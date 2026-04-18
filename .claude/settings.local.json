@@ -2,7 +2,22 @@
   "permissions": {
     "allow": [
       "Bash(find:*)",
-      "Bash(go build:*)"
+      "Bash(go build:*)",
+      "Bash(mkdir -p _legacy)",
+      "Bash(mv cmd *)",
+      "Bash(chmod +x *)",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "Bash(docker info *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | %{size_download} bytes\\\\n\" http://localhost:8080/)",
+      "Bash(curl -s http://localhost:8080/)",
+      "Bash(curl *)",
+      "Bash(tar xf *)",
+      "WebFetch(domain:www.tum.de)",
+      "WebFetch(domain:www.typo3.tum.de)",
+      "Bash(gh auth *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)"
     ]
   }
 }

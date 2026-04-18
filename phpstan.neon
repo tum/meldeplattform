@@ -1,0 +1,40 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+
+parameters:
+    level: 9
+
+    paths:
+        - app
+        - config
+        - database
+        - routes
+        - tests
+
+    excludePaths:
+        # _legacy is only present in dev checkouts, not in CI.
+        - _legacy (?)
+        - bootstrap/cache
+        - storage
+
+    checkOctaneCompatibility: false
+    reportUnmatchedIgnoredErrors: false
+
+    ignoreErrors:
+        # Laravel's helpers frequently return mixed – Purifier is a great example.
+        -
+            message: '#Call to an undefined static method Mews\\Purifier\\Facades\\Purifier::clean\(\).#'
+            path: app/Support/Markdown.php
+
+        # Eloquent magic factory helper – larastan knows about it but the
+        # helper returns a generic Factory so we accept the mixed return.
+        -
+            message: '#Unable to resolve the template type TFactoryModel in call to method#'
+            paths:
+                - app/Models/*
+
+        # Facade calls resolve to mixed at analysis time when inside closures
+        -
+            message: '#Parameter \#1 \$callback of method Illuminate\\Database\\ConnectionInterface::transaction\(\) expects Closure#'
+            path: app/Http/Controllers/*

@@ -1,0 +1,14 @@
+services:
+  app:
+    # Dev: bind-mount the repo into the container so Pint/PHPStan/Tests
+    # executed inside the container edit the files on the host.
+    # The production image still ships with the baked-in copy.
+    volumes:
+      - ./:/var/www/html
+      - uploads:/var/www/html/storage/app/uploads
+      - logs:/var/www/html/storage/logs
+      # Keep vendor/ inside the container to avoid hammering the Mac FS.
+      - vendor:/var/www/html/vendor
+
+volumes:
+  vendor:

@@ -1,0 +1,10 @@
+User-agent: *
+# Block token-bearing URLs and admin surfaces from being indexed.
+Disallow: /report
+Disallow: /file/
+Disallow: /dev/
+Disallow: /api/
+Disallow: /newTopic/
+Disallow: /reports/
+Disallow: /saml/
+Disallow: /shib

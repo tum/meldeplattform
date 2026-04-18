@@ -1,0 +1,63 @@
+services:
+  app:
+    build: .
+    image: tum-dev/meldeplattform:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_NAME: "TUM Meldeplattform"
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_URL: "${APP_URL:-http://localhost:8080}"
+      APP_LOCALE: de
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: meldeplattform
+      DB_USERNAME: meldeplattform
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_HOST: ${MAIL_HOST:-smtp.tum.de}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-meldeplattform@tum.de}
+      MAIL_FROM_NAME: "${MAIL_FROM_NAME:-Meldeplattform TUM}"
+      MELDE_ADMIN_USERS: ${MELDE_ADMIN_USERS:-dev,ge25bof}
+      MELDE_DEV_LOGIN_ENABLED: ${MELDE_DEV_LOGIN_ENABLED:-true}
+      SAML2_IDP_ENTITYID: ${SAML2_IDP_ENTITYID:-}
+      SAML2_IDP_METADATA_URL: ${SAML2_IDP_METADATA_URL:-}
+      SAML2_IDP_SSO_URL: ${SAML2_IDP_SSO_URL:-}
+      SAML2_IDP_SLO_URL: ${SAML2_IDP_SLO_URL:-}
+      SAML2_SP_ENTITYID: ${SAML2_SP_ENTITYID:-}
+      SAML2_SP_X509CERT: ${SAML2_SP_X509CERT:-}
+      SAML2_SP_PRIVATEKEY: ${SAML2_SP_PRIVATEKEY:-}
+    volumes:
+      - uploads:/var/www/html/storage/app/uploads
+      - logs:/var/www/html/storage/logs
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: meldeplattform
+      MARIADB_USER: meldeplattform
+      MARIADB_PASSWORD: ${DB_PASSWORD:-changeme}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootchange}
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  dbdata:
+  uploads:
+  logs:
