@@ -7,12 +7,12 @@ return [
     |--------------------------------------------------------------------------
     */
     'title' => [
-        'de' => 'Meldeplattform',
-        'en' => 'Reporting Platform',
+        'de' => 'TUM SafeSignal',
+        'en' => 'TUM SafeSignal',
     ],
     'subtitle' => [
-        'de' => 'Technische Universität München',
-        'en' => 'Technical University of Munich',
+        'de' => 'Whistleblowing & IT Security Reporting System',
+        'en' => 'Whistleblowing & IT Security Reporting System',
     ],
 
     /*

@@ -27,6 +27,6 @@ return [
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'meldeplattform@tum.de'),
-        'name' => env('MAIL_FROM_NAME', 'Meldeplattform TUM'),
+        'name' => env('MAIL_FROM_NAME', 'TUM SafeSignal'),
     ],
 ];

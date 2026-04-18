@@ -1,8 +1,8 @@
 {
     "name": "tum-dev/meldeplattform",
     "type": "project",
-    "description": "TUM Meldeplattform – anonymous reporting platform (Laravel port).",
-    "keywords": ["tum", "reporting", "laravel"],
+    "description": "TUM SafeSignal – whistleblowing & IT security reporting system (Laravel).",
+    "keywords": ["tum", "safesignal", "whistleblowing", "reporting", "laravel"],
     "license": "MIT",
     "require": {
         "php": "^8.3",

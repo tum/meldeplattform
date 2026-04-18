@@ -13,7 +13,7 @@ class PublicPagesTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('Reporting Platform', false);
+            ->assertSee('TUM SafeSignal', false);
     }
 
     public function test_imprint_renders(): void

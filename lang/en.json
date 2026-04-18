@@ -7,7 +7,7 @@
     "select_topic_prompt": "Please select the type of issue you want to report",
     "report": "Report",
     "create_topic": "Create / Update topic",
-    "create_topic_summary": "Create a new subtopic for the reporting platform:",
+    "create_topic_summary": "Create a new subtopic for TUM SafeSignal:",
     "send": "Send",
     "german": "German",
     "english": "English",

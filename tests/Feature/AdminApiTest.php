@@ -81,7 +81,8 @@ class AdminApiTest extends TestCase
         ])->assertOk()->assertJson(['saved' => true]);
 
         $this->assertDatabaseHas('topics', ['name_en' => 'New']);
-        $this->assertDatabaseCount('fields', 1);
+        $newTopicId = (int) Topic::where('name_en', 'New')->value('id');
+        $this->assertSame(1, Field::where('topic_id', $newTopicId)->count());
         $this->assertDatabaseHas('admins', ['user_id' => 'ge42tum']);
     }
 

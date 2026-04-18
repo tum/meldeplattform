@@ -20,7 +20,7 @@
         </p>
 
         <p style="color: #6A757E; font-size: 12px; margin-top: 32px;">
-            TUM Meldeplattform · Technische Universität München
+            TUM SafeSignal · Whistleblowing & IT Security Reporting System · Technische Universität München
         </p>
     </div>
 </body>

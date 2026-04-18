@@ -1,8 +1,13 @@
-# TUM Meldeplattform
+# TUM SafeSignal
 
-Anonyme Meldeplattform der Technischen Universität München. Laravel-basierte
-Portierung der ursprünglichen Go-Anwendung mit MySQL-Backend, TUM-Design und
-SAML-Login über den TUM Shibboleth-IdP.
+**Whistleblowing & IT Security Reporting System** der Technischen Universität
+München. Anonyme, SAML-gestützte Meldeplattform mit Laravel-Backend, MySQL,
+TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
+
+> Interne Paket- und Verzeichnisnamen (`tum-dev/meldeplattform`, Config-Key
+> `meldeplattform.*`, `MELDE_*` Env-Vars, DB-Name `meldeplattform`) bleiben
+> aus Kompatibilitätsgründen erhalten. Nach außen heißt das System
+> **TUM SafeSignal**.
 
 <p align="center">
   <img alt="Laravel 13" src="https://img.shields.io/badge/Laravel-13.5-ff2d20?logo=laravel&logoColor=white">

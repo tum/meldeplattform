@@ -7,7 +7,7 @@
     "select_topic_prompt": "Bitte wählen Sie den Typ des zu meldenden Problems aus",
     "report": "Meldung",
     "create_topic": "Thema erstellen / aktualisieren",
-    "create_topic_summary": "Erstellen eines neuen Unterthemas für die Meldeplattform:",
+    "create_topic_summary": "Erstellen eines neuen Unterthemas für TUM SafeSignal:",
     "send": "Absenden",
     "german": "Deutsch",
     "english": "Englisch",
