@@ -257,10 +257,7 @@ gegen SQLite + MariaDB 11.
 
 ## Sicherheit
 
-Siehe [`SECURITY.md`](SECURITY.md) für den vollständigen Audit-Report
-(Threat Model, Findings, Fixes, Empfehlungen).
-
-Kurzfassung:
+Eingebaute Härtung (Kurzfassung):
 
 - CSRF: aktiv auf allen POST-Routen außer `/shib` + `/saml/*`.
 - CSP, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` im
@@ -274,8 +271,9 @@ Kurzfassung:
 - SAML-ACS-Endpoint validiert Signatur und NotBefore/NotOnOrAfter via
   `onelogin/php-saml`.
 
-Security-Meldungen bitte an die TUM-Dev-Security-Adresse, **nicht** über
-öffentliche GitHub-Issues.
+**Schwachstellen bitte vertraulich an `it-sicherheit@tum.de` melden,
+nicht** über öffentliche GitHub-Issues. Details zum Reporting-Prozess,
+Scope und Safe Harbor siehe [`SECURITY.md`](SECURITY.md).
 
 ## Lizenz
 
