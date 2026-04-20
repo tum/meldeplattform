@@ -1,0 +1,23 @@
+# Shared-host fallback: forwards every request into public/ when the
+# hosting provider does not let us change the DocumentRoot to public/.
+# Prefer pointing the DocumentRoot at public/ directly whenever possible –
+# this file exposes the project root to Apache, so any misconfiguration of
+# mod_rewrite could leak source files (.env, storage/, vendor/).
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Deny direct access to the application source even if rewrite fails.
+    RewriteRule ^\.env(\..*)?$             - [F,L]
+    RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests|vendor)(/|$) - [F,L]
+    RewriteRule ^(composer\.(json|lock)|artisan|phpunit\.xml|phpstan\.neon)$ - [F,L]
+
+    # Send every request that is not already targeting public/ into public/.
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    # Without mod_rewrite the shared-host workaround cannot work safely.
+    Require all denied
+</IfModule>
