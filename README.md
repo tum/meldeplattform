@@ -182,6 +182,30 @@ In `config/saml2.php` konfiguriert, Werte per `.env`.
 
 Attribute-Mapping: `uid`, `displayName`, `mail`.
 
+#### IdP-Zertifikat importieren
+
+Das Signing-Zertifikat des IdPs kann direkt aus dessen Metadaten gezogen
+werden, statt es manuell aus der XML zu kopieren:
+
+```bash
+# Dry run – zeigt Cert + SSO/SLO-URLs + SHA-256-Fingerprint
+docker compose exec app php artisan saml:import-idp-metadata
+
+# Schreibt SAML2_IDP_X509CERT / SAML2_IDP_SSO_URL / SAML2_IDP_SLO_URL /
+# SAML2_IDP_ENTITYID direkt in die .env (fragt vor dem Überschreiben nach).
+docker compose exec app php artisan saml:import-idp-metadata --write
+```
+
+Standardmäßig wird `SAML2_IDP_METADATA_URL` (z. B.
+`https://login.tum.de/idp/shibboleth`) abgefragt; `--url=` und
+`--entity-id=` überschreiben die Defaults. Der TLS-Peer wird **immer**
+gegen die lokalen Root-CAs validiert. Den ausgegebenen SHA-256-Fingerprint
+bitte **out-of-band** gegen eine vertrauenswürdige Quelle (TUM-Support,
+Föderations-Registry) vergleichen, bevor der Cert in Produktion
+übernommen wird.
+
+Bei IdP-Key-Rollover denselben Command erneut laufen lassen.
+
 ### Admins
 
 Globale Admins via `MELDE_ADMIN_USERS` (komma-separierte UIDs). Sie dürfen
