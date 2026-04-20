@@ -4,6 +4,8 @@
     "imprint": "Impressum",
     "privacy": "Datenschutz",
     "source": "Quellcode",
+    "thanks_prefix": "Mit Dank an",
+    "thanks_suffix": "für die Vorarbeit und laufenden Beiträge.",
     "select_topic_prompt": "Bitte wählen Sie den Typ des zu meldenden Problems aus",
     "report": "Meldung",
     "create_topic": "Thema erstellen / aktualisieren",

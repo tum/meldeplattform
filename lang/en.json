@@ -4,6 +4,8 @@
     "imprint": "Imprint",
     "privacy": "Privacy",
     "source": "Source code",
+    "thanks_prefix": "With thanks to",
+    "thanks_suffix": "for their groundwork and ongoing contributions.",
     "select_topic_prompt": "Please select the type of issue you want to report",
     "report": "Report",
     "create_topic": "Create / Update topic",

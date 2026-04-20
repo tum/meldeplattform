@@ -30,6 +30,7 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
 - [Entwicklung](#entwicklung)
 - [Tests & Qualität](#tests--qualität)
 - [Sicherheit](#sicherheit)
+- [Danksagung](#danksagung)
 - [Lizenz](#lizenz)
 
 ---
@@ -71,7 +72,7 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
 Voraussetzung: Docker Desktop ≥ 24.
 
 ```bash
-git clone https://github.com/TUM-Dev/meldeplattform.git
+git clone https://github.com/tum/meldeplattform.git
 cd meldeplattform
 cp .env.example .env
 docker compose up --build -d
@@ -279,6 +280,12 @@ Eingebaute Härtung (Kurzfassung):
 **Schwachstellen bitte vertraulich an `it-sicherheit@tum.de` melden,
 nicht** über öffentliche GitHub-Issues. Details zum Reporting-Prozess,
 Scope und Safe Harbor siehe [`SECURITY.md`](SECURITY.md).
+
+## Danksagung
+
+Besonderer Dank gilt **[TUM DEV](https://www.tum.dev/)** für die Vorarbeit,
+die Code-Grundlage und das fortlaufende Engagement rund um quelloffene
+Werkzeuge für die TUM-Community. TUM SafeSignal baut auf ihrer Arbeit auf.
 
 ## Lizenz
 
