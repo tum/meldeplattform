@@ -10,10 +10,10 @@
                 @if (! app()->environment('production'))
                     <a href="/dev/logout">{{ __('logout') }}</a>
                 @else
-                    <a href="/saml/logout">{{ __('logout') }}</a>
+                    <a href="{{ route('auth.logout') }}">{{ __('logout') }}</a>
                 @endif
             @else
-                <a href="/saml/out">{{ __('login') }}</a>
+                <a href="{{ route('auth.login') }}">{{ __('login') }}</a>
                 @if (! app()->environment('production'))
                     <a href="/dev/login" style="opacity:.8;">Dev-Login</a>
                 @endif

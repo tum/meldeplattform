@@ -11,9 +11,9 @@ class EnsureGlobalAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        /** @var array{uid?: string}|null $saml */
-        $saml = $request->session()->get('saml_user');
-        $uid = $saml['uid'] ?? null;
+        /** @var array{uid?: string}|null $auth */
+        $auth = $request->session()->get('auth_user');
+        $uid = $auth['uid'] ?? null;
 
         /** @var list<string> $admins */
         $admins = array_values(array_filter(

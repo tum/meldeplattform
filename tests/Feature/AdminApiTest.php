@@ -17,14 +17,14 @@ class AdminApiTest extends TestCase
     private function asGlobalAdmin(): self
     {
         return $this->withSession([
-            'saml_user' => ['uid' => 'globaladmin', 'name' => 'Admin', 'email' => 'a@x'],
+            'auth_user' => ['uid' => 'globaladmin', 'name' => 'Admin', 'email' => 'a@x'],
         ]);
     }
 
     private function asUser(string $uid): self
     {
         return $this->withSession([
-            'saml_user' => ['uid' => $uid, 'name' => $uid, 'email' => $uid.'@x'],
+            'auth_user' => ['uid' => $uid, 'name' => $uid, 'email' => $uid.'@x'],
         ]);
     }
 

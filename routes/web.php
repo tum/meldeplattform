@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DevLoginController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\SamlController;
 use App\Http\Controllers\SubmitController;
 use App\Http\Controllers\TopicAdminController;
 use Illuminate\Support\Facades\Route;
@@ -46,14 +46,15 @@ if (! app()->environment('production') && (bool) config('meldeplattform.dev_logi
     });
 }
 
-// SAML
-Route::get('/saml/metadata', [SamlController::class, 'metadata']);
-Route::get('/saml/out', [SamlController::class, 'login'])->middleware('throttle:20,1');
-Route::get('/saml/logout', [SamlController::class, 'logout']);
-// HTTP-Redirect binding uses GET; HTTP-POST binding uses POST. Accept both
-// so the SP works regardless of which binding the IdP picks at runtime.
-Route::match(['get', 'post'], '/saml/slo', [SamlController::class, 'singleLogout']);
-Route::post('/shib', [SamlController::class, 'acs'])->middleware('throttle:20,1');
+// OIDC (Authorization Code with PKCE).
+Route::get('/auth/login', [AuthController::class, 'login'])
+    ->middleware('throttle:20,1')
+    ->name('auth.login');
+Route::get('/auth/callback', [AuthController::class, 'callback'])
+    ->middleware('throttle:20,1')
+    ->name('auth.callback');
+Route::get('/auth/logout', [AuthController::class, 'logout'])
+    ->name('auth.logout');
 
 // Admin of a topic
 Route::middleware(['topic.admin'])->group(function (): void {

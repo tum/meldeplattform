@@ -20,8 +20,9 @@ return [
     | Admin users
     |--------------------------------------------------------------------------
     |
-    | Comma-separated list of SAML UIDs (e.g. "ge42tum") that get global
-    | admin rights (can create topics, see every report, etc.).
+    | Comma-separated list of OIDC user IDs (the claim configured by
+    | OIDC_USER_ID_CLAIM, defaults to `preferred_username` — e.g.
+    | "ge42tum") that get global admin rights.
     |
     */
     'admin_users' => array_values(array_filter(array_map(
@@ -41,7 +42,7 @@ return [
     | Dev login bypass
     |--------------------------------------------------------------------------
     | When true AND APP_ENV != "production", an in-app form at /dev/login
-    | seeds the SAML session without contacting the IdP. Must stay off in prod.
+    | seeds the auth session without contacting the IdP. Must stay off in prod.
     */
     'dev_login_enabled' => filter_var(env('MELDE_DEV_LOGIN_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
 

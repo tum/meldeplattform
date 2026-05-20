@@ -26,7 +26,7 @@ class DevLoginTest extends TestCase
             'uid' => 'globaladmin',
             'name' => 'Test Admin',
             'email' => 'admin@example.com',
-        ], session('saml_user'));
+        ], session('auth_user'));
     }
 
     public function test_dev_login_rejects_empty_uid(): void
@@ -38,9 +38,9 @@ class DevLoginTest extends TestCase
 
     public function test_dev_logout_clears_session(): void
     {
-        $this->withSession(['saml_user' => ['uid' => 'x', 'name' => 'x', 'email' => 'x@x']])
+        $this->withSession(['auth_user' => ['uid' => 'x', 'name' => 'x', 'email' => 'x@x']])
             ->get('/dev/logout')
             ->assertRedirect('/');
-        $this->assertNull(session('saml_user'));
+        $this->assertNull(session('auth_user'));
     }
 }

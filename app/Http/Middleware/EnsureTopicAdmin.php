@@ -12,9 +12,9 @@ class EnsureTopicAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        /** @var array{uid?: string}|null $saml */
-        $saml = $request->session()->get('saml_user');
-        $uid = $saml['uid'] ?? null;
+        /** @var array{uid?: string}|null $auth */
+        $auth = $request->session()->get('auth_user');
+        $uid = $auth['uid'] ?? null;
 
         if ($uid === null) {
             abort(401);

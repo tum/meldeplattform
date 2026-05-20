@@ -28,16 +28,19 @@ services:
       MAIL_FROM_NAME: "${MAIL_FROM_NAME:-TUM SafeSignal}"
       MELDE_ADMIN_USERS: ${MELDE_ADMIN_USERS:-dev,ge25bof}
       MELDE_DEV_LOGIN_ENABLED: ${MELDE_DEV_LOGIN_ENABLED:-true}
-      SAML2_IDP_ENTITYID: ${SAML2_IDP_ENTITYID:-}
-      SAML2_IDP_METADATA_URL: ${SAML2_IDP_METADATA_URL:-}
-      SAML2_IDP_SSO_URL: ${SAML2_IDP_SSO_URL:-}
-      SAML2_IDP_SLO_URL: ${SAML2_IDP_SLO_URL:-}
-      SAML2_SP_ENTITYID: ${SAML2_SP_ENTITYID:-}
-      SAML2_SP_X509CERT: ${SAML2_SP_X509CERT:-}
-      SAML2_SP_PRIVATEKEY: ${SAML2_SP_PRIVATEKEY:-}
+      OIDC_DISCOVERY_URL: ${OIDC_DISCOVERY_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI:-}
+      OIDC_POST_LOGOUT_REDIRECT_URI: ${OIDC_POST_LOGOUT_REDIRECT_URI:-}
+      OIDC_SCOPES: ${OIDC_SCOPES:-openid profile email}
+      OIDC_USER_ID_CLAIM: ${OIDC_USER_ID_CLAIM:-preferred_username}
     volumes:
       - uploads:/var/www/html/storage/app/uploads
       - logs:/var/www/html/storage/logs
+      # Bind-mount the host .env so local-dev secrets (e.g. OIDC_CLIENT_SECRET)
+      # are picked up without rebuilding the image. Read-only to avoid the
+      # container writing back into the repo.
+      - ./.env:/var/www/html/.env:ro
     ports:
       - "${HTTP_PORT:-8080}:8080"
 

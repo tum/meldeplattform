@@ -16,11 +16,11 @@ class ShareViewData
     {
         $lang = App::getLocale();
 
-        /** @var array{uid?: string, name?: string, email?: string}|null $saml */
-        $saml = $request->session()->get('saml_user');
-        $uid = $saml['uid'] ?? null;
-        $name = $saml['name'] ?? null;
-        $email = $saml['email'] ?? null;
+        /** @var array{uid?: string, name?: string, email?: string}|null $auth */
+        $auth = $request->session()->get('auth_user');
+        $uid = $auth['uid'] ?? null;
+        $name = $auth['name'] ?? null;
+        $email = $auth['email'] ?? null;
 
         /** @var list<string> $admins */
         $admins = array_values(array_filter(

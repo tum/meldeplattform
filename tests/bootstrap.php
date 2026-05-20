@@ -29,6 +29,12 @@ foreach ([
     'TELESCOPE_ENABLED' => 'false',
     'MELDE_ADMIN_USERS' => 'globaladmin',
     'MELDE_DEV_LOGIN_ENABLED' => 'true',
+    'OIDC_DISCOVERY_URL' => '',
+    'OIDC_CLIENT_ID' => 'test-client',
+    'OIDC_CLIENT_SECRET' => 'test-secret',
+    'OIDC_REDIRECT_URI' => 'http://localhost/auth/callback',
+    'OIDC_POST_LOGOUT_REDIRECT_URI' => 'http://localhost/',
+    'OIDC_USER_ID_CLAIM' => 'preferred_username',
 ] as $key => $value) {
     $_SERVER[$key] = $value;
     $_ENV[$key] = $value;

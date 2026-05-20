@@ -22,13 +22,6 @@ return Application::configure(basePath: dirname(__DIR__))
             ShareViewData::class,
         ]);
 
-        // CSRF exception for the SAML ACS endpoint. The SAML response is
-        // signed by the IdP and validated by the SAML package.
-        $middleware->preventRequestForgery(except: [
-            'shib',
-            'saml/*',
-        ]);
-
         $middleware->alias([
             'topic.admin' => EnsureTopicAdmin::class,
             'admin' => EnsureGlobalAdmin::class,

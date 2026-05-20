@@ -9,7 +9,7 @@ use Illuminate\View\View;
 
 /**
  * Dev-only login bypass. Only wired up from routes/web.php when
- * `APP_ENV !== 'production'` so the SAML flow stays mandatory in prod.
+ * `APP_ENV !== 'production'` so the OIDC flow stays mandatory in prod.
  */
 class DevLoginController extends Controller
 {
@@ -33,7 +33,7 @@ class DevLoginController extends Controller
         // Rotate session ID on privilege elevation (OWASP ASVS V3.2.1).
         $request->session()->regenerate(true);
 
-        $request->session()->put('saml_user', [
+        $request->session()->put('auth_user', [
             'uid' => $uid,
             'name' => $name !== '' ? $name : $uid,
             'email' => $email !== '' ? $email : $uid.'@example.com',

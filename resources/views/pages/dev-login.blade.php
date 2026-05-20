@@ -6,14 +6,14 @@
     <section class="page-intro">
         <div class="container">
             <h1>Dev-Login</h1>
-            <p>Lokaler Bypass ohne Shibboleth – nur aktiv, wenn nicht in Produktion.</p>
+            <p>Lokaler Bypass ohne OIDC – nur aktiv, wenn nicht in Produktion.</p>
         </div>
     </section>
 @endsection
 
 @section('content')
     <div class="alert alert-warning">
-        <strong>Achtung:</strong> Dieses Formular umgeht die SAML-Authentifizierung.
+        <strong>Achtung:</strong> Dieses Formular umgeht die OIDC-Authentifizierung.
         In Produktion ist es deaktiviert.
     </div>
 
