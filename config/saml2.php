@@ -28,7 +28,8 @@ return [
         ],
         'x509cert' => env('SAML2_SP_X509CERT', ''),
         'privateKey' => env('SAML2_SP_PRIVATEKEY', ''),
-        'NameIDFormat' => 'urn:oasis:names:tc:SAML:1.1:nameid-format:persistent',
+        'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
+//        'NameIDFormat' => 'urn:oasis:names:tc:SAML:1.1:nameid-format:persistent',
     ],
 
     'idp' => [
@@ -50,7 +51,7 @@ return [
     // Mandatory in production; the SP refuses to boot without an IdP certificate.
     'security' => [
         'wantMessagesSigned' => true,
-        'wantAssertionsSigned' => true,
+        'wantAssertionsSigned' => false,
         'wantAssertionsEncrypted' => false,
         'wantNameIdEncrypted' => false,
         'authnRequestsSigned' => false,

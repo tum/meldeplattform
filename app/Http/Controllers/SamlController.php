@@ -25,12 +25,19 @@ class SamlController extends Controller
     public function login(): RedirectResponse
     {
         $auth = $this->newAuth();
-        $auth->login(url('/'));
+    	$redirectUrl = $auth->login(
+        	url('/'), // returnTo / RelayState
+        	[],       // parameters
+        	false,    // forceAuthn
+		    false,    // isPassive
+        	true      // stay = true: kein exit(), URL zurückgeben
+	    );
 
-        // onelogin's login() calls exit() internally after emitting the redirect,
-        // so we never actually reach the line below at runtime. It is here only
-        // to satisfy the return-type contract for tests and static analysis.
-        return redirect('/'); // @phpstan-ignore deadCode.unreachable
+	    session(['saml_request_id' => $auth->getLastRequestID()]);
+	    session()->save();
+
+    	return redirect()->away($redirectUrl);
+	
     }
 
     public function logout(Request $request): RedirectResponse
@@ -73,7 +80,9 @@ class SamlController extends Controller
     public function acs(Request $request): RedirectResponse
     {
         $auth = $this->newAuth();
-        $auth->processResponse();
+        $requestId = session('saml_request_id');
+
+        $auth->processResponse($requestId);
 
         /** @var list<string> $errors */
         $errors = $auth->getErrors();
