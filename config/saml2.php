@@ -29,7 +29,6 @@ return [
         'x509cert' => env('SAML2_SP_X509CERT', ''),
         'privateKey' => env('SAML2_SP_PRIVATEKEY', ''),
         'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
-//        'NameIDFormat' => 'urn:oasis:names:tc:SAML:1.1:nameid-format:persistent',
     ],
 
     'idp' => [

@@ -25,19 +25,19 @@ class SamlController extends Controller
     public function login(): RedirectResponse
     {
         $auth = $this->newAuth();
-    	$redirectUrl = $auth->login(
-        	url('/'), // returnTo / RelayState
-        	[],       // parameters
-        	false,    // forceAuthn
-		    false,    // isPassive
-        	true      // stay = true: kein exit(), URL zurückgeben
-	    );
+        $redirectUrl = $auth->login(
+            url('/'), // returnTo / RelayState
+            [],       // parameters
+            false,    // forceAuthn
+            false,    // isPassive
+            true,      // stay = true: kein exit(), URL zurückgeben
+        );
 
-	    session(['saml_request_id' => $auth->getLastRequestID()]);
-	    session()->save();
+        session(['saml_request_id' => $auth->getLastRequestID()]);
+        session()->save();
 
-    	return redirect()->away($redirectUrl);
-	
+        return redirect()->away($redirectUrl);
+
     }
 
     public function logout(Request $request): RedirectResponse
