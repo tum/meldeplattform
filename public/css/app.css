@@ -244,14 +244,25 @@ hr {
 .card-important a { color: var(--tum-hover-tint); }
 
 .topic-card {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 1.25rem;
     flex-wrap: wrap;
     border-left: 4px solid var(--tum-primary);
+    cursor: pointer;
+    transition: border-left-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
-.topic-card:hover { border-left-color: var(--tum-secondary); }
+.topic-card:hover {
+    border-left-color: var(--tum-secondary);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+.topic-card:focus-within {
+    outline: 2px solid var(--tum-primary);
+    outline-offset: 2px;
+}
 .topic-card .topic-body { flex: 1 1 65%; min-width: 0; }
 .topic-card h3 {
     margin: 0 0 0.35rem;
@@ -262,12 +273,19 @@ hr {
     color: var(--tum-text-heading);
     text-decoration: none;
 }
-.topic-card h3 a:hover {
+.topic-card h3 a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+.topic-card:hover h3 a {
     color: var(--tum-primary);
-    text-decoration: underline;
 }
 .topic-card p { margin: 0; color: var(--tum-text); }
 .topic-card .actions {
+    position: relative;
+    z-index: 2;
     display: flex; gap: 0.5rem; flex-wrap: wrap; flex-shrink: 0;
 }
 
