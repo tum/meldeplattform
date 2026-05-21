@@ -82,7 +82,7 @@ class SamlController extends Controller
         $auth = $this->newAuth();
         $requestId = session('saml_request_id');
 
-        $auth->processResponse($requestId);
+        $auth->processResponse(is_string($requestId) ? $requestId : null);
 
         /** @var list<string> $errors */
         $errors = $auth->getErrors();
