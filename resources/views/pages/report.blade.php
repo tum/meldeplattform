@@ -78,24 +78,35 @@
                 <h2>{{ __('status') }}</h2>
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                @php
+                    // Auto-advance to the reports list after Close/Spam so
+                    // the admin lands somewhere actionable instead of being
+                    // stranded on the just-triaged report. Reopen omits the
+                    // redirect — the admin probably wants to verify the
+                    // state change before moving on.
+                    $statusUrl = route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]);
+                    $listUrl = route('topic.reports', $report->topic_id);
+                @endphp
                 @if ($report->isClosed())
                     <button class="button button-success"
-                            data-status-url="{{ route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]) }}"
+                            data-status-url="{{ $statusUrl }}"
                             data-status="open">
                         {{ __('reopen') }}
                     </button>
                 @else
                     <button class="button button-success"
-                            data-status-url="{{ route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]) }}"
+                            data-status-url="{{ $statusUrl }}"
                             data-status="close"
+                            data-status-redirect="{{ $listUrl }}"
                             data-status-confirm="{{ __('confirm_close') }}">
                         {{ __('close') }}
                     </button>
                 @endif
                 @if (! $report->isSpam())
                     <button class="button button-danger"
-                            data-status-url="{{ route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]) }}"
+                            data-status-url="{{ $statusUrl }}"
                             data-status="spam"
+                            data-status-redirect="{{ $listUrl }}"
                             data-status-confirm="{{ __('confirm_spam') }}">
                         {{ __('spam') }}
                     </button>

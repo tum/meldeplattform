@@ -15,7 +15,11 @@
                 body: JSON.stringify(body ?? {}),
             });
             if (!res.ok) throw new Error('HTTP ' + res.status);
-            if (opts.reload) window.location.reload();
+            if (opts.redirect) {
+                window.location.href = opts.redirect;
+            } else if (opts.reload) {
+                window.location.reload();
+            }
             return res.json().catch(() => ({}));
         },
         async getJson(url) {
@@ -28,9 +32,13 @@
         },
     };
 
-    // Hook buttons with data-status (report open/close/spam). A
-    // data-status-confirm attribute (when present) gates the request behind
-    // a confirm() prompt so misclicks on destructive actions don't fire.
+    // Hook buttons with data-status (report open/close/spam).
+    //  - data-status-confirm (optional): gates the request behind confirm()
+    //    so misclicks on destructive actions don't fire.
+    //  - data-status-redirect (optional): navigate here on success instead
+    //    of reloading the current page. Used on the single-report view to
+    //    auto-advance the admin back to the reports list after Close/Spam,
+    //    so they don't get stranded on a freshly-closed report.
     document.addEventListener('click', (e) => {
         const el = e.target.closest('[data-status-url]');
         if (!el) return;
@@ -39,7 +47,9 @@
         if (confirmText && !window.confirm(confirmText)) return;
         const url = el.getAttribute('data-status-url');
         const s = el.getAttribute('data-status');
-        window.md.postJson(url, { s }, { reload: true }).catch((err) => {
+        const redirect = el.getAttribute('data-status-redirect');
+        const opts = redirect ? { redirect } : { reload: true };
+        window.md.postJson(url, { s }, opts).catch((err) => {
             alert('Request failed: ' + err.message);
         });
     });
