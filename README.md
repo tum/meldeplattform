@@ -13,7 +13,7 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
   <img alt="Laravel 13" src="https://img.shields.io/badge/Laravel-13.5-ff2d20?logo=laravel&logoColor=white">
   <img alt="PHP 8.3" src="https://img.shields.io/badge/PHP-8.3-777bb4?logo=php&logoColor=white">
   <img alt="PHPStan level 9" src="https://img.shields.io/badge/PHPStan-level%209-1d4ed8">
-  <img alt="Tests" src="https://img.shields.io/badge/Tests-51%20passing-16a34a">
+  <img alt="Tests" src="https://img.shields.io/badge/Tests-50%20passing-16a34a">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-blue">
 </p>
 
@@ -63,7 +63,7 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
 | SAML | `onelogin/php-saml` |
 | Markdown | `league/commonmark` + `mews/purifier` |
 | HTTP (Matrix/Webhook) | Guzzle via Laravel `Http` Facade |
-| Qualität | Laravel Pint, PHPStan (larastan) Level 9, PHPUnit 11 |
+| Qualität | Laravel Pint, PHPStan (larastan) Level 9, PHPUnit 12 |
 | CI | GitHub Actions (lint, stan, tests × SQLite + MariaDB) |
 | Container | PHP-FPM + nginx + Supervisord, MariaDB 11 via Compose |
 
@@ -242,7 +242,7 @@ Mailable, Matrix via HTTP Client, Webhook via HTTP Client.
 docker compose exec app composer install
 docker compose exec app vendor/bin/pint            # Autoformat
 docker compose exec app vendor/bin/phpstan analyse # Statik, Level 9
-docker compose exec app vendor/bin/phpunit         # 51 Tests
+docker compose exec app vendor/bin/phpunit         # 50 Tests
 ```
 
 Das `docker-compose.override.yml` bind-mounted das Repo in den Container,
@@ -280,7 +280,7 @@ docker compose exec app vendor/bin/phpunit
 
 - **Pint**: Laravel-Preset + Extras (siehe `pint.json`)
 - **PHPStan**: Level 9 (siehe `phpstan.neon`, larastan-Extension)
-- **PHPUnit**: 51 Tests (Unit + Feature), 118 Assertions
+- **PHPUnit**: 50 Tests (Unit + Feature), 122 Assertions
 
 GitHub Actions führt die drei Stufen bei jedem Push/PR aus – Test-Matrix
 gegen SQLite + MariaDB 11.
