@@ -17,7 +17,10 @@
         <div class="alert alert-error">{{ __('please_fix_errors') }}</div>
     @endif
 
-    <form method="post" action="{{ route('form.submit') }}" enctype="multipart/form-data" class="card" style="max-width: 820px;">
+    <div class="alert alert-info draft-restored" data-draft-note hidden>{{ __('draft_restored') }}</div>
+
+    <form method="post" action="{{ route('form.submit') }}" enctype="multipart/form-data" class="card"
+          data-draft-key="form-draft:{{ $topic->id }}" style="max-width: 820px;">
         @csrf
         <input type="hidden" name="topic" value="{{ $topic->id }}">
 
@@ -99,4 +102,5 @@
     </form>
 
     <script src="{{ asset('js/file-input.js') }}" defer></script>
+    <script src="{{ asset('js/form-draft.js') }}" defer></script>
 @endsection

@@ -88,5 +88,6 @@
     "select_row": "Select report",
     "selected": "selected",
     "confirm_close_bulk": "Mark the selected reports as closed?",
-    "confirm_spam_bulk": "Mark the selected reports as spam?"
+    "confirm_spam_bulk": "Mark the selected reports as spam?",
+    "draft_restored": "We restored your previous draft on this device. File selections were not saved."
 }

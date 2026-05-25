@@ -88,5 +88,6 @@
     "select_row": "Meldung auswählen",
     "selected": "ausgewählt",
     "confirm_close_bulk": "Ausgewählte Meldungen schließen?",
-    "confirm_spam_bulk": "Ausgewählte Meldungen als Spam markieren?"
+    "confirm_spam_bulk": "Ausgewählte Meldungen als Spam markieren?",
+    "draft_restored": "Wir haben Ihren letzten Entwurf auf diesem Gerät wiederhergestellt. Datei-Anhänge wurden nicht gespeichert."
 }
