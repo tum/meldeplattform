@@ -7,6 +7,7 @@ use App\View\Composers\AppLayoutComposer;
 use Closure;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -29,6 +30,11 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->configureRateLimiting();
+
+        // Preserve the legacy top-level JSON shape consumed by the admin
+        // editor. Without this, JsonResource responses would be wrapped in
+        // a `{ "data": … }` envelope, breaking the existing JS client.
+        JsonResource::withoutWrapping();
 
         // Locale-derived branding strings are cheap config lookups and need
         // to be available inside child views' @section('title', ...)

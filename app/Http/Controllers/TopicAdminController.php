@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ReportState;
 use App\Http\Requests\UpsertTopicRequest;
+use App\Http\Resources\TopicResource;
 use App\Models\Admin;
 use App\Models\Field;
 use App\Models\Report;
@@ -36,23 +37,14 @@ class TopicAdminController
         ]);
     }
 
-    public function createSkeleton(): JsonResponse
+    public function createSkeleton(): TopicResource
     {
-        return response()->json([
-            'ID' => 0,
-            'Name' => ['de' => '', 'en' => ''],
-            'Summary' => ['de' => '', 'en' => ''],
-            'Fields' => [],
-            'Admins' => [],
-            'Email' => '',
-        ]);
+        return TopicResource::skeleton();
     }
 
-    public function show(Topic $topic): JsonResponse
+    public function show(Topic $topic): TopicResource
     {
-        $topic->load(['fields', 'admins']);
-
-        return response()->json($this->serialize($topic));
+        return TopicResource::make($topic->load(['fields', 'admins']));
     }
 
     public function store(UpsertTopicRequest $request): JsonResponse
@@ -144,36 +136,5 @@ class TopicAdminController
         });
 
         return response()->json(['ID' => $saved->id, 'saved' => true]);
-    }
-
-    /**
-     * @return array{ID: int, Name: array{de: string, en: string}, Summary: array{de: string, en: string}, Email: string, Fields: list<array{ID: int, Name: array{de: string, en: string}, Description: array{de: string, en: string}, Type: string, Required: bool, Choices: list<string>}>, Admins: list<array{ID: int, UserID: string}>}
-     */
-    private function serialize(Topic $topic): array
-    {
-        /** @var list<array{ID: int, Name: array{de: string, en: string}, Description: array{de: string, en: string}, Type: string, Required: bool, Choices: list<string>}> $fields */
-        $fields = array_values($topic->fields->map(static fn (Field $f): array => [
-            'ID' => $f->id,
-            'Name' => ['de' => $f->name_de, 'en' => $f->name_en],
-            'Description' => ['de' => (string) $f->description_de, 'en' => (string) $f->description_en],
-            'Type' => $f->type->value,
-            'Required' => $f->required,
-            'Choices' => $f->choices ?? [],
-        ])->all());
-
-        /** @var list<array{ID: int, UserID: string}> $admins */
-        $admins = array_values($topic->admins->map(static fn (Admin $a): array => [
-            'ID' => $a->id,
-            'UserID' => $a->user_id,
-        ])->all());
-
-        return [
-            'ID' => $topic->id,
-            'Name' => ['de' => $topic->name_de, 'en' => $topic->name_en],
-            'Summary' => ['de' => (string) $topic->summary_de, 'en' => (string) $topic->summary_en],
-            'Email' => (string) $topic->email,
-            'Fields' => $fields,
-            'Admins' => $admins,
-        ];
     }
 }
