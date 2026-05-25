@@ -41,7 +41,7 @@ class HomeController
         // Tie the Secure flag to the actual request scheme rather than the
         // environment: a misconfigured prod box reached over HTTP would
         // otherwise silently drop the cookie the browser refuses to resend.
-        return redirect('/')->withCookie(cookie(
+        return redirect($this->resolveReturnUrl($request))->withCookie(cookie(
             'lang',
             $lang,
             60 * 24 * 365,
@@ -50,6 +50,42 @@ class HomeController
             $request->secure(),
             true,
         ));
+    }
+
+    /**
+     * Return the user to the page they switched language on — but only when
+     * the Referer points back to the same host. Anything else (off-site
+     * referer, missing header, malformed URL) falls back to `/` so we don't
+     * turn `/setLang` into an open-redirect oracle.
+     */
+    private function resolveReturnUrl(Request $request): string
+    {
+        $referer = $request->headers->get('referer');
+        if (! is_string($referer) || $referer === '') {
+            return '/';
+        }
+
+        $parsed = parse_url($referer);
+        if (! is_array($parsed)) {
+            return '/';
+        }
+
+        $sameHost = ($parsed['host'] ?? null) === $request->getHttpHost()
+            && ($parsed['scheme'] ?? null) === $request->getScheme();
+        if (! $sameHost) {
+            return '/';
+        }
+
+        $path = $parsed['path'] ?? '/';
+        $query = isset($parsed['query']) ? '?'.$parsed['query'] : '';
+
+        // Loop guard: bouncing /setLang back to itself would strip the
+        // user's actual location and re-enter the controller.
+        if (rtrim($path, '/') === '/setLang') {
+            return '/';
+        }
+
+        return $path.$query;
     }
 
     private function operatorPage(string $name, string $fallback): string

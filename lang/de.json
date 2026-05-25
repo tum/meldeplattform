@@ -76,5 +76,7 @@
     "please_fix_errors": "Bitte korrigieren Sie die markierten Felder und senden Sie das Formular erneut.",
     "upload_limit": "Maximal :mb MB pro Datei.",
     "report_link_label": "Link zu Ihrer Meldung",
-    "copy_link": "Link kopieren"
+    "copy_link": "Link kopieren",
+    "you": "Sie",
+    "change_status": "Status ändern"
 }

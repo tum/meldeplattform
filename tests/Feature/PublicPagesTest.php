@@ -40,6 +40,24 @@ class PublicPagesTest extends TestCase
             ->assertCookie('lang', 'en');
     }
 
+    public function test_set_lang_returns_to_same_host_referer(): void
+    {
+        // The lang switch must bounce the user back to their starting page
+        // (so deep links survive the language change) without becoming an
+        // open-redirect oracle.
+        $this->get('/setLang?lang=de', ['referer' => 'http://localhost/imprint'])
+            ->assertRedirect('/imprint')
+            ->assertCookie('lang', 'de');
+
+        $this->get('/setLang?lang=de', ['referer' => 'https://evil.example.com/phish'])
+            ->assertRedirect('/')
+            ->assertCookie('lang', 'de');
+
+        $this->get('/setLang?lang=de', ['referer' => 'http://localhost/setLang?lang=en'])
+            ->assertRedirect('/')
+            ->assertCookie('lang', 'de');
+    }
+
     public function test_health_endpoint_is_ok(): void
     {
         $this->get('/up')->assertOk();

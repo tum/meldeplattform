@@ -34,10 +34,14 @@
 
     <div class="thread">
         @foreach ($report->messages as $m)
-            @php $cls = ($isAdministrator === $m->is_admin) ? 'bubble-admin' : 'bubble-user'; @endphp
+            @php
+                $isMine = ($isAdministrator === $m->is_admin);
+                $cls = $isMine ? 'bubble-mine' : 'bubble-theirs';
+                $roleLabel = $m->is_admin ? __('role_admin') : __('role_reporter');
+            @endphp
             <div class="bubble {{ $cls }}">
                 <div class="bubble-meta">
-                    {{ $m->is_admin ? __('role_admin') : __('role_reporter') }}
+                    {{ $isMine ? __('you').' · '.$roleLabel : $roleLabel }}
                     · {{ $m->created_at?->format('d.m.Y H:i') }}
                 </div>
                 <div class="message-body">
