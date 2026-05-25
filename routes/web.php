@@ -58,6 +58,10 @@ Route::post('/shib', [SamlController::class, 'acs'])->middleware('throttle:saml'
 
 // Admin of a topic — `auth` ensures a User is bound; `can:` runs the policy.
 Route::middleware('auth')->group(function (): void {
+    // Cross-topic admin landing page: every report the user can see.
+    Route::get('/dashboard', [TopicAdminController::class, 'dashboard'])
+        ->name('dashboard');
+
     // Create-new lives on its own URL so route-model binding can handle the
     // edit case without colliding with the `0`-sentinel that used to mean
     // "no topic yet".

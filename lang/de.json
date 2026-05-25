@@ -79,5 +79,9 @@
     "copy_link": "Link kopieren",
     "you": "Sie",
     "change_status": "Status ändern",
-    "unread_reports": "{1} :count ungelesene Meldung|[2,*] :count ungelesene Meldungen"
+    "unread_reports": "{1} :count ungelesene Meldung|[2,*] :count ungelesene Meldungen",
+    "dashboard": "Übersicht",
+    "topic": "Thema",
+    "no_reports_yet": "Noch keine Meldungen in den von Ihnen betreuten Themen.",
+    "reports_across_topics": "{1} :reports Meldung in :topics Thema|[2,*] :reports Meldungen in :topics Themen"
 }

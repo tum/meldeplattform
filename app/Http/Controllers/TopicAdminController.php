@@ -45,6 +45,35 @@ class TopicAdminController
         ]);
     }
 
+    /**
+     * Cross-topic admin dashboard: every report in every topic the
+     * authenticated user can view, sorted newest first. Uses the existing
+     * TopicPolicy::view check to pick the topic set so the same access
+     * rules apply as on the per-topic /reports/{topic} page.
+     */
+    public function dashboard(Request $request): View
+    {
+        $user = $request->user();
+        abort_if($user === null, 403);
+
+        $topics = Topic::with('admins')->get()->filter(
+            fn (Topic $t) => $user->can('view', $t),
+        )->values();
+
+        /** @var list<int> $topicIds */
+        $topicIds = $topics->pluck('id')->all();
+
+        $reports = Report::with(['topic', 'messages'])
+            ->whereIn('topic_id', $topicIds)
+            ->latest('updated_at')
+            ->get();
+
+        return view('pages.dashboard', [
+            'topics' => $topics,
+            'reports' => $reports,
+        ]);
+    }
+
     public function createSkeleton(): TopicResource
     {
         return TopicResource::skeleton();

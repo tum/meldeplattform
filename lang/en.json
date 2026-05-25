@@ -79,5 +79,9 @@
     "copy_link": "Copy link",
     "you": "You",
     "change_status": "Change status",
-    "unread_reports": "{1} :count unread report|[2,*] :count unread reports"
+    "unread_reports": "{1} :count unread report|[2,*] :count unread reports",
+    "dashboard": "Dashboard",
+    "topic": "Topic",
+    "no_reports_yet": "No reports yet across the topics you manage.",
+    "reports_across_topics": "{1} :reports report across :topics topic|[2,*] :reports reports across :topics topics"
 }
