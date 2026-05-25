@@ -12,25 +12,9 @@ class UserManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function actingAsGlobalAdmin(): User
-    {
-        $u = User::updateOrCreate(['uid' => 'globaladmin'], ['name' => 'GA', 'email' => 'ga@x']);
-        $this->actingAs($u);
-
-        return $u;
-    }
-
-    private function actingAsRegular(string $uid = 'regular'): User
-    {
-        $u = User::updateOrCreate(['uid' => $uid], ['name' => $uid, 'email' => "{$uid}@x"]);
-        $this->actingAs($u);
-
-        return $u;
-    }
-
     public function test_index_blocks_non_global_admin(): void
     {
-        $this->actingAsRegular();
+        $this->actingAsUser('regular');
         $this->get('/users')->assertStatus(403);
     }
 

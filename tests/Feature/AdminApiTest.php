@@ -8,27 +8,12 @@ use App\Models\Field;
 use App\Models\Message;
 use App\Models\Report;
 use App\Models\Topic;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AdminApiTest extends TestCase
 {
     use RefreshDatabase;
-
-    private function asGlobalAdmin(): self
-    {
-        $user = User::updateOrCreate(['uid' => 'globaladmin'], ['name' => 'Admin', 'email' => 'a@x']);
-
-        return $this->actingAs($user);
-    }
-
-    private function asUser(string $uid): self
-    {
-        $user = User::updateOrCreate(['uid' => $uid], ['name' => $uid, 'email' => $uid.'@x']);
-
-        return $this->actingAs($user);
-    }
 
     public function test_newtopic_requires_auth(): void
     {
@@ -40,12 +25,12 @@ class AdminApiTest extends TestCase
 
     public function test_newtopic_requires_global_admin_for_new(): void
     {
-        $this->asUser('not-admin')->get('/newTopic')->assertStatus(403);
+        $this->actingAsUser('not-admin')->get('/newTopic')->assertStatus(403);
     }
 
     public function test_global_admin_can_open_create_form(): void
     {
-        $this->asGlobalAdmin()->get('/newTopic')->assertOk();
+        $this->actingAsGlobalAdmin()->get('/newTopic')->assertOk();
     }
 
     public function test_topic_admin_may_edit_own_topic(): void
@@ -56,7 +41,7 @@ class AdminApiTest extends TestCase
         $admin = Admin::create(['user_id' => 'topicadmin']);
         $t->admins()->attach($admin);
 
-        $this->asUser('topicadmin')->get("/newTopic/{$t->id}")->assertOk();
+        $this->actingAsUser('topicadmin')->get("/newTopic/{$t->id}")->assertOk();
     }
 
     public function test_non_admin_cannot_edit_topic(): void
@@ -64,12 +49,12 @@ class AdminApiTest extends TestCase
         $t = Topic::create([
             'name_de' => 'T', 'name_en' => 'T', 'summary_de' => 's', 'summary_en' => 's',
         ]);
-        $this->asUser('someone-else')->get("/newTopic/{$t->id}")->assertStatus(403);
+        $this->actingAsUser('someone-else')->get("/newTopic/{$t->id}")->assertStatus(403);
     }
 
     public function test_upsert_topic_creates_from_scratch(): void
     {
-        $this->asGlobalAdmin()->postJson('/api/topic', [
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
             'ID' => 0,
             'Name' => ['de' => 'Neues', 'en' => 'New'],
             'Summary' => ['de' => 'S-de', 'en' => 'S-en'],
@@ -94,7 +79,7 @@ class AdminApiTest extends TestCase
     public function test_upsert_topic_requires_fields(): void
     {
         // FormRequest validation rejects empty Fields with 422.
-        $this->asGlobalAdmin()->postJson('/api/topic', [
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
             'ID' => 0,
             'Name' => ['de' => 'x', 'en' => 'x'],
             'Fields' => [],
@@ -107,15 +92,15 @@ class AdminApiTest extends TestCase
         $r = Report::create(['topic_id' => $t->id]);
         Message::create(['report_id' => $r->id, 'content' => 'init', 'is_admin' => false]);
 
-        $this->asGlobalAdmin()->postJson("/api/topic/{$t->id}/report/{$r->id}/status", ['s' => 'close'])
+        $this->actingAsGlobalAdmin()->postJson("/api/topic/{$t->id}/report/{$r->id}/status", ['s' => 'close'])
             ->assertOk();
         $this->assertSame(ReportState::Done, Report::findOrFail($r->id)->state);
 
-        $this->asGlobalAdmin()->postJson("/api/topic/{$t->id}/report/{$r->id}/status", ['s' => 'spam'])
+        $this->actingAsGlobalAdmin()->postJson("/api/topic/{$t->id}/report/{$r->id}/status", ['s' => 'spam'])
             ->assertOk();
         $this->assertSame(ReportState::Spam, Report::findOrFail($r->id)->state);
 
-        $this->asGlobalAdmin()->postJson("/api/topic/{$t->id}/report/{$r->id}/status", ['s' => 'invalid'])
+        $this->actingAsGlobalAdmin()->postJson("/api/topic/{$t->id}/report/{$r->id}/status", ['s' => 'invalid'])
             ->assertStatus(400);
     }
 
@@ -127,7 +112,7 @@ class AdminApiTest extends TestCase
         $r2 = Report::create(['topic_id' => $t1->id]);
         $foreign = Report::create(['topic_id' => $t2->id]);
 
-        $this->asGlobalAdmin()
+        $this->actingAsGlobalAdmin()
             ->postJson("/api/topic/{$t1->id}/reports/status", [
                 'ids' => [$r1->id, $r2->id, $foreign->id],
                 's' => 'close',
@@ -144,7 +129,7 @@ class AdminApiTest extends TestCase
     {
         $t = Topic::create(['name_de' => 'T', 'name_en' => 'T', 'summary_de' => '', 'summary_en' => '']);
 
-        $this->asGlobalAdmin()
+        $this->actingAsGlobalAdmin()
             ->postJson("/api/topic/{$t->id}/reports/status", ['ids' => [], 's' => 'invalid'])
             ->assertStatus(400);
     }
@@ -152,13 +137,13 @@ class AdminApiTest extends TestCase
     public function test_reports_list_respects_topic_admin(): void
     {
         $t = Topic::create(['name_de' => 't', 'name_en' => 't', 'summary_de' => '', 'summary_en' => '']);
-        $this->asGlobalAdmin()->get("/reports/{$t->id}")->assertOk();
-        $this->asUser('nobody')->get("/reports/{$t->id}")->assertStatus(403);
+        $this->actingAsGlobalAdmin()->get("/reports/{$t->id}")->assertOk();
+        $this->actingAsUser('nobody')->get("/reports/{$t->id}")->assertStatus(403);
     }
 
     public function test_get_topic_returns_skeleton_for_new(): void
     {
-        $this->asGlobalAdmin()->getJson('/api/topic/new')
+        $this->actingAsGlobalAdmin()->getJson('/api/topic/new')
             ->assertOk()
             ->assertJsonStructure(['ID', 'Name', 'Summary', 'Fields', 'Admins', 'Email']);
     }
@@ -172,7 +157,7 @@ class AdminApiTest extends TestCase
             'type' => 'text', 'required' => false, 'position' => 0,
         ]);
 
-        $this->asGlobalAdmin()->getJson("/api/topic/{$t->id}")
+        $this->actingAsGlobalAdmin()->getJson("/api/topic/{$t->id}")
             ->assertOk()
             ->assertJson(['ID' => $t->id, 'Name' => ['de' => 'DE', 'en' => 'EN']])
             ->assertJsonCount(1, 'Fields');

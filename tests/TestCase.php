@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
@@ -18,5 +19,35 @@ abstract class TestCase extends BaseTestCase
         // Ensure the test "globaladmin" UID is always recognised, regardless
         // of the ambient `MELDE_ADMIN_USERS` env coming from Docker/CI.
         config(['meldeplattform.admin_users' => ['globaladmin']]);
+    }
+
+    /**
+     * Authenticate as the env-allowlisted global admin. Returns `$this`
+     * so callers can chain into request helpers
+     * (`$this->actingAsGlobalAdmin()->postJson(...)`).
+     */
+    protected function actingAsGlobalAdmin(): self
+    {
+        $user = User::updateOrCreate(
+            ['uid' => 'globaladmin'],
+            ['name' => 'Global Admin', 'email' => 'globaladmin@example.com'],
+        );
+
+        return $this->actingAs($user);
+    }
+
+    /**
+     * Authenticate as an arbitrary (non-global) user. The user is created
+     * on demand from the given UID so tests don't have to seed users
+     * themselves before exercising auth-gated endpoints.
+     */
+    protected function actingAsUser(string $uid): self
+    {
+        $user = User::updateOrCreate(
+            ['uid' => $uid],
+            ['name' => $uid, 'email' => "{$uid}@example.com"],
+        );
+
+        return $this->actingAs($user);
     }
 }
