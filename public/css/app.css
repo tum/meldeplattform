@@ -549,6 +549,23 @@ tbody tr:last-child td { border-bottom: 0; }
 .bulk-bar-count { font-weight: 600; }
 .bulk-bar-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
+.topic-chip {
+    display: inline-block;
+    margin: 0.1rem 0.2rem 0.1rem 0;
+    padding: 0.1rem 0.55rem;
+    background: var(--tum-soft);
+    border-radius: 999px;
+    font-size: 0.8rem;
+}
+
+.form-inline {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.form-inline .form-group { margin-bottom: 0; }
+
 /* Status pill rendered as a clickable <summary> in the reports table.
    Native triangle is hidden; clicking the pill reveals inline action
    buttons that post to the existing setStatus endpoint. */

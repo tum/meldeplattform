@@ -8,7 +8,9 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SamlController;
 use App\Http\Controllers\SubmitController;
 use App\Http\Controllers\TopicAdminController;
+use App\Http\Controllers\UserController;
 use App\Models\Topic;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 // Public pages
@@ -92,4 +94,18 @@ Route::middleware('auth')->group(function (): void {
         ->whereNumber('topic')
         ->can('update', 'topic')
         ->name('report.status.bulk');
+
+    // User management — only global admins. UIDs are alphanumeric (TUM
+    // identifiers like `ge42tum`); the route constraint keeps stray
+    // characters out of the URL and forces a 404 instead of a 500.
+    Route::middleware('can:manage,'.User::class)->group(function (): void {
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::get('/users/{uid}/edit', [UserController::class, 'edit'])
+            ->whereAlphaNumeric('uid')->name('users.edit');
+        Route::post('/users/{uid}', [UserController::class, 'update'])
+            ->whereAlphaNumeric('uid')->name('users.update');
+        Route::delete('/users/{uid}', [UserController::class, 'destroy'])
+            ->whereAlphaNumeric('uid')->name('users.destroy');
+    });
 });

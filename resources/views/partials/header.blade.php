@@ -8,6 +8,9 @@
                     </svg>{{ auth()->user()->name ?: auth()->user()->uid }}
                 </span>
                 <a href="{{ route('dashboard') }}">{{ __('dashboard') }}</a>
+                @can('manage', App\Models\User::class)
+                    <a href="{{ route('users.index') }}">{{ __('users') }}</a>
+                @endcan
                 @if (! app()->environment('production'))
                     <a href="/dev/logout">{{ __('logout') }}</a>
                 @else
