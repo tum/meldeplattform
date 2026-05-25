@@ -30,8 +30,17 @@
     </form>
 
     @php
+        // Field-type options shown in the admin editor's Type <select>.
+        // Order matches the FieldType enum so new cases here are caught by
+        // PHPStan if the enum changes shape.
+        $fieldTypes = collect(\App\Enums\FieldType::cases())->map(fn ($c) => [
+            'value' => $c->value,
+            'label' => __('field_type_'.$c->value),
+        ])->values()->all();
+
         $newTopicBootstrap = [
             'topicID' => $topic?->id ?? 0,
+            'fieldTypes' => $fieldTypes,
             'tr' => [
                 'general' => __('general'),
                 'questions' => __('questions'),

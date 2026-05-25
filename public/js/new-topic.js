@@ -5,6 +5,9 @@
     const bootstrap = JSON.parse(bootstrapEl.textContent || '{}');
     const topicID = bootstrap.topicID | 0;
     const tr = bootstrap.tr || {};
+    const fieldTypes = Array.isArray(bootstrap.fieldTypes) && bootstrap.fieldTypes.length > 0
+        ? bootstrap.fieldTypes
+        : [{ value: 'text', label: 'text' }];
 
     const defaultField = () => ({
         ID: 0,
@@ -90,9 +93,9 @@
 
             const typeLabel = el('label', { textContent: tr.type });
             const sel = el('select', {});
-            ['text', 'textarea', 'file', 'files', 'select', 'email', 'date'].forEach((t) => {
-                const o = el('option', { value: t, textContent: t });
-                if (f.Type === t) o.selected = true;
+            fieldTypes.forEach((t) => {
+                const o = el('option', { value: t.value, textContent: t.label });
+                if (f.Type === t.value) o.selected = true;
                 sel.append(o);
             });
             sel.addEventListener('change', (e) => {

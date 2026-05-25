@@ -59,5 +59,15 @@
     "status_open": "Offen",
     "status_done": "Erledigt",
     "status_spam": "Spam",
-    "status_unknown": "Unbekannt"
+    "status_unknown": "Unbekannt",
+    "field_type_text": "Kurzer Text",
+    "field_type_textarea": "Langer Text",
+    "field_type_file": "Eine Datei",
+    "field_type_files": "Mehrere Dateien",
+    "field_type_select": "Auswahlliste",
+    "field_type_checkbox": "Ja / Nein",
+    "field_type_email": "E-Mail",
+    "field_type_date": "Datum",
+    "field_type_number": "Zahl",
+    "field_type_url": "URL"
 }
