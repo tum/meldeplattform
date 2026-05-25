@@ -8,8 +8,8 @@ services:
         condition: service_healthy
     environment:
       APP_NAME: "TUM SafeSignal"
-      APP_ENV: ${APP_ENV:-local}
-      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
       APP_URL: "${APP_URL:-http://localhost:8080}"
       APP_LOCALE: de
       DB_CONNECTION: mysql
@@ -26,8 +26,8 @@ services:
       MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-meldeplattform@tum.de}
       MAIL_FROM_NAME: "${MAIL_FROM_NAME:-TUM SafeSignal}"
-      MELDE_ADMIN_USERS: ${MELDE_ADMIN_USERS:-dev,ge25bof}
-      MELDE_DEV_LOGIN_ENABLED: ${MELDE_DEV_LOGIN_ENABLED:-true}
+      MELDE_ADMIN_USERS: ${MELDE_ADMIN_USERS:-}
+      MELDE_DEV_LOGIN_ENABLED: ${MELDE_DEV_LOGIN_ENABLED:-false}
       SAML2_IDP_ENTITYID: ${SAML2_IDP_ENTITYID:-}
       SAML2_IDP_METADATA_URL: ${SAML2_IDP_METADATA_URL:-}
       SAML2_IDP_SSO_URL: ${SAML2_IDP_SSO_URL:-}

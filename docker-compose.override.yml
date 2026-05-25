@@ -1,6 +1,14 @@
 services:
   app:
-    # Dev: bind-mount the repo into the container so Pint/PHPStan/Tests
+    # Dev-only overrides. `docker compose up` merges this file on top of
+    # docker-compose.yml automatically, so production deployers who copy
+    # only docker-compose.yml get safe (production) defaults.
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      MELDE_ADMIN_USERS: ${MELDE_ADMIN_USERS:-dev,ge25bof}
+      MELDE_DEV_LOGIN_ENABLED: ${MELDE_DEV_LOGIN_ENABLED:-true}
+    # Bind-mount the repo into the container so Pint/PHPStan/Tests
     # executed inside the container edit the files on the host.
     # The production image still ships with the baked-in copy.
     volumes:

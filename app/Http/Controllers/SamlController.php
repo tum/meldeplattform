@@ -56,15 +56,40 @@ class SamlController extends Controller
 
     public function singleLogout(Request $request): RedirectResponse
     {
+        // Require an IdP-issued SAMLRequest/SAMLResponse on the SLO endpoint.
+        // Without this guard, a cross-origin GET (e.g. <img src="/saml/slo">)
+        // would force the victim to log out, since /saml/slo is CSRF-exempt.
+        if (! $request->has('SAMLRequest') && ! $request->has('SAMLResponse')) {
+            abort(400, 'SAML SLO requires SAMLRequest or SAMLResponse');
+        }
+
+        $redirectUrl = null;
+        $sloSucceeded = false;
         try {
             $auth = $this->newAuth();
-            $auth->processSLO();
+            // keepLocalSession=true: we destroy Laravel's session ourselves below.
+            // stay=true: return the IdP response URL instead of exit()'ing.
+            $redirectUrl = $auth->processSLO(true, null, false, null, true);
+            $errors = $auth->getErrors();
+            if ($errors === []) {
+                $sloSucceeded = true;
+            } else {
+                Log::warning('SAML SLO validation errors', [
+                    'errors' => $errors,
+                    'reason' => $auth->getLastErrorReason(),
+                ]);
+            }
         } catch (\Throwable $e) {
             Log::info('SAML SLO failed', ['error' => $e->getMessage()]);
         }
-        $this->destroySession($request);
 
-        return redirect('/');
+        if ($sloSucceeded) {
+            $this->destroySession($request);
+        }
+
+        return is_string($redirectUrl) && $redirectUrl !== ''
+            ? redirect()->away($redirectUrl)
+            : redirect('/');
     }
 
     /**
