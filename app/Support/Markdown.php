@@ -16,13 +16,7 @@ class Markdown
     public static function sanitize(string $markdown): string
     {
         $escaped = htmlspecialchars($markdown, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-        $converter = new GithubFlavoredMarkdownConverter([
-            'html_input' => 'escape',
-            'allow_unsafe_links' => false,
-        ]);
-
-        $html = (string) $converter->convert($escaped);
+        $html = (string) self::converter()->convert($escaped);
 
         /** @var string $clean */
         $clean = Purifier::clean($html, 'meldeplattform');
@@ -36,14 +30,17 @@ class Markdown
      */
     public static function renderOperatorContent(string $markdown): string
     {
-        $converter = new GithubFlavoredMarkdownConverter([
+        /** @var string $clean */
+        $clean = Purifier::clean((string) self::converter()->convert($markdown), 'operator');
+
+        return $clean;
+    }
+
+    private static function converter(): GithubFlavoredMarkdownConverter
+    {
+        return new GithubFlavoredMarkdownConverter([
             'html_input' => 'escape',
             'allow_unsafe_links' => false,
         ]);
-
-        /** @var string $clean */
-        $clean = Purifier::clean((string) $converter->convert($markdown), 'operator');
-
-        return $clean;
     }
 }

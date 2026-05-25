@@ -2,11 +2,10 @@
 
 namespace App\View\Composers;
 
-use App\Models\Report;
 use App\Models\Topic;
-use App\Models\TopicView;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -41,6 +40,9 @@ class AppLayoutComposer
      * every new Message) is newer than this user's last visit to the
      * topic's reports page.
      *
+     * Implemented as a single GROUP BY join so a home page with N topics
+     * costs one query instead of N.
+     *
      * @param list<int> $topicIds
      * @return array<int, int>
      */
@@ -50,20 +52,25 @@ class AppLayoutComposer
             return [];
         }
 
-        $lastSeen = TopicView::where('user_id', $user->id)
-            ->whereIn('topic_id', $topicIds)
-            ->pluck('last_seen_at', 'topic_id');
+        /** @var array<int, int> $rows */
+        $rows = DB::table('reports as r')
+            ->leftJoin('topic_views as tv', function ($join) use ($user): void {
+                $join->on('tv.topic_id', '=', 'r.topic_id')
+                    ->where('tv.user_id', '=', $user->id);
+            })
+            ->whereIn('r.topic_id', $topicIds)
+            ->where(function ($q): void {
+                $q->whereNull('tv.last_seen_at')
+                    ->orWhereColumn('r.updated_at', '>', 'tv.last_seen_at');
+            })
+            ->groupBy('r.topic_id')
+            ->selectRaw('r.topic_id, count(*) as cnt')
+            ->pluck('cnt', 'r.topic_id')
+            ->map(static fn (mixed $v): int => is_numeric($v) ? (int) $v : 0)
+            ->all();
 
-        $counts = [];
-        foreach ($topicIds as $topicId) {
-            $cutoff = $lastSeen->get($topicId);
-            $query = Report::where('topic_id', $topicId);
-            if ($cutoff !== null) {
-                $query->where('updated_at', '>', $cutoff);
-            }
-            $counts[$topicId] = $query->count();
-        }
-
-        return $counts;
+        // Fill topics with no matching rows so callers can read $counts[$id]
+        // without an isset() guard.
+        return array_replace(array_fill_keys($topicIds, 0), $rows);
     }
 }

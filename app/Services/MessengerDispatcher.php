@@ -14,37 +14,32 @@ class MessengerDispatcher
     /** @return list<Messenger> */
     public function forTopic(Topic $topic): array
     {
+        $contacts = TopicContacts::fromTopic($topic);
         /** @var list<Messenger> $messengers */
         $messengers = [];
 
-        /** @var array<string, mixed> $contacts */
-        $contacts = $topic->contacts ?? [];
-
-        $email = is_string($topic->email) ? trim($topic->email) : '';
-        if ($email !== '' && ! isset($contacts['email'])) {
-            $messengers[] = new EmailMessenger($email);
+        // `contacts.email.target` overrides the legacy `topics.email` column;
+        // fall back to that column when no per-contacts email is configured
+        // so older topics keep notifying their original mailbox.
+        $emailTarget = $contacts->emailTarget;
+        if ($emailTarget === null) {
+            $topicEmail = is_string($topic->email) ? trim($topic->email) : '';
+            $emailTarget = $topicEmail === '' ? null : $topicEmail;
+        }
+        if ($emailTarget !== null) {
+            $messengers[] = new EmailMessenger($emailTarget);
         }
 
-        $emailCfg = is_array($contacts['email'] ?? null) ? $contacts['email'] : null;
-        if ($emailCfg !== null && isset($emailCfg['target']) && is_string($emailCfg['target']) && $emailCfg['target'] !== '') {
-            $messengers[] = new EmailMessenger($emailCfg['target']);
-        }
-
-        $matrixCfg = is_array($contacts['matrix'] ?? null) ? $contacts['matrix'] : null;
-        if ($matrixCfg !== null
-            && isset($matrixCfg['homeServer'], $matrixCfg['roomID'])
-            && is_string($matrixCfg['homeServer'])
-            && is_string($matrixCfg['roomID'])) {
+        if ($contacts->matrix !== null) {
             $messengers[] = new MatrixMessenger(
-                $matrixCfg['homeServer'],
-                $matrixCfg['roomID'],
-                isset($matrixCfg['accessToken']) && is_string($matrixCfg['accessToken']) ? $matrixCfg['accessToken'] : '',
+                $contacts->matrix->homeServer,
+                $contacts->matrix->roomId,
+                $contacts->matrix->accessToken,
             );
         }
 
-        $webhookCfg = is_array($contacts['webhook'] ?? null) ? $contacts['webhook'] : null;
-        if ($webhookCfg !== null && isset($webhookCfg['target']) && is_string($webhookCfg['target']) && $webhookCfg['target'] !== '') {
-            $messengers[] = new WebhookMessenger($webhookCfg['target']);
+        if ($contacts->webhookTarget !== null) {
+            $messengers[] = new WebhookMessenger($contacts->webhookTarget);
         }
 
         return $messengers;
