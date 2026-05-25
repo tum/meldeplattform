@@ -5,7 +5,16 @@
 @section('intro')
     <section class="page-intro">
         <div class="container">
-            <h1>{{ __('report') }} #{{ $report->id }}</h1>
+            @if ($isAdministrator)
+                <a href="{{ route('topic.reports', $report->topic_id) }}" class="crumb">{{ __('reports') }}</a>
+            @else
+                <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
+            @endif
+            <h1>
+                {{ __('report') }} #{{ $report->id }}
+                <span class="muted" style="font-weight: 400; font-size: 0.55em; margin-left: 0.5rem;">·
+                    {{ $report->topic->name($lang) }}</span>
+            </h1>
             <p class="muted">
                 {{ $isAdministrator ? __('report_view_admin') : __('report_view_reporter') }}
                 · {{ $report->dateFmt() }}
