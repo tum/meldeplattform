@@ -15,34 +15,41 @@
 @section('content')
     <section class="card mb-4">
         <h2 style="margin-top:0;">{{ __('users_add_heading') }}</h2>
-        <form method="post" action="{{ route('users.store') }}" class="form-inline">
+        <form method="post" action="{{ route('users.store') }}">
             @csrf
-            <div class="form-group" style="flex: 1; min-width: 12rem;">
-                <label for="new-uid">{{ __('users_uid_label') }}</label>
-                <input id="new-uid" name="uid" type="text" required autocomplete="off"
-                       placeholder="ge42tum" value="{{ old('uid') }}">
-                @error('uid')
-                    <span class="field-error">{{ $message }}</span>
-                @enderror
+            <div class="form-inline" style="margin-bottom: 1rem;">
+                <div class="form-group" style="flex: 1; min-width: 12rem;">
+                    <label for="new-uid">{{ __('users_uid_label') }}</label>
+                    <input id="new-uid" name="uid" type="text" required autocomplete="off"
+                           placeholder="ge42tum" value="{{ old('uid') }}">
+                    @error('uid')
+                        <span class="field-error">{{ $message }}</span>
+                    @enderror
+                </div>
+                <label style="margin: 0;">
+                    <input type="checkbox" name="is_global_admin" value="1" @checked(old('is_global_admin'))>
+                    {{ __('users_is_global_admin') }}
+                </label>
             </div>
-            <label style="margin: 0;">
-                <input type="checkbox" name="is_global_admin" value="1" @checked(old('is_global_admin'))>
-                {{ __('users_is_global_admin') }}
-            </label>
-            <fieldset style="margin: 0.5rem 0; border: none; padding: 0;">
-                <legend class="desc" style="margin-bottom: 0.35rem;">{{ __('users_topic_access') }}</legend>
-                @foreach ($topics as $t)
-                    <label style="display: inline-flex; gap: 0.35rem; align-items: center; margin-right: 1rem;">
-                        <input type="checkbox" name="topic_ids[]" value="{{ $t->id }}"
-                               @checked(in_array($t->id, old('topic_ids', []), false))>
-                        {{ $t->name($lang) }}
-                    </label>
-                @endforeach
+            <fieldset style="margin: 0 0 1rem; border: none; padding: 0;">
+                <legend class="desc" style="margin-bottom: 0.4rem;">{{ __('users_topic_access') }}</legend>
                 @if ($topics->isEmpty())
-                    <span class="desc">{{ __('no_topics_configured') }}</span>
+                    <p class="muted" style="margin: 0;">{{ __('no_topics_configured') }}</p>
+                @else
+                    <div class="topic-checkbox-list">
+                        @foreach ($topics as $t)
+                            <label>
+                                <input type="checkbox" name="topic_ids[]" value="{{ $t->id }}"
+                                       @checked(in_array($t->id, old('topic_ids', []), false))>
+                                <span>{{ $t->name($lang) }}</span>
+                            </label>
+                        @endforeach
+                    </div>
                 @endif
             </fieldset>
-            <button type="submit">{{ __('users_add_button') }}</button>
+            <div class="text-right">
+                <button type="submit">{{ __('users_add_button') }}</button>
+            </div>
         </form>
     </section>
 

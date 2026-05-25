@@ -45,18 +45,20 @@
             @enderror
         </div>
 
-        <fieldset style="border: none; padding: 0;">
+        <fieldset style="border: none; padding: 0; margin-bottom: 1rem;">
             <legend>{{ __('users_topic_access') }}</legend>
             @if ($topics->isEmpty())
                 <p class="muted">{{ __('no_topics_configured') }}</p>
             @else
-                @foreach ($topics as $t)
-                    @php $checked = in_array($t->id, old('topic_ids', $assignedTopicIds), false); @endphp
-                    <label style="display: flex; gap: 0.4rem; align-items: center; padding: 0.25rem 0;">
-                        <input type="checkbox" name="topic_ids[]" value="{{ $t->id }}" @checked($checked)>
-                        {{ $t->name($lang) }}
-                    </label>
-                @endforeach
+                <div class="topic-checkbox-list">
+                    @foreach ($topics as $t)
+                        @php $checked = in_array($t->id, old('topic_ids', $assignedTopicIds), false); @endphp
+                        <label>
+                            <input type="checkbox" name="topic_ids[]" value="{{ $t->id }}" @checked($checked)>
+                            <span>{{ $t->name($lang) }}</span>
+                        </label>
+                    @endforeach
+                </div>
             @endif
         </fieldset>
 
