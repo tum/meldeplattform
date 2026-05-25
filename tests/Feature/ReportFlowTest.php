@@ -85,6 +85,6 @@ class ReportFlowTest extends TestCase
 
         $this->post('/report?reporterToken='.$r->reporter_token, [
             'reply' => '',
-        ])->assertStatus(400);
+        ])->assertSessionHasErrors('reply');
     }
 }

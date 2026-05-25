@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Database\Factories\FieldFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -23,6 +25,9 @@ use Illuminate\Support\Carbon;
  */
 class Field extends Model
 {
+    /** @use HasFactory<FieldFactory> */
+    use HasFactory;
+
     /** @var list<string> */
     protected $fillable = [
         'topic_id', 'name_de', 'name_en',

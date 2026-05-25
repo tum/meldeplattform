@@ -11,12 +11,21 @@ use Tests\TestCase;
 
 class MessengerDispatcherTest extends TestCase
 {
+    private MessengerDispatcher $dispatcher;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->dispatcher = new MessengerDispatcher;
+    }
+
     public function test_topic_email_field_builds_email_messenger(): void
     {
         $t = new Topic;
         $t->email = 'it-sec@tum.de';
 
-        $messengers = MessengerDispatcher::forTopic($t);
+        $messengers = $this->dispatcher->forTopic($t);
 
         $this->assertCount(1, $messengers);
         $this->assertInstanceOf(EmailMessenger::class, $messengers[0]);
@@ -31,7 +40,7 @@ class MessengerDispatcherTest extends TestCase
             'webhook' => ['target' => 'https://hook.example/endpoint'],
         ];
 
-        $messengers = MessengerDispatcher::forTopic($t);
+        $messengers = $this->dispatcher->forTopic($t);
 
         $this->assertCount(3, $messengers);
         $this->assertInstanceOf(EmailMessenger::class, $messengers[0]);
@@ -42,6 +51,6 @@ class MessengerDispatcherTest extends TestCase
     public function test_empty_contacts_yield_no_messengers(): void
     {
         $t = new Topic;
-        $this->assertSame([], MessengerDispatcher::forTopic($t));
+        $this->assertSame([], $this->dispatcher->forTopic($t));
     }
 }

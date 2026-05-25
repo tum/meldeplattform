@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class FileController extends Controller
+class FileController
 {
     public function download(Request $request, string $name): BinaryFileResponse
     {

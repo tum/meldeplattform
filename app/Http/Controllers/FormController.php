@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Topic;
 use Illuminate\View\View;
 
-class FormController extends Controller
+class FormController
 {
     public function show(Topic $topic): View
     {

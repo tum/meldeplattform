@@ -14,7 +14,7 @@ use OneLogin\Saml2\Auth as OneLoginAuth;
  * Thin SAML SP implementation backed directly by onelogin/php-saml. Mirrors the
  * behaviour of the Go /saml/{metadata,out,slo} + /shib handlers.
  */
-class SamlController extends Controller
+class SamlController
 {
     public function metadata(): Response
     {

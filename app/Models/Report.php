@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\ReportFactory;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -23,6 +25,9 @@ use Illuminate\Support\Str;
  */
 class Report extends Model
 {
+    /** @use HasFactory<ReportFactory> */
+    use HasFactory;
+
     public const STATE_OPEN = 'open';
 
     public const STATE_DONE = 'done';
@@ -65,22 +70,13 @@ class Report extends Model
         return $this->state === self::STATE_SPAM;
     }
 
-    public function statusColor(): string
-    {
-        return match ($this->state) {
-            self::STATE_OPEN => 'rgb(220 38 38)',
-            self::STATE_DONE => 'rgb(74 222 128)',
-            default => '#000',
-        };
-    }
-
     public function statusLabel(): string
     {
         return match ($this->state) {
-            self::STATE_OPEN => 'Open',
-            self::STATE_DONE => 'Done',
-            self::STATE_SPAM => 'Spam',
-            default => 'Unknown',
+            self::STATE_OPEN => __('status_open'),
+            self::STATE_DONE => __('status_done'),
+            self::STATE_SPAM => __('status_spam'),
+            default => __('status_unknown'),
         };
     }
 

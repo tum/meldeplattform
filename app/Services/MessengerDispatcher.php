@@ -12,7 +12,7 @@ use App\Services\Messengers\WebhookMessenger;
 class MessengerDispatcher
 {
     /** @return list<Messenger> */
-    public static function forTopic(Topic $topic): array
+    public function forTopic(Topic $topic): array
     {
         /** @var list<Messenger> $messengers */
         $messengers = [];
@@ -50,9 +50,9 @@ class MessengerDispatcher
         return $messengers;
     }
 
-    public static function dispatch(Topic $topic, string $title, Message $message, string $reportUrl): void
+    public function dispatch(Topic $topic, string $title, Message $message, string $reportUrl): void
     {
-        foreach (self::forTopic($topic) as $messenger) {
+        foreach ($this->forTopic($topic) as $messenger) {
             $messenger->send($title, $message, $reportUrl);
         }
     }

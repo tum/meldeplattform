@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\View\View;
 
-class HomeController extends Controller
+class HomeController
 {
     public function index(): View
     {

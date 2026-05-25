@@ -4,11 +4,7 @@
     <section class="page-intro">
         <div class="container">
             <h1>{{ __('select_topic_prompt') }}</h1>
-            <p>
-                {{ $lang === 'de'
-                    ? 'Ihre Meldung erreicht die zuständigen TUM-Teams – vertraulich, auf Wunsch anonym und ohne Registrierung.'
-                    : 'Your report reaches the responsible TUM teams – confidentially, anonymously if you wish, and without an account.' }}
-            </p>
+            <p>{{ __('intro_text') }}</p>
         </div>
     </section>
 @endsection
@@ -32,11 +28,7 @@
         @endforeach
 
         @if ($topicsAll->isEmpty())
-            <div class="alert alert-info">
-                {{ $lang === 'de'
-                    ? 'Aktuell sind noch keine Meldethemen konfiguriert.'
-                    : 'No reporting topics have been configured yet.' }}
-            </div>
+            <div class="alert alert-info">{{ __('no_topics_configured') }}</div>
         @endif
     </div>
 

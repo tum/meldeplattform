@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\TopicFactory;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,6 +26,9 @@ use Illuminate\Support\Carbon;
  */
 class Topic extends Model
 {
+    /** @use HasFactory<TopicFactory> */
+    use HasFactory;
+
     /** @var list<string> */
     protected $fillable = [
         'name_de', 'name_en', 'summary_de', 'summary_en', 'email', 'contacts',

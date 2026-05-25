@@ -14,19 +14,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class SubmitController extends Controller
+class SubmitController
 {
+    public function __construct(private readonly MessengerDispatcher $messengers) {}
+
     public function store(SubmitReportRequest $request): RedirectResponse
     {
         $topic = $request->topic();
         $email = $request->emailOrNull();
-
-        /** @var list<string> $extensions */
-        $extensions = array_values(array_filter(
-            Config::array('meldeplattform.allowed_extensions', []),
-            'is_string',
-        ));
-        $maxBytes = Config::integer('meldeplattform.max_upload_mb', 10) * 1024 * 1024;
 
         $message = '';
         /** @var list<FileModel> $storedFiles */
@@ -36,19 +31,12 @@ class SubmitController extends Controller
             $message .= "\n**".$field->name('en')."**\n";
 
             if (! in_array($field->type, ['file', 'files'], true)) {
-                $value = $request->string((string) $field->id, '')->toString();
-                if ($value === '' && $field->required) {
-                    abort(400, 'required field not provided');
-                }
-                $message .= $value."\n";
+                $message .= $request->string((string) $field->id, '')->toString()."\n";
 
                 continue;
             }
 
             $uploads = $request->file((string) $field->id);
-            if ($uploads === null && $field->required) {
-                abort(400, 'required file field not provided');
-            }
             if ($uploads === null) {
                 continue;
             }
@@ -57,32 +45,7 @@ class SubmitController extends Controller
             $uploadList = array_values(is_array($uploads) ? $uploads : [$uploads]);
 
             foreach ($uploadList as $upload) {
-                if (! $upload->isValid()) {
-                    continue;
-                }
-                if ($upload->getSize() > $maxBytes) {
-                    abort(400, 'file too large');
-                }
-                $ext = Str::of($upload->getClientOriginalExtension())->lower()->toString();
-                if (! in_array($ext, $extensions, true)) {
-                    abort(400, 'file type not allowed');
-                }
-
-                $safeName = basename($upload->getClientOriginalName());
-                if ($safeName === '' || $safeName === '.') {
-                    $safeName = (string) Str::uuid();
-                }
-
-                $uuid = (string) Str::uuid();
-                $storageName = $uuid.'.'.$ext;
-                Storage::disk('uploads')->putFileAs('', $upload, $storageName);
-                $absPath = Storage::disk('uploads')->path($storageName);
-
-                $file = FileModel::create([
-                    'uuid' => $uuid,
-                    'location' => $absPath,
-                    'name' => $safeName,
-                ]);
+                $file = $this->storeUpload($upload);
                 $storedFiles[] = $file;
 
                 $message .= '['.$file->name.']('
@@ -114,7 +77,7 @@ class SubmitController extends Controller
 
         $firstMessage = $report->messages->first();
         if ($firstMessage instanceof Message) {
-            MessengerDispatcher::dispatch(
+            $this->messengers->dispatch(
                 $topic,
                 sprintf('[%s]: report #%d opened', $topic->name('en'), $report->id),
                 $firstMessage,
@@ -123,5 +86,26 @@ class SubmitController extends Controller
         }
 
         return redirect('/report?reporterToken='.$report->reporter_token);
+    }
+
+    private function storeUpload(UploadedFile $upload): FileModel
+    {
+        $ext = Str::of($upload->getClientOriginalExtension())->lower()->toString();
+
+        $safeName = basename($upload->getClientOriginalName());
+        if ($safeName === '' || $safeName === '.') {
+            $safeName = (string) Str::uuid();
+        }
+
+        $uuid = (string) Str::uuid();
+        $storageName = $uuid.'.'.$ext;
+        Storage::disk('uploads')->putFileAs('', $upload, $storageName);
+        $absPath = Storage::disk('uploads')->path($storageName);
+
+        return FileModel::create([
+            'uuid' => $uuid,
+            'location' => $absPath,
+            'name' => $safeName,
+        ]);
     }
 }

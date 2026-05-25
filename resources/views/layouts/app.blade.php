@@ -11,7 +11,7 @@
 </head>
 <body>
 
-<a class="skip-link" href="#main-content">{{ $lang === 'de' ? 'Zum Inhalt springen' : 'Skip to content' }}</a>
+<a class="skip-link" href="#main-content">{{ __('skip_to_content') }}</a>
 
 @include('partials.header')
 

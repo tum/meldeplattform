@@ -13,7 +13,7 @@ use Illuminate\View\View;
  * Dev-only login bypass. Only wired up from routes/web.php when
  * `APP_ENV !== 'production'` so the SAML flow stays mandatory in prod.
  */
-class DevLoginController extends Controller
+class DevLoginController
 {
     public function show(): View
     {

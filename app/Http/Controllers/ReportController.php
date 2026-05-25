@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ReplyRequest;
 use App\Mail\ReportNotification;
 use App\Models\Message;
 use App\Models\Report;
@@ -13,8 +14,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
-class ReportController extends Controller
+class ReportController
 {
+    public function __construct(private readonly MessengerDispatcher $messengers) {}
+
     public function show(Request $request): View
     {
         [$report, $isAdmin] = $this->resolveReport($request);
@@ -27,15 +30,11 @@ class ReportController extends Controller
         ]);
     }
 
-    public function reply(Request $request): RedirectResponse
+    public function reply(ReplyRequest $request): RedirectResponse
     {
         [$report, $isAdmin] = $this->resolveReport($request);
 
-        $reply = trim($request->string('reply', '')->toString());
-        if ($reply === '') {
-            abort(400, 'empty reply');
-        }
-
+        $reply = $request->string('reply')->toString();
         $topic = $report->topic;
 
         $message = Message::create([
@@ -48,7 +47,7 @@ class ReportController extends Controller
         $adminUrl = $baseUrl.'/report?administratorToken='.$report->administrator_token;
         $reporterUrl = $baseUrl.'/report?reporterToken='.$report->reporter_token;
 
-        MessengerDispatcher::dispatch(
+        $this->messengers->dispatch(
             $topic,
             sprintf('[%s]: report #%d updated', $topic->name('en'), $report->id),
             $message,

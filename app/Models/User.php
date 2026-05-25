@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Carbon;
 
@@ -15,6 +17,9 @@ use Illuminate\Support\Carbon;
  */
 class User extends Authenticatable
 {
+    /** @use HasFactory<UserFactory> */
+    use HasFactory;
+
     /** @var list<string> */
     protected $fillable = ['uid', 'name', 'email'];
 

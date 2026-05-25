@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\AdminFactory;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
@@ -16,6 +18,9 @@ use Illuminate\Support\Carbon;
  */
 class Admin extends Model
 {
+    /** @use HasFactory<AdminFactory> */
+    use HasFactory;
+
     /** @var list<string> */
     protected $fillable = ['user_id'];
 

@@ -118,9 +118,9 @@ class SubmitFlowTest extends TestCase
             'type' => 'file', 'required' => true, 'position' => 0,
         ]);
 
-        $this->post('/submit', [
+        $this->postJson('/submit', [
             'topic' => $topic->id,
             (string) $field->id => UploadedFile::fake()->create('evil.exe', 10, 'application/octet-stream'),
-        ])->assertStatus(400);
+        ])->assertStatus(422)->assertJsonValidationErrors([(string) $field->id]);
     }
 }

@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
-class TopicAdminController extends Controller
+class TopicAdminController
 {
     public function create(): View
     {

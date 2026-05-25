@@ -13,24 +13,16 @@ class ReportStateTest extends TestCase
         $r->state = Report::STATE_OPEN;
         $this->assertFalse($r->isClosed());
         $this->assertFalse($r->isSpam());
-        $this->assertSame('Open', $r->statusLabel());
+        $this->assertSame(__('status_open'), $r->statusLabel());
 
         $r->state = Report::STATE_DONE;
         $this->assertTrue($r->isClosed());
         $this->assertFalse($r->isSpam());
-        $this->assertSame('Done', $r->statusLabel());
+        $this->assertSame(__('status_done'), $r->statusLabel());
 
         $r->state = Report::STATE_SPAM;
         $this->assertFalse($r->isClosed());
         $this->assertTrue($r->isSpam());
-        $this->assertSame('Spam', $r->statusLabel());
-    }
-
-    public function test_status_color_is_css_safe(): void
-    {
-        $r = new Report;
-        $r->state = Report::STATE_OPEN;
-        $this->assertStringNotContainsString(';', $r->statusColor());
-        $this->assertStringNotContainsString('<', $r->statusColor());
+        $this->assertSame(__('status_spam'), $r->statusLabel());
     }
 }

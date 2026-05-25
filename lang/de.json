@@ -47,5 +47,17 @@
     "open": "Öffnen",
     "back": "Zurück",
     "title": "Titel",
-    "add_option": "Option hinzufügen"
+    "add_option": "Option hinzufügen",
+    "skip_to_content": "Zum Inhalt springen",
+    "intro_text": "Ihre Meldung erreicht die zuständigen TUM-Teams – vertraulich, auf Wunsch anonym und ohne Registrierung.",
+    "no_topics_configured": "Aktuell sind noch keine Meldethemen konfiguriert.",
+    "report_view_admin": "Bearbeitung als Administrator*in.",
+    "report_view_reporter": "Ihre eingereichte Meldung.",
+    "role_admin": "Administration",
+    "role_reporter": "Melder*in",
+    "reply_placeholder": "Ihre Antwort…",
+    "status_open": "Offen",
+    "status_done": "Erledigt",
+    "status_spam": "Spam",
+    "status_unknown": "Unbekannt"
 }
