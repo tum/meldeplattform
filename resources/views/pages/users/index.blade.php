@@ -98,7 +98,7 @@
                         @if (auth()->user()?->uid !== $row['uid'])
                             <form method="post" action="{{ route('users.destroy', ['uid' => $row['uid']]) }}"
                                   style="display: inline;"
-                                  onsubmit="return confirm('{{ __('users_confirm_revoke', ['uid' => $row['uid']]) }}');">
+                                  data-confirm-submit="{{ __('users_confirm_revoke', ['uid' => $row['uid']]) }}">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="button button-small button-danger">{{ __('users_revoke') }}</button>

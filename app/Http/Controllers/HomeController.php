@@ -54,7 +54,7 @@ class HomeController
 
     /**
      * Return the user to the page they switched language on — but only when
-     * the Referer points back to the same host. Anything else (off-site
+     * the Referer points back to the same origin. Anything else (off-site
      * referer, missing header, malformed URL) falls back to `/` so we don't
      * turn `/setLang` into an open-redirect oracle.
      */
@@ -70,9 +70,16 @@ class HomeController
             return '/';
         }
 
-        $sameHost = ($parsed['host'] ?? null) === $request->getHttpHost()
+        // Match origin = scheme + host + explicit port. `getHttpHost()` is
+        // already "host[:port]"; rebuilding the referer's host:port has to
+        // do the same join because parse_url splits port off into its own key.
+        $refererHostPort = isset($parsed['host'])
+            ? $parsed['host'].(isset($parsed['port']) ? ':'.$parsed['port'] : '')
+            : '';
+
+        $sameOrigin = $refererHostPort === $request->getHttpHost()
             && ($parsed['scheme'] ?? null) === $request->getScheme();
-        if (! $sameHost) {
+        if (! $sameOrigin) {
             return '/';
         }
 

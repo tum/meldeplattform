@@ -43,4 +43,17 @@
             alert('Request failed: ' + err.message);
         });
     });
+
+    // Generic form-submit confirmation via `data-confirm-submit="…"`. Used
+    // instead of inline `onsubmit="return confirm(…)"` because the strict
+    // CSP (`script-src 'self'`) blocks inline event handlers — the inline
+    // version would silently submit without ever asking.
+    document.addEventListener('submit', (e) => {
+        const form = e.target.closest('form[data-confirm-submit]');
+        if (!form) return;
+        const message = form.getAttribute('data-confirm-submit');
+        if (message && !window.confirm(message)) {
+            e.preventDefault();
+        }
+    });
 })();
