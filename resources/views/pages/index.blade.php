@@ -21,7 +21,13 @@
                     <a class="button button-small" href="{{ route('form.show', $t) }}">{{ __('report') }}</a>
                     @can('update', $t)
                         <a class="button button-small button-ghost" href="{{ route('topic.edit', $t) }}">{{ __('edit') }}</a>
-                        <a class="button button-small button-ghost" href="{{ route('topic.reports', $t) }}">{{ __('reports') }}</a>
+                        @php $unread = $unreadByTopic[$t->id] ?? 0; @endphp
+                        <a class="button button-small button-ghost" href="{{ route('topic.reports', $t) }}">
+                            {{ __('reports') }}
+                            @if ($unread > 0)
+                                <span class="unread-badge" aria-label="{{ trans_choice('unread_reports', $unread, ['count' => $unread]) }}">{{ $unread }}</span>
+                            @endif
+                        </a>
                     @endcan
                 </div>
             </article>

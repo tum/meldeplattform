@@ -517,6 +517,18 @@ tbody tr:last-child td { border-bottom: 0; }
 .status-pill.done { color: var(--tum-green); background: #d1e7dd; }
 .status-pill.spam { color: var(--tum-muted); background: var(--tum-bg); }
 
+.unread-badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.45rem;
+    background: var(--tum-primary);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
 /* Status pill rendered as a clickable <summary> in the reports table.
    Native triangle is hidden; clicking the pill reveals inline action
    buttons that post to the existing setStatus endpoint. */

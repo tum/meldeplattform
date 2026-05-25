@@ -34,6 +34,15 @@ class Message extends Model
         'is_admin' => 'boolean',
     ];
 
+    /**
+     * Touch the parent Report on save/delete so its `updated_at` reflects
+     * the freshest message timestamp. Drives the per-topic unread badge on
+     * the admin home page (counts reports.updated_at > topic_views.last_seen_at).
+     *
+     * @var list<string>
+     */
+    protected $touches = ['report'];
+
     /** @return BelongsTo<Report, $this> */
     public function report(): BelongsTo
     {

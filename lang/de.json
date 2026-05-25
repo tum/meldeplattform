@@ -78,5 +78,6 @@
     "report_link_label": "Link zu Ihrer Meldung",
     "copy_link": "Link kopieren",
     "you": "Sie",
-    "change_status": "Status ändern"
+    "change_status": "Status ändern",
+    "unread_reports": "{1} :count ungelesene Meldung|[2,*] :count ungelesene Meldungen"
 }

@@ -78,5 +78,6 @@
     "report_link_label": "Link to your report",
     "copy_link": "Copy link",
     "you": "You",
-    "change_status": "Change status"
+    "change_status": "Change status",
+    "unread_reports": "{1} :count unread report|[2,*] :count unread reports"
 }

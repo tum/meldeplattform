@@ -9,6 +9,7 @@ use App\Models\Admin;
 use App\Models\Field;
 use App\Models\Report;
 use App\Models\Topic;
+use App\Models\TopicView;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,10 +27,17 @@ class TopicAdminController
         return view('pages.new-topic', ['topic' => $topic]);
     }
 
-    public function reportsOfTopic(Topic $topic): View
+    public function reportsOfTopic(Topic $topic, Request $request): View
     {
         $topic->load(['fields', 'admins']);
         $reports = Report::with('messages')->where('topic_id', $topic->id)->latest()->get();
+
+        // Mark the topic as just-seen for this admin so the home-page
+        // unread badge clears.
+        $user = $request->user();
+        if ($user !== null) {
+            TopicView::markSeen($user->id, $topic->id);
+        }
 
         return view('pages.reports', [
             'topic' => $topic,
