@@ -2,34 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\StoreReportSubmission;
 use App\Http\Requests\SubmitReportRequest;
 use App\Models\File as FileModel;
-use App\Models\Message;
-use App\Models\Report;
-use App\Services\MessengerDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class SubmitController
 {
-    public function __construct(private readonly MessengerDispatcher $messengers) {}
+    public function __construct(private readonly StoreReportSubmission $action) {}
 
     public function store(SubmitReportRequest $request): RedirectResponse
     {
         $topic = $request->topic();
-        $email = $request->emailOrNull();
 
-        $message = '';
+        $messageBody = '';
         /** @var list<FileModel> $storedFiles */
         $storedFiles = [];
 
         foreach ($topic->fields as $field) {
-            $message .= "\n**".$field->name('en')."**\n";
+            $messageBody .= "\n**".$field->name('en')."**\n";
 
             if (! $field->type->isFileUpload()) {
-                $message .= $request->string((string) $field->id, '')->toString()."\n";
+                $messageBody .= $request->string((string) $field->id, '')->toString()."\n";
 
                 continue;
             }
@@ -46,41 +42,13 @@ class SubmitController
                 $file = $this->storeUpload($upload);
                 $storedFiles[] = $file;
 
-                $message .= '['.$file->name.']('
+                $messageBody .= '['.$file->name.']('
                     .route('file.download', ['name' => $file->name, 'id' => $file->uuid])
                     .')';
             }
         }
 
-        $report = DB::transaction(function () use ($topic, $message, $email, $storedFiles): Report {
-            $report = Report::create([
-                'topic_id' => $topic->id,
-                'creator' => $email,
-            ]);
-            $msg = Message::create([
-                'report_id' => $report->id,
-                'content' => $message,
-                'is_admin' => false,
-            ]);
-            if ($storedFiles !== []) {
-                $msg->files()->sync(array_map(static fn (FileModel $f): int => $f->id, $storedFiles));
-            }
-            $report->setRelation('messages', collect([$msg]));
-
-            return $report;
-        });
-
-        $adminUrl = route('report.show', ['administratorToken' => $report->administrator_token]);
-
-        $firstMessage = $report->messages->first();
-        if ($firstMessage instanceof Message) {
-            $this->messengers->dispatch(
-                $topic,
-                sprintf('[%s]: report #%d opened', $topic->name('en'), $report->id),
-                $firstMessage,
-                $adminUrl,
-            );
-        }
+        $report = $this->action->execute($topic, $messageBody, $request->emailOrNull(), $storedFiles);
 
         return redirect()->route('report.show', ['reporterToken' => $report->reporter_token]);
     }

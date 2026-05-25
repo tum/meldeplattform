@@ -37,15 +37,17 @@ class HomeController
         if (! in_array($lang, ['de', 'en'], true)) {
             $lang = 'en';
         }
-        $secure = app()->environment('production');
 
+        // Tie the Secure flag to the actual request scheme rather than the
+        // environment: a misconfigured prod box reached over HTTP would
+        // otherwise silently drop the cookie the browser refuses to resend.
         return redirect('/')->withCookie(cookie(
             'lang',
             $lang,
             60 * 24 * 365,
             '/',
             null,
-            $secure,
+            $request->secure(),
             true,
         ));
     }
