@@ -70,5 +70,8 @@
     "field_type_date": "Date",
     "field_type_number": "Number",
     "field_type_url": "URL",
-    "please_fix_errors": "Please fix the highlighted fields and submit again."
+    "please_fix_errors": "Please fix the highlighted fields and submit again.",
+    "upload_limit": "Max :mb MB per file.",
+    "report_link_label": "Link to your report",
+    "copy_link": "Copy link"
 }

@@ -16,7 +16,16 @@
 
 @section('content')
     @if (! $isAdministrator)
-        <div class="alert alert-warning">{{ __('reportOpened') }}</div>
+        <div class="alert alert-warning">
+            <div>{{ __('reportOpened') }}</div>
+            <div class="copy-link" style="margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <input type="text" readonly value="{{ url()->current().'?reporterToken='.$report->reporter_token }}"
+                       data-copy-link aria-label="{{ __('report_link_label') }}"
+                       style="flex: 1; min-width: 18rem; font-family: monospace; font-size: 0.9rem;">
+                <button type="button" class="button button-small" data-copy-button>{{ __('copy_link') }}</button>
+            </div>
+        </div>
+        <script src="{{ asset('js/copy-link.js') }}" defer></script>
     @endif
 
     @if ($report->creator)

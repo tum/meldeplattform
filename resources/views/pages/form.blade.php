@@ -21,15 +21,6 @@
         @csrf
         <input type="hidden" name="topic" value="{{ $topic->id }}">
 
-        <div class="form-group">
-            <label for="email">{{ __('emailLabel') }}</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="you@example.com">
-            <span class="desc">{{ __('emailDescription') }}</span>
-            @error('email')
-                <span class="field-error">{{ $message }}</span>
-            @enderror
-        </div>
-
         @foreach ($topic->fields as $field)
             @php
                 $name = (string) $field->id;
@@ -66,11 +57,15 @@
                         @break
                     @case('files')
                         <input type="file" id="field-{{ $field->id }}" name="{{ $name }}[]" multiple
+                               data-file-input
                                @if ($field->required) required @endif>
+                        <span class="desc">{{ __('upload_limit', ['mb' => $maxUploadMb]) }}</span>
                         @break
                     @case('file')
                         <input type="file" id="field-{{ $field->id }}" name="{{ $name }}"
+                               data-file-input
                                @if ($field->required) required @endif>
+                        <span class="desc">{{ __('upload_limit', ['mb' => $maxUploadMb]) }}</span>
                         @break
                     @default
                         <input type="{{ $field->type->value }}" id="field-{{ $field->id }}" name="{{ $name }}"
@@ -86,6 +81,15 @@
             </div>
         @endforeach
 
+        <div class="form-group">
+            <label for="email">{{ __('emailLabel') }}</label>
+            <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="you@example.com">
+            <span class="desc">{{ __('emailDescription') }}</span>
+            @error('email')
+                <span class="field-error">{{ $message }}</span>
+            @enderror
+        </div>
+
         <hr>
 
         <div class="flex-between">
@@ -93,4 +97,6 @@
             <button type="submit">{{ __('send') }}</button>
         </div>
     </form>
+
+    <script src="{{ asset('js/file-input.js') }}" defer></script>
 @endsection

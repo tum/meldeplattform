@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Topic;
+use Illuminate\Support\Facades\Config;
 use Illuminate\View\View;
 
 class FormController
@@ -13,6 +14,7 @@ class FormController
 
         return view('pages.form', [
             'topic' => $topic,
+            'maxUploadMb' => Config::integer('meldeplattform.max_upload_mb', 10),
         ]);
     }
 }
