@@ -32,7 +32,7 @@
                     @endif
                 </label>
 
-                @switch($field->type)
+                @switch($field->type->value)
                     @case('textarea')
                         <textarea id="field-{{ $field->id }}" name="{{ $field->id }}"
                                   @if ($field->required) required @endif></textarea>
@@ -59,7 +59,7 @@
                                @if ($field->required) required @endif>
                         @break
                     @default
-                        <input type="{{ $field->type }}" id="field-{{ $field->id }}" name="{{ $field->id }}"
+                        <input type="{{ $field->type->value }}" id="field-{{ $field->id }}" name="{{ $field->id }}"
                                @if ($field->required) required @endif>
                 @endswitch
                 @if ($field->description($lang))

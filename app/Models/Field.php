@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\FieldType;
 use Database\Factories\FieldFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property string $name_en
  * @property string|null $description_de
  * @property string|null $description_en
- * @property string $type
+ * @property FieldType $type
  * @property bool $required
  * @property list<string>|null $choices
  * @property int $position
@@ -37,6 +38,7 @@ class Field extends Model
 
     /** @var array<string, string> */
     protected $casts = [
+        'type' => FieldType::class,
         'required' => 'boolean',
         'choices' => 'array',
         'position' => 'integer',

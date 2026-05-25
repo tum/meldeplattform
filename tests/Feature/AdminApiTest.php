@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ReportState;
 use App\Models\Admin;
 use App\Models\Field;
 use App\Models\Message;
@@ -108,11 +109,11 @@ class AdminApiTest extends TestCase
 
         $this->asGlobalAdmin()->postJson("/api/topic/{$t->id}/report/{$r->id}/status", ['s' => 'close'])
             ->assertOk();
-        $this->assertSame('done', Report::findOrFail($r->id)->state);
+        $this->assertSame(ReportState::Done, Report::findOrFail($r->id)->state);
 
         $this->asGlobalAdmin()->postJson("/api/topic/{$t->id}/report/{$r->id}/status", ['s' => 'spam'])
             ->assertOk();
-        $this->assertSame('spam', Report::findOrFail($r->id)->state);
+        $this->assertSame(ReportState::Spam, Report::findOrFail($r->id)->state);
 
         $this->asGlobalAdmin()->postJson("/api/topic/{$t->id}/report/{$r->id}/status", ['s' => 'invalid'])
             ->assertStatus(400);

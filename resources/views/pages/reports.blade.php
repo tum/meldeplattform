@@ -44,7 +44,7 @@
                     <td>{{ $r->dateFmt() }}</td>
                     <td>{{ $r->creator ?: __('anonymous') }}</td>
                     <td>
-                        <span class="status-pill {{ $r->state }}">
+                        <span class="status-pill {{ $r->state->value }}">
                             {{ $r->statusLabel() }}
                         </span>
                     </td>

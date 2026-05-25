@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ReportState;
 use Database\Factories\ReportFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
  * @property int $topic_id
  * @property string $reporter_token
  * @property string $administrator_token
- * @property string $state
+ * @property ReportState $state
  * @property string|null $creator
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -28,15 +29,14 @@ class Report extends Model
     /** @use HasFactory<ReportFactory> */
     use HasFactory;
 
-    public const STATE_OPEN = 'open';
-
-    public const STATE_DONE = 'done';
-
-    public const STATE_SPAM = 'spam';
-
     /** @var list<string> */
     protected $fillable = [
         'topic_id', 'reporter_token', 'administrator_token', 'state', 'creator',
+    ];
+
+    /** @var array<string, string> */
+    protected $casts = [
+        'state' => ReportState::class,
     ];
 
     protected static function booted(): void
@@ -44,7 +44,7 @@ class Report extends Model
         static::creating(function (Report $report): void {
             $report->reporter_token ??= (string) Str::uuid();
             $report->administrator_token ??= (string) Str::uuid();
-            $report->state ??= self::STATE_OPEN;
+            $report->state ??= ReportState::Open;
         });
     }
 
@@ -62,22 +62,17 @@ class Report extends Model
 
     public function isClosed(): bool
     {
-        return $this->state === self::STATE_DONE;
+        return $this->state === ReportState::Done;
     }
 
     public function isSpam(): bool
     {
-        return $this->state === self::STATE_SPAM;
+        return $this->state === ReportState::Spam;
     }
 
     public function statusLabel(): string
     {
-        return match ($this->state) {
-            self::STATE_OPEN => __('status_open'),
-            self::STATE_DONE => __('status_done'),
-            self::STATE_SPAM => __('status_spam'),
-            default => __('status_unknown'),
-        };
+        return $this->state->label();
     }
 
     public function dateFmt(): string

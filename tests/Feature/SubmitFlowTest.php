@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ReportState;
 use App\Models\Field;
 use App\Models\Report;
 use App\Models\Topic;
@@ -77,7 +78,7 @@ class SubmitFlowTest extends TestCase
         $report = Report::first();
         $this->assertNotNull($report);
         $this->assertSame('anon@example.com', $report->creator);
-        $this->assertSame('open', $report->state);
+        $this->assertSame(ReportState::Open, $report->state);
         $this->assertCount(1, $report->messages);
     }
 

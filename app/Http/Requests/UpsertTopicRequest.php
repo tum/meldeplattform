@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\FieldType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpsertTopicRequest extends FormRequest
 {
@@ -35,7 +37,7 @@ class UpsertTopicRequest extends FormRequest
             'Fields.*.Description' => ['nullable', 'array:de,en'],
             'Fields.*.Description.de' => ['nullable', 'string'],
             'Fields.*.Description.en' => ['nullable', 'string'],
-            'Fields.*.Type' => ['required', 'string', 'in:text,textarea,file,files,select,checkbox,email,date,number,url'],
+            'Fields.*.Type' => ['required', Rule::enum(FieldType::class)],
             'Fields.*.Required' => ['nullable', 'boolean'],
             'Fields.*.Choices' => ['nullable', 'array'],
             'Fields.*.Choices.*' => ['string'],

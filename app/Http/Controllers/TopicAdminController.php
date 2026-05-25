@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ReportState;
 use App\Http\Requests\UpsertTopicRequest;
 use App\Models\Admin;
 use App\Models\Field;
@@ -68,9 +69,9 @@ class TopicAdminController
     {
         $status = $request->string('s', '')->toString();
         $map = [
-            'open' => Report::STATE_OPEN,
-            'close' => Report::STATE_DONE,
-            'spam' => Report::STATE_SPAM,
+            'open' => ReportState::Open,
+            'close' => ReportState::Done,
+            'spam' => ReportState::Spam,
         ];
         if (! isset($map[$status])) {
             return response()->json(['error' => 'invalid status'], 400);
@@ -155,7 +156,7 @@ class TopicAdminController
             'ID' => $f->id,
             'Name' => ['de' => $f->name_de, 'en' => $f->name_en],
             'Description' => ['de' => (string) $f->description_de, 'en' => (string) $f->description_en],
-            'Type' => $f->type,
+            'Type' => $f->type->value,
             'Required' => $f->required,
             'Choices' => $f->choices ?? [],
         ])->all());

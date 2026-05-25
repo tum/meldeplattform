@@ -28,7 +28,7 @@ class SubmitController
         foreach ($topic->fields as $field) {
             $message .= "\n**".$field->name('en')."**\n";
 
-            if (! in_array($field->type, ['file', 'files'], true)) {
+            if (! $field->type->isFileUpload()) {
                 $message .= $request->string((string) $field->id, '')->toString()."\n";
 
                 continue;

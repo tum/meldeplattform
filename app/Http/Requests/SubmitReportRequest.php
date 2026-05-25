@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\FieldType;
 use App\Models\Topic;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -52,10 +53,10 @@ class SubmitReportRequest extends FormRequest
         foreach ($topic->fields as $field) {
             $name = (string) $field->id;
 
-            if (in_array($field->type, ['file', 'files'], true)) {
+            if ($field->type->isFileUpload()) {
                 $fileRules = ['file', $extensionRule, $mimesRule, "max:{$maxKb}"];
 
-                if ($field->type === 'files') {
+                if ($field->type === FieldType::Files) {
                     $rules[$name] = $field->required ? ['required', 'array', 'min:1'] : ['nullable', 'array'];
                     $rules[$name.'.*'] = $fileRules;
                 } else {
