@@ -69,5 +69,6 @@
     "field_type_email": "Email",
     "field_type_date": "Date",
     "field_type_number": "Number",
-    "field_type_url": "URL"
+    "field_type_url": "URL",
+    "please_fix_errors": "Please fix the highlighted fields and submit again."
 }

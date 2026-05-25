@@ -41,7 +41,10 @@
     <form method="post" class="card mt-4">
         @csrf
         <label for="reply">{{ __('reply') }}</label>
-        <textarea id="reply" name="reply" required placeholder="{{ __('reply_placeholder') }}"></textarea>
+        <textarea id="reply" name="reply" required placeholder="{{ __('reply_placeholder') }}">{{ old('reply') }}</textarea>
+        @error('reply')
+            <span class="field-error">{{ $message }}</span>
+        @enderror
         <div class="text-right mt-3">
             <button type="submit">{{ __('send') }}</button>
         </div>

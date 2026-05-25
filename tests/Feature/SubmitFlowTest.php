@@ -124,4 +124,29 @@ class SubmitFlowTest extends TestCase
             (string) $field->id => UploadedFile::fake()->create('evil.exe', 10, 'application/octet-stream'),
         ])->assertStatus(422)->assertJsonValidationErrors([(string) $field->id]);
     }
+
+    public function test_form_renders_inline_validation_errors_after_redirect_back(): void
+    {
+        // Regression: a bad-email submit redirects back with errors in
+        // session — those need to surface as `.field-error` spans on the
+        // form so the reporter knows what to fix.
+        $topic = Topic::create([
+            'name_de' => 'T', 'name_en' => 'T', 'summary_de' => 's', 'summary_en' => 's',
+        ]);
+        Field::create([
+            'topic_id' => $topic->id,
+            'name_de' => 'F', 'name_en' => 'F',
+            'type' => 'textarea', 'required' => false, 'position' => 0,
+        ]);
+
+        $this->from("/form/{$topic->id}")
+            ->post('/submit', ['topic' => $topic->id, 'email' => 'not-an-email'])
+            ->assertRedirect("/form/{$topic->id}")
+            ->assertSessionHasErrors(['email']);
+
+        $this->withSession(['errors' => session('errors')])
+            ->get("/form/{$topic->id}")
+            ->assertOk()
+            ->assertSee('field-error', escape: false);
+    }
 }

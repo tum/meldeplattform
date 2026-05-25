@@ -69,5 +69,6 @@
     "field_type_email": "E-Mail",
     "field_type_date": "Datum",
     "field_type_number": "Zahl",
-    "field_type_url": "URL"
+    "field_type_url": "URL",
+    "please_fix_errors": "Bitte korrigieren Sie die markierten Felder und senden Sie das Formular erneut."
 }
