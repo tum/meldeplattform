@@ -5,7 +5,7 @@
 @section('intro')
     <section class="page-intro">
         <div class="container">
-            <a href="/" class="crumb">{{ __('back') }}</a>
+            <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ __('users') }}</h1>
             <p class="muted">{{ __('users_intro') }}</p>
         </div>

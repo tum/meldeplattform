@@ -11,29 +11,29 @@
                 @can('manage', App\Models\User::class)
                     <a href="{{ route('users.index') }}">{{ __('users') }}</a>
                 @endcan
-                @if (! app()->environment('production'))
-                    <a href="/dev/logout">{{ __('logout') }}</a>
+                @if (Route::has('dev.logout'))
+                    <a href="{{ route('dev.logout') }}">{{ __('logout') }}</a>
                 @else
-                    <a href="/saml/logout">{{ __('logout') }}</a>
+                    <a href="{{ route('saml.logout') }}">{{ __('logout') }}</a>
                 @endif
             @else
-                <a href="/saml/out">{{ __('login') }}</a>
-                @if (! app()->environment('production'))
-                    <a href="/dev/login" style="opacity:.8;">Dev-Login</a>
+                <a href="{{ route('saml.login') }}">{{ __('login') }}</a>
+                @if (Route::has('dev.login'))
+                    <a href="{{ route('dev.login') }}" style="opacity:.8;">Dev-Login</a>
                 @endif
             @endauth
         </div>
         <div class="right lang-switch">
-            <a href="/setLang?lang=de" class="{{ $lang === 'de' ? 'active' : '' }}"><abbr lang="de" title="Deutsch">de</abbr></a>
+            <a href="{{ route('lang.set', ['lang' => 'de']) }}" class="{{ $lang === 'de' ? 'active' : '' }}"><abbr lang="de" title="Deutsch">de</abbr></a>
             <span class="sep">|</span>
-            <a href="/setLang?lang=en" class="{{ $lang === 'en' ? 'active' : '' }}"><abbr lang="en" title="English">en</abbr></a>
+            <a href="{{ route('lang.set', ['lang' => 'en']) }}" class="{{ $lang === 'en' ? 'active' : '' }}"><abbr lang="en" title="English">en</abbr></a>
         </div>
     </div>
 </div>
 
 <header class="masthead">
     <div class="container">
-        <a href="/" class="brand" aria-label="{{ $appTitle }} – {{ $appSubtitle }}">
+        <a href="{{ route('home') }}" class="brand" aria-label="{{ $appTitle }} – {{ $appSubtitle }}">
             <span class="app-eyebrow">{{ config('meldeplattform.subtitle.'.$lang) }}</span>
             <span class="app-name">{{ config('meldeplattform.title.'.$lang) }}</span>
         </a>

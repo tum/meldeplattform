@@ -5,7 +5,7 @@
 @section('intro')
     <section class="page-intro">
         <div class="container">
-            <a href="/" class="crumb">{{ __('back') }}</a>
+            <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ __('dashboard') }}</h1>
             <p class="muted">
                 {{ trans_choice('reports_across_topics', $topics->count(), ['topics' => $topics->count(), 'reports' => $reports->count()]) }}

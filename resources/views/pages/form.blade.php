@@ -5,7 +5,7 @@
 @section('intro')
     <section class="page-intro">
         <div class="container">
-            <a href="/" class="crumb">{{ __('back') }}</a>
+            <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ $topic->name($lang) }}</h1>
             <p>{{ $topic->summary($lang) }}</p>
         </div>
@@ -96,7 +96,7 @@
         <hr>
 
         <div class="flex-between">
-            <a class="button button-ghost" href="/">← {{ __('back') }}</a>
+            <a class="button button-ghost" href="{{ route('home') }}">← {{ __('back') }}</a>
             <button type="submit">{{ __('send') }}</button>
         </div>
     </form>

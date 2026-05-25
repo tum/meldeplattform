@@ -5,7 +5,7 @@
 @section('intro')
     <section class="page-intro">
         <div class="container">
-            <a href="/" class="crumb">{{ __('back') }}</a>
+            <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ __('reports') }}: {{ $topic->name($lang) }}</h1>
             <p class="muted">{{ $reports->count() }} {{ __('reports') }}</p>
         </div>

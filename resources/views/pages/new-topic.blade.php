@@ -5,7 +5,7 @@
 @section('intro')
     <section class="page-intro">
         <div class="container">
-            <a href="/" class="crumb">{{ __('back') }}</a>
+            <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ __('create_topic') }}</h1>
             <p>{{ __('create_topic_summary') }}</p>
         </div>
@@ -21,7 +21,7 @@
 
         <hr>
         <div class="flex-between">
-            <a class="button button-ghost" href="/">{{ __('back') }}</a>
+            <a class="button button-ghost" href="{{ route('home') }}">{{ __('back') }}</a>
             <div>
                 <span id="save-status" class="muted" style="margin-right: 1rem;"></span>
                 <button type="submit">{{ __('create_topic') }}</button>

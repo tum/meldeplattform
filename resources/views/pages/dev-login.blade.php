@@ -17,7 +17,7 @@
         In Produktion ist es deaktiviert.
     </div>
 
-    <form method="post" action="/dev/login" class="card" style="max-width: 520px;">
+    <form method="post" action="{{ route('dev.login.submit') }}" class="card" style="max-width: 520px;">
         @csrf
 
         <div class="form-group">
@@ -48,7 +48,7 @@
         </div>
 
         <div class="flex-between">
-            <a class="button button-ghost" href="/">← Zurück</a>
+            <a class="button button-ghost" href="{{ route('home') }}">← Zurück</a>
             <button type="submit">Login</button>
         </div>
 

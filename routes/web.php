@@ -44,19 +44,21 @@ Route::get('/file/{name}', [FileController::class, 'download'])
 if (! app()->environment('production') && (bool) config('meldeplattform.dev_login_enabled', false)) {
     Route::middleware('throttle:dev-login')->group(function (): void {
         Route::get('/dev/login', [DevLoginController::class, 'show'])->name('dev.login');
-        Route::post('/dev/login', [DevLoginController::class, 'login']);
+        Route::post('/dev/login', [DevLoginController::class, 'login'])->name('dev.login.submit');
         Route::get('/dev/logout', [DevLoginController::class, 'logout'])->name('dev.logout');
     });
 }
 
 // SAML
-Route::get('/saml/metadata', [SamlController::class, 'metadata']);
-Route::get('/saml/out', [SamlController::class, 'login'])->middleware('throttle:saml');
-Route::get('/saml/logout', [SamlController::class, 'logout']);
+Route::get('/saml/metadata', [SamlController::class, 'metadata'])->name('saml.metadata');
+Route::get('/saml/out', [SamlController::class, 'login'])
+    ->middleware('throttle:saml')->name('saml.login');
+Route::get('/saml/logout', [SamlController::class, 'logout'])->name('saml.logout');
 // HTTP-Redirect binding uses GET; HTTP-POST binding uses POST. Accept both
 // so the SP works regardless of which binding the IdP picks at runtime.
-Route::match(['get', 'post'], '/saml/slo', [SamlController::class, 'singleLogout']);
-Route::post('/shib', [SamlController::class, 'acs'])->middleware('throttle:saml');
+Route::match(['get', 'post'], '/saml/slo', [SamlController::class, 'singleLogout'])->name('saml.slo');
+Route::post('/shib', [SamlController::class, 'acs'])
+    ->middleware('throttle:saml')->name('saml.acs');
 
 // Admin of a topic — `auth` ensures a User is bound; `can:` runs the policy.
 Route::middleware('auth')->group(function (): void {
