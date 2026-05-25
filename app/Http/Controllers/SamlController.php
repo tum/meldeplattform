@@ -73,14 +73,12 @@ class SamlController
             // keepLocalSession=true: we destroy Laravel's session ourselves below.
             // stay=true: return the IdP response URL instead of exit()'ing.
             $redirectUrl = $auth->processSLO(true, null, false, null, true);
+            /** @var list<string> $errors */
             $errors = $auth->getErrors();
             if ($errors === []) {
                 $sloSucceeded = true;
             } else {
-                Log::warning('SAML SLO validation errors', [
-                    'errors' => $errors,
-                    'reason' => $auth->getLastErrorReason(),
-                ]);
+                $this->logSloFailure($auth, $errors);
             }
         } catch (\Throwable $e) {
             Log::info('SAML SLO failed', ['error' => $e->getMessage()]);
@@ -93,6 +91,84 @@ class SamlController
         return is_string($redirectUrl) && $redirectUrl !== ''
             ? redirect()->away($redirectUrl)
             : redirect('/');
+    }
+
+    /**
+     * Surface a failing SLO with enough context to debug. Lifts the
+     * <StatusCode> Value attribute and any <StatusMessage> out of the
+     * IdP's LogoutResponse XML so the log isn't just
+     * `errors:[logout_not_success], reason:null`.
+     *
+     * The bare "logout_not_success" with no extra signal is benign: it
+     * means the IdP rejected the SLO (often because the user's IdP
+     * session was already gone), but the local SP session was already
+     * destroyed in /saml/logout before we ever got here. Downgrade
+     * those to info() so they don't page the on-call. Anything richer
+     * (a sub-status, a reason, multiple errors) still warns.
+     *
+     * @param list<string> $errors
+     */
+    private function logSloFailure(OneLoginAuth $auth, array $errors): void
+    {
+        $reason = $auth->getLastErrorReason();
+        $context = ['errors' => $errors, 'reason' => $reason];
+
+        $xml = (string) ($auth->getLastResponseXML() ?? '');
+        if ($xml !== '') {
+            [$statusCode, $statusMessage] = $this->parseLogoutResponseStatus($xml);
+            if ($statusCode !== null) {
+                $context['status_code'] = $statusCode;
+            }
+            if ($statusMessage !== null) {
+                $context['status_message'] = $statusMessage;
+            }
+        }
+
+        $benign = $errors === ['logout_not_success']
+            && ($reason === null || $reason === '')
+            && ! isset($context['status_message']);
+
+        if ($benign) {
+            Log::info('SAML SLO returned non-success (local session already destroyed)', $context);
+        } else {
+            Log::warning('SAML SLO validation errors', $context);
+        }
+    }
+
+    /**
+     * Extract the top-level StatusCode @Value and any StatusMessage from
+     * a SAML LogoutResponse XML payload. Returns [null, null] on parse
+     * failure so the caller falls back to its existing log shape.
+     *
+     * @return array{0: string|null, 1: string|null}
+     */
+    private function parseLogoutResponseStatus(string $xml): array
+    {
+        $previousInternalErrors = libxml_use_internal_errors(true);
+        try {
+            $dom = new \DOMDocument;
+            if (! $dom->loadXML($xml, LIBXML_NONET)) {
+                return [null, null];
+            }
+            $xpath = new \DOMXPath($dom);
+            $xpath->registerNamespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
+
+            $codeList = $xpath->query('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/@Value');
+            $codeNode = $codeList !== false ? $codeList->item(0) : null;
+            $code = $codeNode !== null ? (string) $codeNode->nodeValue : null;
+
+            $msgList = $xpath->query('/samlp:LogoutResponse/samlp:Status/samlp:StatusMessage');
+            $msgNode = $msgList !== false ? $msgList->item(0) : null;
+            if ($msgNode === null) {
+                return [$code, null];
+            }
+            $message = trim((string) $msgNode->nodeValue);
+
+            return [$code, $message === '' ? null : $message];
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previousInternalErrors);
+        }
     }
 
     /**
