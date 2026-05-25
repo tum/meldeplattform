@@ -21,25 +21,28 @@ class FileDownloadTest extends TestCase
         $this->get('/file/whatever.txt?id=unknown')->assertNotFound();
     }
 
-    public function test_file_with_escape_path_is_denied(): void
+    public function test_path_escaping_the_disk_root_is_safe(): void
     {
+        Storage::fake('uploads');
+
+        // Even if a row's `path` somehow contains traversal characters or an
+        // absolute path, Flysystem normalises it relative to the disk root,
+        // so the file simply isn't found and the download 404s.
         $file = File::create([
-            'location' => '/etc/passwd',
+            'path' => '/etc/passwd',
             'name' => 'passwd',
         ]);
 
-        $this->get('/file/passwd?id='.$file->uuid)
-            ->assertStatus(403);
+        $this->get('/file/passwd?id='.$file->uuid)->assertNotFound();
     }
 
     public function test_valid_stored_file_is_served(): void
     {
         Storage::fake('uploads');
         Storage::disk('uploads')->put('example.txt', 'hello world');
-        $absPath = Storage::disk('uploads')->path('example.txt');
 
         $file = File::create([
-            'location' => $absPath,
+            'path' => 'example.txt',
             'name' => 'example.txt',
         ]);
 

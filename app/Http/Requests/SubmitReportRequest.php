@@ -41,13 +41,19 @@ class SubmitReportRequest extends FormRequest
             'is_string',
         ));
         $maxKb = Config::integer('meldeplattform.max_upload_mb', 10) * 1024;
-        $extensionRule = 'extensions:'.implode(',', $extensions);
+        $joined = implode(',', $extensions);
+        // `extensions:` blocks rename attacks (evil.exe → evil.pdf in the
+        // filename) and `mimes:` reinforces with server-side MIME detection
+        // so a file whose content does not match its claimed extension is
+        // rejected before it ever hits the disk.
+        $extensionRule = 'extensions:'.$joined;
+        $mimesRule = 'mimes:'.$joined;
 
         foreach ($topic->fields as $field) {
             $name = (string) $field->id;
 
             if (in_array($field->type, ['file', 'files'], true)) {
-                $fileRules = ['file', $extensionRule, "max:{$maxKb}"];
+                $fileRules = ['file', $extensionRule, $mimesRule, "max:{$maxKb}"];
 
                 if ($field->type === 'files') {
                     $rules[$name] = $field->required ? ['required', 'array', 'min:1'] : ['nullable', 'array'];

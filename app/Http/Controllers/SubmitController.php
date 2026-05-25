@@ -11,7 +11,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class SubmitController
@@ -90,7 +89,12 @@ class SubmitController
 
     private function storeUpload(UploadedFile $upload): FileModel
     {
-        $ext = Str::of($upload->getClientOriginalExtension())->lower()->toString();
+        // Prefer the server-detected extension over the client-supplied one;
+        // fall back to the original extension when MIME-based detection fails
+        // (validation has already restricted it to the allowlist).
+        $ext = Str::of($upload->extension() ?: $upload->getClientOriginalExtension())
+            ->lower()
+            ->toString();
 
         $safeName = basename($upload->getClientOriginalName());
         if ($safeName === '' || $safeName === '.') {
@@ -98,13 +102,14 @@ class SubmitController
         }
 
         $uuid = (string) Str::uuid();
-        $storageName = $uuid.'.'.$ext;
-        Storage::disk('uploads')->putFileAs('', $upload, $storageName);
-        $absPath = Storage::disk('uploads')->path($storageName);
+        $storageName = $ext === '' ? $uuid : $uuid.'.'.$ext;
+        $disk = 'uploads';
+        $path = $upload->storeAs('', $storageName, $disk);
 
         return FileModel::create([
             'uuid' => $uuid,
-            'location' => $absPath,
+            'path' => $path,
+            'disk' => $disk,
             'name' => $safeName,
         ]);
     }

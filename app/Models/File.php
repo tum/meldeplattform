@@ -11,7 +11,8 @@ use Illuminate\Support\Str;
 /**
  * @property int $id
  * @property string $uuid
- * @property string $location
+ * @property string $path
+ * @property string $disk
  * @property string $name
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -20,7 +21,12 @@ use Illuminate\Support\Str;
 class File extends Model
 {
     /** @var list<string> */
-    protected $fillable = ['uuid', 'location', 'name'];
+    protected $fillable = ['uuid', 'path', 'disk', 'name'];
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'disk' => 'uploads',
+    ];
 
     protected static function booted(): void
     {

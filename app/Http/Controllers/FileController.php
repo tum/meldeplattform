@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\File as FileModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FileController
 {
-    public function download(Request $request, string $name): BinaryFileResponse
+    public function download(Request $request, string $name): StreamedResponse
     {
         $id = $request->string('id', '')->toString();
         if ($id === '') {
@@ -21,14 +21,11 @@ class FileController
             abort(404);
         }
 
-        $absLocation = realpath($file->location);
-        $rawDir = Storage::disk('uploads')->path('');
-        $absFileDir = realpath($rawDir);
-
-        if ($absLocation === false || $absFileDir === false || ! str_starts_with($absLocation, $absFileDir)) {
-            abort(403);
+        $disk = Storage::disk($file->disk);
+        if (! $disk->exists($file->path)) {
+            abort(404);
         }
 
-        return response()->download($absLocation, $file->name);
+        return $disk->download($file->path, $file->name);
     }
 }
