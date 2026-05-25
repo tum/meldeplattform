@@ -112,5 +112,8 @@
     "users_revoked": "Revoked access for :uid.",
     "users_cannot_self_demote": "You cannot demote yourself from global admin via this UI.",
     "users_cannot_self_revoke": "You cannot revoke yourself.",
-    "users_none": "—"
+    "users_none": "—",
+    "dashboard_filter_all_topics": "All topics",
+    "dashboard_count_shown": ":shown of :total reports shown",
+    "dashboard_no_matches": "No reports match the current filters."
 }

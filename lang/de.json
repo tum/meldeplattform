@@ -112,5 +112,8 @@
     "users_revoked": "Rechte für :uid entzogen.",
     "users_cannot_self_demote": "Sie können sich nicht selbst die globale Admin-Rolle entziehen.",
     "users_cannot_self_revoke": "Sie können sich nicht selbst entziehen.",
-    "users_none": "—"
+    "users_none": "—",
+    "dashboard_filter_all_topics": "Alle Themen",
+    "dashboard_count_shown": ":shown von :total Meldungen angezeigt",
+    "dashboard_no_matches": "Keine Meldungen entsprechen den aktiven Filtern."
 }
