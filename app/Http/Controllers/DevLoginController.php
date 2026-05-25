@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\View\View;
 
@@ -30,20 +32,24 @@ class DevLoginController extends Controller
         $name = trim($request->string('name', '')->toString());
         $email = trim($request->string('email', '')->toString());
 
+        $user = User::updateOrCreate(
+            ['uid' => $uid],
+            [
+                'name' => $name !== '' ? $name : $uid,
+                'email' => $email !== '' ? $email : $uid.'@example.com',
+            ],
+        );
+
         // Rotate session ID on privilege elevation (OWASP ASVS V3.2.1).
         $request->session()->regenerate(true);
-
-        $request->session()->put('saml_user', [
-            'uid' => $uid,
-            'name' => $name !== '' ? $name : $uid,
-            'email' => $email !== '' ? $email : $uid.'@example.com',
-        ]);
+        Auth::login($user);
 
         return redirect('/');
     }
 
     public function logout(Request $request): RedirectResponse
     {
+        Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

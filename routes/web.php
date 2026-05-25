@@ -8,6 +8,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SamlController;
 use App\Http\Controllers\SubmitController;
 use App\Http\Controllers\TopicAdminController;
+use App\Models\Topic;
 use Illuminate\Support\Facades\Route;
 
 // Public pages
@@ -17,7 +18,7 @@ Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
 Route::get('/setLang', [HomeController::class, 'setLang'])->name('lang.set');
 
 // Reporter flow — /submit is rate-limited to blunt storage-exhaustion abuse.
-Route::get('/form/{topicID}', [FormController::class, 'show'])->whereNumber('topicID')->name('form.show');
+Route::get('/form/{topic}', [FormController::class, 'show'])->whereNumber('topic')->name('form.show');
 Route::post('/submit', [SubmitController::class, 'store'])
     ->middleware('throttle:10,1')
     ->name('form.submit');
@@ -55,13 +56,32 @@ Route::get('/saml/logout', [SamlController::class, 'logout']);
 Route::match(['get', 'post'], '/saml/slo', [SamlController::class, 'singleLogout']);
 Route::post('/shib', [SamlController::class, 'acs'])->middleware('throttle:20,1');
 
-// Admin of a topic
-Route::middleware(['topic.admin'])->group(function (): void {
-    Route::get('/newTopic/{topicID}', [TopicAdminController::class, 'newTopic'])->whereNumber('topicID');
-    Route::get('/reports/{topicID}', [TopicAdminController::class, 'reportsOfTopic'])->whereNumber('topicID');
+// Admin of a topic — `auth` ensures a User is bound; `can:` runs the policy.
+Route::middleware('auth')->group(function (): void {
+    // Create-new lives on its own URL so route-model binding can handle the
+    // edit case without colliding with the `0`-sentinel that used to mean
+    // "no topic yet".
+    Route::get('/newTopic', [TopicAdminController::class, 'create'])
+        ->can('create', Topic::class)
+        ->name('topic.create');
+    Route::get('/api/topic/new', [TopicAdminController::class, 'createSkeleton'])
+        ->can('create', Topic::class)
+        ->name('topic.create.skeleton');
+    Route::post('/api/topic', [TopicAdminController::class, 'store'])
+        ->can('create', Topic::class)
+        ->name('topic.store');
 
-    Route::get('/api/topic/{topicID}', [TopicAdminController::class, 'getTopic'])->whereNumber('topicID');
-    Route::post('/api/topic/{topicID}', [TopicAdminController::class, 'upsertTopic'])->whereNumber('topicID');
-    Route::post('/api/topic/{topicID}/report/{reportID}/status', [TopicAdminController::class, 'setStatus'])
-        ->whereNumber('topicID')->whereNumber('reportID');
+    Route::get('/newTopic/{topic}', [TopicAdminController::class, 'edit'])
+        ->whereNumber('topic')->can('update', 'topic')->name('topic.edit');
+    Route::get('/reports/{topic}', [TopicAdminController::class, 'reportsOfTopic'])
+        ->whereNumber('topic')->can('view', 'topic')->name('topic.reports');
+    Route::get('/api/topic/{topic}', [TopicAdminController::class, 'show'])
+        ->whereNumber('topic')->can('view', 'topic')->name('topic.show');
+    Route::post('/api/topic/{topic}', [TopicAdminController::class, 'update'])
+        ->whereNumber('topic')->can('update', 'topic')->name('topic.update');
+    Route::post('/api/topic/{topic}/report/{report}/status', [TopicAdminController::class, 'setStatus'])
+        ->whereNumber('topic')->whereNumber('report')
+        ->scopeBindings()
+        ->can('update', 'topic')
+        ->name('report.status');
 });

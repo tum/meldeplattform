@@ -61,20 +61,20 @@
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 @if ($report->isClosed())
                     <button class="button button-success"
-                            data-status-url="/api/topic/{{ $report->topic_id }}/report/{{ $report->id }}/status"
+                            data-status-url="{{ route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]) }}"
                             data-status="open">
                         {{ __('reopen') }}
                     </button>
                 @else
                     <button class="button button-success"
-                            data-status-url="/api/topic/{{ $report->topic_id }}/report/{{ $report->id }}/status"
+                            data-status-url="{{ route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]) }}"
                             data-status="close">
                         {{ __('close') }}
                     </button>
                 @endif
                 @if (! $report->isSpam())
                     <button class="button button-danger"
-                            data-status-url="/api/topic/{{ $report->topic_id }}/report/{{ $report->id }}/status"
+                            data-status-url="{{ route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]) }}"
                             data-status="spam">
                         {{ __('spam') }}
                     </button>

@@ -7,10 +7,9 @@ use Illuminate\View\View;
 
 class FormController extends Controller
 {
-    public function show(int $topicID): View
+    public function show(Topic $topic): View
     {
-        /** @var Topic $topic */
-        $topic = Topic::with(['fields', 'admins'])->findOrFail($topicID);
+        $topic->load(['fields', 'admins']);
 
         return view('pages.form', [
             'topic' => $topic,

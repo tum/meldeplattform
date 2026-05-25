@@ -31,7 +31,7 @@
 
     @php
         $newTopicBootstrap = [
-            'topicID' => (int) $topicID,
+            'topicID' => $topic?->id ?? 0,
             'tr' => [
                 'general' => __('general'),
                 'questions' => __('questions'),

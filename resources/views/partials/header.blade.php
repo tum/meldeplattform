@@ -1,11 +1,11 @@
 <div class="topbar">
     <div class="container">
         <div class="left">
-            @if ($authLoggedIn)
+            @auth
                 <span>
                     <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:.25rem;">
                         <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/>
-                    </svg>{{ $authName ?: $authUid }}
+                    </svg>{{ auth()->user()->name ?: auth()->user()->uid }}
                 </span>
                 @if (! app()->environment('production'))
                     <a href="/dev/logout">{{ __('logout') }}</a>
@@ -17,7 +17,7 @@
                 @if (! app()->environment('production'))
                     <a href="/dev/login" style="opacity:.8;">Dev-Login</a>
                 @endif
-            @endif
+            @endauth
         </div>
         <div class="right lang-switch">
             <a href="/setLang?lang=de" class="{{ $lang === 'de' ? 'active' : '' }}"><abbr lang="de" title="Deutsch">de</abbr></a>

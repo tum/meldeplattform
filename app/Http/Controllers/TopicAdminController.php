@@ -14,17 +14,19 @@ use Illuminate\View\View;
 
 class TopicAdminController extends Controller
 {
-    public function newTopic(int $topicID): View
+    public function create(): View
     {
-        return view('pages.new-topic', [
-            'topicID' => $topicID,
-        ]);
+        return view('pages.new-topic', ['topic' => null]);
     }
 
-    public function reportsOfTopic(int $topicID): View
+    public function edit(Topic $topic): View
     {
-        /** @var Topic $topic */
-        $topic = Topic::with(['fields', 'admins'])->findOrFail($topicID);
+        return view('pages.new-topic', ['topic' => $topic]);
+    }
+
+    public function reportsOfTopic(Topic $topic): View
+    {
+        $topic->load(['fields', 'admins']);
         $reports = Report::with('messages')->where('topic_id', $topic->id)->latest()->get();
 
         return view('pages.reports', [
@@ -33,37 +35,64 @@ class TopicAdminController extends Controller
         ]);
     }
 
-    public function getTopic(int $topicID): JsonResponse
+    public function createSkeleton(): JsonResponse
     {
-        if ($topicID === 0) {
-            return response()->json([
-                'ID' => 0,
-                'Name' => ['de' => '', 'en' => ''],
-                'Summary' => ['de' => '', 'en' => ''],
-                'Fields' => [],
-                'Admins' => [],
-                'Email' => '',
-            ]);
-        }
+        return response()->json([
+            'ID' => 0,
+            'Name' => ['de' => '', 'en' => ''],
+            'Summary' => ['de' => '', 'en' => ''],
+            'Fields' => [],
+            'Admins' => [],
+            'Email' => '',
+        ]);
+    }
 
-        /** @var Topic $topic */
-        $topic = Topic::with(['fields', 'admins'])->findOrFail($topicID);
+    public function show(Topic $topic): JsonResponse
+    {
+        $topic->load(['fields', 'admins']);
 
         return response()->json($this->serialize($topic));
     }
 
-    public function upsertTopic(UpsertTopicRequest $request, int $topicID): JsonResponse
+    public function store(UpsertTopicRequest $request): JsonResponse
+    {
+        return $this->save($request, null);
+    }
+
+    public function update(UpsertTopicRequest $request, Topic $topic): JsonResponse
+    {
+        return $this->save($request, $topic);
+    }
+
+    public function setStatus(Request $request, Topic $topic, Report $report): JsonResponse
+    {
+        $status = $request->string('s', '')->toString();
+        $map = [
+            'open' => Report::STATE_OPEN,
+            'close' => Report::STATE_DONE,
+            'spam' => Report::STATE_SPAM,
+        ];
+        if (! isset($map[$status])) {
+            return response()->json(['error' => 'invalid status'], 400);
+        }
+        $report->state = $map[$status];
+        $report->save();
+
+        return response()->json(['ok' => true]);
+    }
+
+    private function save(UpsertTopicRequest $request, ?Topic $topic): JsonResponse
     {
         /** @var array{ID: int, Name: array{de?: string|null, en?: string|null}, Summary?: array{de?: string|null, en?: string|null}|null, Email?: string|null, Fields: list<array{ID?: int|null, Name: array{de?: string|null, en?: string|null}, Description?: array{de?: string|null, en?: string|null}|null, Type: string, Required?: bool|null, Choices?: list<string>|null}>, Admins?: list<array{UserID?: string|null}>|null} $payload */
         $payload = $request->validated();
 
-        if ($payload['ID'] !== $topicID) {
+        $expectedId = $topic === null ? 0 : $topic->id;
+        if ($payload['ID'] !== $expectedId) {
             return response()->json(['error' => 'Topic ID mismatch'], 400);
         }
 
-        $topic = DB::transaction(function () use ($topicID, $payload): Topic {
-            /** @var Topic $topic */
-            $topic = $topicID === 0 ? new Topic : Topic::findOrFail($topicID);
+        $saved = DB::transaction(function () use ($topic, $payload): Topic {
+            $topic ??= new Topic;
 
             $topic->name_de = (string) ($payload['Name']['de'] ?? '');
             $topic->name_en = (string) ($payload['Name']['en'] ?? '');
@@ -113,28 +142,7 @@ class TopicAdminController extends Controller
             return $topic;
         });
 
-        return response()->json(['ID' => $topic->id, 'saved' => true]);
-    }
-
-    public function setStatus(Request $request, int $topicID, int $reportID): JsonResponse
-    {
-        $status = $request->string('s', '')->toString();
-        $map = [
-            'open' => Report::STATE_OPEN,
-            'close' => Report::STATE_DONE,
-            'spam' => Report::STATE_SPAM,
-        ];
-        if (! isset($map[$status])) {
-            return response()->json(['error' => 'invalid status'], 400);
-        }
-        $report = Report::where('id', $reportID)->where('topic_id', $topicID)->first();
-        if ($report === null) {
-            return response()->json(['error' => 'report not found'], 404);
-        }
-        $report->state = $map[$status];
-        $report->save();
-
-        return response()->json(['ok' => true]);
+        return response()->json(['ID' => $saved->id, 'saved' => true]);
     }
 
     /**

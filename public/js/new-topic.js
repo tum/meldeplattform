@@ -228,7 +228,8 @@
         body.append(input(topic.Email ?? '', (v) => (topic.Email = v), 'it-sec@tum.de', 'email'));
     }
 
-    fetch(`/api/topic/${topicID}`, { credentials: 'same-origin' })
+    const loadUrl = topicID > 0 ? `/api/topic/${topicID}` : '/api/topic/new';
+    fetch(loadUrl, { credentials: 'same-origin' })
         .then((r) => r.json())
         .then((t) => {
             topic = t;
@@ -242,7 +243,9 @@
     document.getElementById('topic-form').addEventListener('submit', (e) => {
         e.preventDefault();
         statusEl.textContent = '…';
-        fetch(`/api/topic/${topic.ID || topicID}`, {
+        const targetId = topic.ID || topicID;
+        const saveUrl = targetId > 0 ? `/api/topic/${targetId}` : '/api/topic';
+        fetch(saveUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

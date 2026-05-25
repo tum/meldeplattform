@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use OneLogin\Saml2\Auth as OneLoginAuth;
 
@@ -98,6 +100,7 @@ class SamlController extends Controller
      */
     private function destroySession(Request $request): void
     {
+        Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
     }
@@ -128,15 +131,15 @@ class SamlController extends Controller
         $name = $this->firstAttr($attrs, 'displayName') ?? '';
         $email = $this->firstAttr($attrs, 'mail') ?? '';
 
+        $user = User::updateOrCreate(
+            ['uid' => $uid],
+            ['name' => $name !== '' ? $name : null, 'email' => $email !== '' ? $email : null],
+        );
+
         // Rotate the session ID on privilege elevation to defeat session fixation
         // (OWASP ASVS V3.2.1, CWE-384). `regenerate(true)` destroys the old session.
         $request->session()->regenerate(true);
-
-        $request->session()->put('saml_user', [
-            'uid' => $uid,
-            'name' => $name,
-            'email' => $email,
-        ]);
+        Auth::login($user);
 
         return redirect('/');
     }

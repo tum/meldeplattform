@@ -18,15 +18,15 @@
         @foreach ($topicsAll as $t)
             <article class="card topic-card">
                 <div class="topic-body">
-                    <h3><a href="/form/{{ $t->id }}">{{ $t->name($lang) }}</a></h3>
+                    <h3><a href="{{ route('form.show', $t) }}">{{ $t->name($lang) }}</a></h3>
                     <p class="muted">{{ $t->summary($lang) }}</p>
                 </div>
                 <div class="actions">
-                    <a class="button button-small" href="/form/{{ $t->id }}">{{ __('report') }}</a>
-                    @if ($isGlobalAdmin || ($authUid && $t->isAdmin($authUid)))
-                        <a class="button button-small button-ghost" href="/newTopic/{{ $t->id }}">{{ __('edit') }}</a>
-                        <a class="button button-small button-ghost" href="/reports/{{ $t->id }}">{{ __('reports') }}</a>
-                    @endif
+                    <a class="button button-small" href="{{ route('form.show', $t) }}">{{ __('report') }}</a>
+                    @can('update', $t)
+                        <a class="button button-small button-ghost" href="{{ route('topic.edit', $t) }}">{{ __('edit') }}</a>
+                        <a class="button button-small button-ghost" href="{{ route('topic.reports', $t) }}">{{ __('reports') }}</a>
+                    @endcan
                 </div>
             </article>
         @endforeach
@@ -40,9 +40,9 @@
         @endif
     </div>
 
-    @if ($isGlobalAdmin)
+    @can('create', App\Models\Topic::class)
         <div class="mt-5">
-            <a class="button" href="/newTopic/0">+ {{ __('create_topic') }}</a>
+            <a class="button" href="{{ route('topic.create') }}">+ {{ __('create_topic') }}</a>
         </div>
-    @endif
+    @endcan
 @endsection

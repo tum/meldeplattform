@@ -7,6 +7,7 @@ use App\Models\Field;
 use App\Models\Message;
 use App\Models\Report;
 use App\Models\Topic;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,31 +17,34 @@ class AdminApiTest extends TestCase
 
     private function asGlobalAdmin(): self
     {
-        return $this->withSession([
-            'saml_user' => ['uid' => 'globaladmin', 'name' => 'Admin', 'email' => 'a@x'],
-        ]);
+        $user = User::updateOrCreate(['uid' => 'globaladmin'], ['name' => 'Admin', 'email' => 'a@x']);
+
+        return $this->actingAs($user);
     }
 
     private function asUser(string $uid): self
     {
-        return $this->withSession([
-            'saml_user' => ['uid' => $uid, 'name' => $uid, 'email' => $uid.'@x'],
-        ]);
+        $user = User::updateOrCreate(['uid' => $uid], ['name' => $uid, 'email' => $uid.'@x']);
+
+        return $this->actingAs($user);
     }
 
     public function test_newtopic_requires_auth(): void
     {
-        $this->get('/newTopic/0')->assertStatus(401);
+        // Guests are redirected to the login flow by the `auth` middleware:
+        // `/saml/out` in prod, `/dev/login` when the dev bypass is enabled
+        // (which it is in the test environment).
+        $this->get('/newTopic')->assertRedirect('/dev/login');
     }
 
     public function test_newtopic_requires_global_admin_for_new(): void
     {
-        $this->asUser('not-admin')->get('/newTopic/0')->assertStatus(403);
+        $this->asUser('not-admin')->get('/newTopic')->assertStatus(403);
     }
 
-    public function test_global_admin_can_open_newtopic_0(): void
+    public function test_global_admin_can_open_create_form(): void
     {
-        $this->asGlobalAdmin()->get('/newTopic/0')->assertOk();
+        $this->asGlobalAdmin()->get('/newTopic')->assertOk();
     }
 
     public function test_topic_admin_may_edit_own_topic(): void
@@ -64,7 +68,7 @@ class AdminApiTest extends TestCase
 
     public function test_upsert_topic_creates_from_scratch(): void
     {
-        $this->asGlobalAdmin()->postJson('/api/topic/0', [
+        $this->asGlobalAdmin()->postJson('/api/topic', [
             'ID' => 0,
             'Name' => ['de' => 'Neues', 'en' => 'New'],
             'Summary' => ['de' => 'S-de', 'en' => 'S-en'],
@@ -89,7 +93,7 @@ class AdminApiTest extends TestCase
     public function test_upsert_topic_requires_fields(): void
     {
         // FormRequest validation rejects empty Fields with 422.
-        $this->asGlobalAdmin()->postJson('/api/topic/0', [
+        $this->asGlobalAdmin()->postJson('/api/topic', [
             'ID' => 0,
             'Name' => ['de' => 'x', 'en' => 'x'],
             'Fields' => [],
@@ -121,9 +125,9 @@ class AdminApiTest extends TestCase
         $this->asUser('nobody')->get("/reports/{$t->id}")->assertStatus(403);
     }
 
-    public function test_get_topic_returns_skeleton_for_zero(): void
+    public function test_get_topic_returns_skeleton_for_new(): void
     {
-        $this->asGlobalAdmin()->getJson('/api/topic/0')
+        $this->asGlobalAdmin()->getJson('/api/topic/new')
             ->assertOk()
             ->assertJsonStructure(['ID', 'Name', 'Summary', 'Fields', 'Admins', 'Email']);
     }
