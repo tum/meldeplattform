@@ -9,7 +9,9 @@
     if (!form) return;
 
     const key = form.dataset.draftKey;
-    const note = form.querySelector('[data-draft-note]');
+    // The "Draft restored" hint lives in the surrounding page, not inside
+    // the form, so search the whole document.
+    const note = document.querySelector('[data-draft-note]');
     const SAVE_DEBOUNCE_MS = 400;
 
     function fieldsToSerialize() {
@@ -69,16 +71,18 @@
         return restored;
     }
 
+    function saveNow() {
+        try {
+            localStorage.setItem(key, JSON.stringify(collect()));
+        } catch {
+            // Quota or disabled storage — silently give up.
+        }
+    }
+
     let saveTimer = null;
     function scheduleSave() {
         clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-            try {
-                localStorage.setItem(key, JSON.stringify(collect()));
-            } catch {
-                // Quota or disabled storage — silently give up.
-            }
-        }, SAVE_DEBOUNCE_MS);
+        saveTimer = setTimeout(saveNow, SAVE_DEBOUNCE_MS);
     }
 
     function clearDraft() {
@@ -100,5 +104,21 @@
         // on a validation failure the user lands back here and old() repopulates,
         // so losing the draft is fine.
         clearDraft();
+    });
+
+    // Flush any pending debounced save before the page goes away — otherwise
+    // a fast close/reload within the 400ms window wipes the draft. Use
+    // `pagehide` over `beforeunload` because it fires reliably on bfcache
+    // and on iOS/Safari.
+    function flush() {
+        if (saveTimer !== null) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+            saveNow();
+        }
+    }
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flush();
     });
 })();
