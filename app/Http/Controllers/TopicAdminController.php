@@ -111,6 +111,45 @@ class TopicAdminController
         return response()->json(['ok' => true]);
     }
 
+    /**
+     * Bulk variant of setStatus. Accepts `ids` (a list of report IDs scoped
+     * to the bound Topic — anything outside is silently ignored) and the
+     * same `s` short code. Returns the number of rows actually updated.
+     */
+    public function bulkSetStatus(Request $request, Topic $topic): JsonResponse
+    {
+        $status = $request->string('s', '')->toString();
+        $map = [
+            'open' => ReportState::Open,
+            'close' => ReportState::Done,
+            'spam' => ReportState::Spam,
+        ];
+        if (! isset($map[$status])) {
+            return response()->json(['error' => 'invalid status'], 400);
+        }
+
+        $rawIds = $request->input('ids', []);
+        if (! is_array($rawIds)) {
+            return response()->json(['error' => 'ids must be an array'], 400);
+        }
+
+        $ids = array_values(array_filter(array_map(
+            static fn (mixed $v): int => is_numeric($v) ? (int) $v : 0,
+            $rawIds,
+        ), static fn (int $i): bool => $i > 0));
+
+        if ($ids === []) {
+            return response()->json(['ok' => true, 'updated' => 0]);
+        }
+
+        $newState = $map[$status];
+        $updated = Report::where('topic_id', $topic->id)
+            ->whereIn('id', $ids)
+            ->update(['state' => $newState->value, 'updated_at' => now()]);
+
+        return response()->json(['ok' => true, 'updated' => $updated]);
+    }
+
     private function save(UpsertTopicRequest $request, ?Topic $topic): JsonResponse
     {
         /** @var array{ID: int, Name: array{de?: string|null, en?: string|null}, Summary?: array{de?: string|null, en?: string|null}|null, Email?: string|null, Fields: list<array{ID?: int|null, Name: array{de?: string|null, en?: string|null}, Description?: array{de?: string|null, en?: string|null}|null, Type: string, Required?: bool|null, Choices?: list<string>|null}>, Admins?: list<array{UserID?: string|null}>|null} $payload */

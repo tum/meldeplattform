@@ -83,5 +83,10 @@
     "dashboard": "Dashboard",
     "topic": "Topic",
     "no_reports_yet": "No reports yet across the topics you manage.",
-    "reports_across_topics": "{1} :reports report across :topics topic|[2,*] :reports reports across :topics topics"
+    "reports_across_topics": "{1} :reports report across :topics topic|[2,*] :reports reports across :topics topics",
+    "select_all": "Select all",
+    "select_row": "Select report",
+    "selected": "selected",
+    "confirm_close_bulk": "Mark the selected reports as closed?",
+    "confirm_spam_bulk": "Mark the selected reports as spam?"
 }

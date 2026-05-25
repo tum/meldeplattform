@@ -83,5 +83,10 @@
     "dashboard": "Übersicht",
     "topic": "Thema",
     "no_reports_yet": "Noch keine Meldungen in den von Ihnen betreuten Themen.",
-    "reports_across_topics": "{1} :reports Meldung in :topics Thema|[2,*] :reports Meldungen in :topics Themen"
+    "reports_across_topics": "{1} :reports Meldung in :topics Thema|[2,*] :reports Meldungen in :topics Themen",
+    "select_all": "Alle auswählen",
+    "select_row": "Meldung auswählen",
+    "selected": "ausgewählt",
+    "confirm_close_bulk": "Ausgewählte Meldungen schließen?",
+    "confirm_spam_bulk": "Ausgewählte Meldungen als Spam markieren?"
 }

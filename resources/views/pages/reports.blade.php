@@ -25,9 +25,22 @@
         </label>
     </div>
 
+    <div class="bulk-bar" data-bulk-bar hidden
+         data-bulk-url="{{ route('report.status.bulk', ['topic' => $topic->id]) }}"
+         data-confirm-close="{{ __('confirm_close_bulk') }}"
+         data-confirm-spam="{{ __('confirm_spam_bulk') }}">
+        <span class="bulk-bar-count" data-bulk-count>0 {{ __('selected') }}</span>
+        <div class="bulk-bar-actions">
+            <button type="button" class="button button-small" data-bulk-status="open">{{ __('reopen') }}</button>
+            <button type="button" class="button button-small" data-bulk-status="close">{{ __('close') }}</button>
+            <button type="button" class="button button-small button-danger" data-bulk-status="spam">{{ __('spam') }}</button>
+        </div>
+    </div>
+
     <table>
         <thead>
             <tr>
+                <th><input type="checkbox" data-bulk-select-all aria-label="{{ __('select_all') }}"></th>
                 <th>ID</th>
                 <th>{{ __('date') }}</th>
                 <th>{{ __('contact') }}</th>
@@ -41,6 +54,7 @@
                 <tr class="report-row"
                     data-closed="{{ $r->isClosed() ? '1' : '0' }}"
                     data-spam="{{ $r->isSpam() ? '1' : '0' }}">
+                    <td><input type="checkbox" data-bulk-row value="{{ $r->id }}" aria-label="{{ __('select_row') }}"></td>
                     <td>#{{ $r->id }}</td>
                     <td>{{ $r->dateFmt() }}</td>
                     <td>{{ $r->creator ?: __('anonymous') }}</td>
@@ -84,7 +98,7 @@
                 </tr>
             @endforeach
             @if ($reports->isEmpty())
-                <tr><td colspan="6" class="muted text-center" style="padding: 2rem;">—</td></tr>
+                <tr><td colspan="7" class="muted text-center" style="padding: 2rem;">—</td></tr>
             @endif
         </tbody>
     </table>

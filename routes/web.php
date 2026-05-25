@@ -88,4 +88,8 @@ Route::middleware('auth')->group(function (): void {
         ->scopeBindings()
         ->can('update', 'topic')
         ->name('report.status');
+    Route::post('/api/topic/{topic}/reports/status', [TopicAdminController::class, 'bulkSetStatus'])
+        ->whereNumber('topic')
+        ->can('update', 'topic')
+        ->name('report.status.bulk');
 });

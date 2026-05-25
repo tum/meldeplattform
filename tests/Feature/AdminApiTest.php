@@ -119,6 +119,36 @@ class AdminApiTest extends TestCase
             ->assertStatus(400);
     }
 
+    public function test_bulk_set_status_updates_only_reports_in_the_topic(): void
+    {
+        $t1 = Topic::create(['name_de' => 'A', 'name_en' => 'A', 'summary_de' => '', 'summary_en' => '']);
+        $t2 = Topic::create(['name_de' => 'B', 'name_en' => 'B', 'summary_de' => '', 'summary_en' => '']);
+        $r1 = Report::create(['topic_id' => $t1->id]);
+        $r2 = Report::create(['topic_id' => $t1->id]);
+        $foreign = Report::create(['topic_id' => $t2->id]);
+
+        $this->asGlobalAdmin()
+            ->postJson("/api/topic/{$t1->id}/reports/status", [
+                'ids' => [$r1->id, $r2->id, $foreign->id],
+                's' => 'close',
+            ])
+            ->assertOk()
+            ->assertJson(['ok' => true, 'updated' => 2]);
+
+        $this->assertSame(ReportState::Done, Report::findOrFail($r1->id)->state);
+        $this->assertSame(ReportState::Done, Report::findOrFail($r2->id)->state);
+        $this->assertSame(ReportState::Open, Report::findOrFail($foreign->id)->state);
+    }
+
+    public function test_bulk_set_status_rejects_invalid_status(): void
+    {
+        $t = Topic::create(['name_de' => 'T', 'name_en' => 'T', 'summary_de' => '', 'summary_en' => '']);
+
+        $this->asGlobalAdmin()
+            ->postJson("/api/topic/{$t->id}/reports/status", ['ids' => [], 's' => 'invalid'])
+            ->assertStatus(400);
+    }
+
     public function test_reports_list_respects_topic_admin(): void
     {
         $t = Topic::create(['name_de' => 't', 'name_en' => 't', 'summary_de' => '', 'summary_en' => '']);
