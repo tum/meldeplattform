@@ -28,11 +28,15 @@
         },
     };
 
-    // Hook buttons with data-status (report open/close/spam).
+    // Hook buttons with data-status (report open/close/spam). A
+    // data-status-confirm attribute (when present) gates the request behind
+    // a confirm() prompt so misclicks on destructive actions don't fire.
     document.addEventListener('click', (e) => {
         const el = e.target.closest('[data-status-url]');
         if (!el) return;
         e.preventDefault();
+        const confirmText = el.getAttribute('data-status-confirm');
+        if (confirmText && !window.confirm(confirmText)) return;
         const url = el.getAttribute('data-status-url');
         const s = el.getAttribute('data-status');
         window.md.postJson(url, { s }, { reload: true }).catch((err) => {

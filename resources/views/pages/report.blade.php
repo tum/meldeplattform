@@ -74,14 +74,16 @@
                 @else
                     <button class="button button-success"
                             data-status-url="{{ route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]) }}"
-                            data-status="close">
+                            data-status="close"
+                            data-status-confirm="{{ __('confirm_close') }}">
                         {{ __('close') }}
                     </button>
                 @endif
                 @if (! $report->isSpam())
                     <button class="button button-danger"
                             data-status-url="{{ route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]) }}"
-                            data-status="spam">
+                            data-status="spam"
+                            data-status-confirm="{{ __('confirm_spam') }}">
                         {{ __('spam') }}
                     </button>
                 @endif

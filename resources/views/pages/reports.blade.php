@@ -13,7 +13,8 @@
 @endsection
 
 @section('content')
-    <div class="card card-soft mb-4" style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;">
+    <div class="card card-soft mb-4" data-reports-filter data-topic-id="{{ $topic->id }}"
+         style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;">
         <label style="font-weight: 500; margin: 0;">
             <input type="checkbox" id="hide-closed" checked>
             {{ __('hide_closed') }}

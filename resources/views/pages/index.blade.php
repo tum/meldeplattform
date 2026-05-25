@@ -34,7 +34,7 @@
 
     @can('create', App\Models\Topic::class)
         <div class="mt-5">
-            <a class="button" href="{{ route('topic.create') }}">+ {{ __('create_topic') }}</a>
+            <a class="button" href="{{ route('topic.create') }}">{{ __('new_topic') }}</a>
         </div>
     @endcan
 @endsection
