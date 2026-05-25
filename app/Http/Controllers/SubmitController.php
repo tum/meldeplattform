@@ -9,7 +9,6 @@ use App\Models\Report;
 use App\Services\MessengerDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -48,8 +47,8 @@ class SubmitController
                 $storedFiles[] = $file;
 
                 $message .= '['.$file->name.']('
-                    .rtrim(Config::string('app.url'), '/')
-                    .'/file/'.rawurlencode($file->name).'?id='.$file->uuid.')';
+                    .route('file.download', ['name' => $file->name, 'id' => $file->uuid])
+                    .')';
             }
         }
 
@@ -71,8 +70,7 @@ class SubmitController
             return $report;
         });
 
-        $reportUrl = rtrim(Config::string('app.url'), '/')
-            .'/report?administratorToken='.$report->administrator_token;
+        $adminUrl = route('report.show', ['administratorToken' => $report->administrator_token]);
 
         $firstMessage = $report->messages->first();
         if ($firstMessage instanceof Message) {
@@ -80,11 +78,11 @@ class SubmitController
                 $topic,
                 sprintf('[%s]: report #%d opened', $topic->name('en'), $report->id),
                 $firstMessage,
-                $reportUrl,
+                $adminUrl,
             );
         }
 
-        return redirect('/report?reporterToken='.$report->reporter_token);
+        return redirect()->route('report.show', ['reporterToken' => $report->reporter_token]);
     }
 
     private function storeUpload(UploadedFile $upload): FileModel

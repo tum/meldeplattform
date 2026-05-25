@@ -51,7 +51,7 @@
                     <td>{{ $r->messages->count() }}</td>
                     <td class="text-right">
                         <a class="button button-small button-ghost"
-                           href="/report?administratorToken={{ $r->administrator_token }}">{{ __('open') }} →</a>
+                           href="{{ route('report.show', ['administratorToken' => $r->administrator_token]) }}">{{ __('open') }} →</a>
                     </td>
                 </tr>
             @endforeach

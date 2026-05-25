@@ -9,7 +9,6 @@ use App\Models\Report;
 use App\Services\MessengerDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
@@ -43,9 +42,8 @@ class ReportController
             'is_admin' => $isAdmin,
         ]);
 
-        $baseUrl = rtrim(Config::string('app.url'), '/');
-        $adminUrl = $baseUrl.'/report?administratorToken='.$report->administrator_token;
-        $reporterUrl = $baseUrl.'/report?reporterToken='.$report->reporter_token;
+        $adminUrl = route('report.show', ['administratorToken' => $report->administrator_token]);
+        $reporterUrl = route('report.show', ['reporterToken' => $report->reporter_token]);
 
         $this->messengers->dispatch(
             $topic,
@@ -68,10 +66,10 @@ class ReportController
         }
 
         $tokenParam = $isAdmin
-            ? 'administratorToken='.$request->string('administratorToken', '')->toString()
-            : 'reporterToken='.$request->string('reporterToken', '')->toString();
+            ? ['administratorToken' => $request->string('administratorToken', '')->toString()]
+            : ['reporterToken' => $request->string('reporterToken', '')->toString()];
 
-        return redirect('/report?'.$tokenParam);
+        return redirect()->route('report.show', $tokenParam);
     }
 
     /**

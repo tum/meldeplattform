@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use OneLogin\Saml2\Auth as OneLoginAuth;
 
@@ -158,14 +159,7 @@ class SamlController
 
     private function newAuth(): OneLoginAuth
     {
-        /** @var array<string, mixed> $idpCfg */
-        $idpCfg = (array) config('saml2.idp', []);
-        /** @var array<string, mixed> $spCfg */
-        $spCfg = (array) config('saml2.sp', []);
-        /** @var array<string, mixed> $securityCfg */
-        $securityCfg = (array) config('saml2.security', []);
-
-        $idpCert = self::str($idpCfg, 'x509cert');
+        $idpCert = Config::string('saml2.idp.x509cert', '');
         if ($idpCert === '') {
             // Without an IdP trust anchor, onelogin/php-saml accepts unsigned
             // assertions and the whole SSO trust model collapses. Refuse to
@@ -175,66 +169,42 @@ class SamlController
 
         return new OneLoginAuth([
             'strict' => true,
-            'debug' => (bool) config('app.debug'),
+            'debug' => Config::boolean('app.debug', false),
             'sp' => [
-                'entityId' => self::str($spCfg, 'entityId'),
+                'entityId' => Config::string('saml2.sp.entityId', ''),
                 'assertionConsumerService' => [
-                    'url' => self::nestedStr($spCfg, 'assertionConsumerService', 'url'),
+                    'url' => Config::string('saml2.sp.assertionConsumerService.url', ''),
                     'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
                 ],
                 'singleLogoutService' => [
-                    'url' => self::nestedStr($spCfg, 'singleLogoutService', 'url'),
+                    'url' => Config::string('saml2.sp.singleLogoutService.url', ''),
                     'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
                 ],
-                'NameIDFormat' => self::str($spCfg, 'NameIDFormat', 'urn:oasis:names:tc:SAML:1.1:nameid-format:persistent'),
-                'x509cert' => self::str($spCfg, 'x509cert'),
-                'privateKey' => self::str($spCfg, 'privateKey'),
+                'NameIDFormat' => Config::string('saml2.sp.NameIDFormat', 'urn:oasis:names:tc:SAML:1.1:nameid-format:persistent'),
+                'x509cert' => Config::string('saml2.sp.x509cert', ''),
+                'privateKey' => Config::string('saml2.sp.privateKey', ''),
             ],
             'idp' => [
-                'entityId' => self::str($idpCfg, 'entityId'),
+                'entityId' => Config::string('saml2.idp.entityId', ''),
                 'singleSignOnService' => [
-                    'url' => self::nestedStr($idpCfg, 'singleSignOnService', 'url'),
+                    'url' => Config::string('saml2.idp.singleSignOnService.url', ''),
                     'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
                 ],
                 'singleLogoutService' => [
-                    'url' => self::nestedStr($idpCfg, 'singleLogoutService', 'url'),
+                    'url' => Config::string('saml2.idp.singleLogoutService.url', ''),
                     'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
                 ],
                 'x509cert' => $idpCert,
             ],
             'security' => [
-                'wantMessagesSigned' => (bool) ($securityCfg['wantMessagesSigned'] ?? true),
-                'wantAssertionsSigned' => (bool) ($securityCfg['wantAssertionsSigned'] ?? true),
-                'wantAssertionsEncrypted' => (bool) ($securityCfg['wantAssertionsEncrypted'] ?? false),
-                'wantNameIdEncrypted' => (bool) ($securityCfg['wantNameIdEncrypted'] ?? false),
-                'authnRequestsSigned' => (bool) ($securityCfg['authnRequestsSigned'] ?? false),
-                'signMetadata' => (bool) ($securityCfg['signMetadata'] ?? false),
-                'rejectUnsolicitedResponsesWithInResponseTo' => (bool) ($securityCfg['rejectUnsolicitedResponsesWithInResponseTo'] ?? true),
+                'wantMessagesSigned' => Config::boolean('saml2.security.wantMessagesSigned', true),
+                'wantAssertionsSigned' => Config::boolean('saml2.security.wantAssertionsSigned', true),
+                'wantAssertionsEncrypted' => Config::boolean('saml2.security.wantAssertionsEncrypted', false),
+                'wantNameIdEncrypted' => Config::boolean('saml2.security.wantNameIdEncrypted', false),
+                'authnRequestsSigned' => Config::boolean('saml2.security.authnRequestsSigned', false),
+                'signMetadata' => Config::boolean('saml2.security.signMetadata', false),
+                'rejectUnsolicitedResponsesWithInResponseTo' => Config::boolean('saml2.security.rejectUnsolicitedResponsesWithInResponseTo', true),
             ],
         ]);
-    }
-
-    /**
-     * @param array<string, mixed> $arr
-     */
-    private static function str(array $arr, string $key, string $default = ''): string
-    {
-        $value = $arr[$key] ?? $default;
-
-        return is_string($value) ? $value : $default;
-    }
-
-    /**
-     * @param array<string, mixed> $arr
-     */
-    private static function nestedStr(array $arr, string $outer, string $inner): string
-    {
-        $sub = $arr[$outer] ?? null;
-        if (! is_array($sub)) {
-            return '';
-        }
-        $value = $sub[$inner] ?? '';
-
-        return is_string($value) ? $value : '';
     }
 }
