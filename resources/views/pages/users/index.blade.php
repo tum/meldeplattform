@@ -30,6 +30,9 @@
                     <input type="checkbox" name="is_global_admin" value="1" @checked(old('is_global_admin'))>
                     {{ __('users_is_global_admin') }}
                 </label>
+                @error('is_global_admin')
+                    <span class="field-error">{{ $message }}</span>
+                @enderror
             </div>
             <fieldset style="margin: 0 0 1rem; border: none; padding: 0;">
                 <legend class="desc" style="margin-bottom: 0.4rem;">{{ __('users_topic_access') }}</legend>

@@ -112,6 +112,7 @@
     "users_revoked": "Rechte für :uid entzogen.",
     "users_cannot_self_demote": "Sie können sich nicht selbst die globale Admin-Rolle entziehen.",
     "users_cannot_self_revoke": "Sie können sich nicht selbst entziehen.",
+    "users_cannot_set_global_admin_pending": "Globaler Admin kann nur für Nutzer vergeben werden, die sich bereits einmal eingeloggt haben. Weisen Sie zunächst Themen-Zugriff zu.",
     "users_none": "—",
     "dashboard_filter_all_topics": "Alle Themen",
     "dashboard_count_shown": ":shown von :total Meldungen angezeigt",
