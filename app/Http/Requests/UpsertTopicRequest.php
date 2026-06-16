@@ -27,7 +27,7 @@ class UpsertTopicRequest extends FormRequest
             'Summary' => ['nullable', 'array:de,en'],
             'Summary.de' => ['nullable', 'string'],
             'Summary.en' => ['nullable', 'string'],
-            'Email' => ['nullable', 'string'],
+            'Email' => ['nullable', 'email:rfc'],
 
             'Fields' => ['required', 'array', 'min:1'],
             'Fields.*.ID' => ['nullable', 'integer'],
@@ -44,7 +44,7 @@ class UpsertTopicRequest extends FormRequest
 
             'Admins' => ['nullable', 'array'],
             'Admins.*.ID' => ['nullable', 'integer'],
-            'Admins.*.UserID' => ['nullable', 'string'],
+            'Admins.*.UserID' => ['nullable', 'string', 'alpha_num'],
 
             'RequireLogin' => ['nullable', 'boolean'],
         ];

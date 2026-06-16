@@ -16,4 +16,9 @@ enum ReportState: string
             self::Spam => __('status_spam'),
         };
     }
+
+    public function allowsReply(): bool
+    {
+        return $this === self::Open;
+    }
 }

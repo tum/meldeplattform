@@ -33,6 +33,10 @@ class ReportController
     {
         [$report, $isAdmin] = $this->resolveReport($request);
 
+        if (! $isAdmin && ! $report->state->allowsReply()) {
+            abort(403);
+        }
+
         $reply = $request->string('reply')->toString();
         $topic = $report->topic;
 
