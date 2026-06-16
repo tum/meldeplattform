@@ -84,6 +84,15 @@
             ),
         );
 
+        const reqLoginLabel = el('label', { className: 'form-group', style: 'display:block;' });
+        const reqLoginCb = el('input', { type: 'checkbox', checked: !!topic.RequireLogin });
+        reqLoginCb.addEventListener('change', (e) => (topic.RequireLogin = e.target.checked));
+        reqLoginLabel.append(reqLoginCb, document.createTextNode(' ' + tr.requireLogin));
+        body.append(reqLoginLabel);
+        if (tr.requireLoginDesc) {
+            body.append(el('p', { className: 'muted', style: 'margin-top:-.5rem;font-size:.875rem;', textContent: tr.requireLoginDesc }));
+        }
+
         body.append(el('hr'));
         body.append(el('h3', { textContent: tr.questions }));
 
@@ -238,6 +247,7 @@
             topic = t;
             topic.Name ??= { de: '', en: '' };
             topic.Summary ??= { de: '', en: '' };
+            topic.RequireLogin ??= false;
             topic.Fields ??= [];
             topic.Admins ??= [];
             render();

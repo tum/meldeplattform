@@ -84,14 +84,22 @@
             </div>
         @endforeach
 
-        <div class="form-group">
-            <label for="email">{{ __('emailLabel') }}</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="you@example.com">
-            <span class="desc">{{ __('emailDescription') }}</span>
-            @error('email')
-                <span class="field-error">{{ $message }}</span>
-            @enderror
-        </div>
+        @if ($topic->require_login)
+            <div class="form-group">
+                <label>{{ __('contact') }}</label>
+                <p>{{ auth()->user()->email ?? auth()->user()->uid }}</p>
+                <span class="desc">{{ __('login_required_identity_note') }}</span>
+            </div>
+        @else
+            <div class="form-group">
+                <label for="email">{{ __('emailLabel') }}</label>
+                <input id="email" type="email" name="email" value="{{ old('email') }}" placeholder="you@example.com">
+                <span class="desc">{{ __('emailDescription') }}</span>
+                @error('email')
+                    <span class="field-error">{{ $message }}</span>
+                @enderror
+            </div>
+        @endif
 
         <hr>
 

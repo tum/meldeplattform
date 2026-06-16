@@ -115,5 +115,9 @@
     "users_none": "—",
     "dashboard_filter_all_topics": "Alle Themen",
     "dashboard_count_shown": ":shown von :total Meldungen angezeigt",
-    "dashboard_no_matches": "Keine Meldungen entsprechen den aktiven Filtern."
+    "dashboard_no_matches": "Keine Meldungen entsprechen den aktiven Filtern.",
+    "require_login": "Anmeldung erforderlich (keine anonyme Meldung)",
+    "require_login_desc": "Meldende müssen sich per TUM-Login authentifizieren. Ihre Identität wird automatisch erfasst.",
+    "login_required_badge": "Anmeldung erforderlich",
+    "login_required_identity_note": "Ihre Identität wird mit dieser Meldung verknüpft."
 }

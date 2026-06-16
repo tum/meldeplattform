@@ -218,7 +218,7 @@ class SamlController
         $request->session()->regenerate(true);
         Auth::login($user);
 
-        return redirect('/');
+        return redirect()->intended('/');
     }
 
     /**
