@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $summary_en
  * @property string|null $email
  * @property array<string, array<string, string>>|null $contacts
+ * @property bool $require_login
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Field> $fields
@@ -31,12 +32,13 @@ class Topic extends Model
 
     /** @var list<string> */
     protected $fillable = [
-        'name_de', 'name_en', 'summary_de', 'summary_en', 'email', 'contacts',
+        'name_de', 'name_en', 'summary_de', 'summary_en', 'email', 'contacts', 'require_login',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'contacts' => 'array',
+        'require_login' => 'boolean',
     ];
 
     /** @return HasMany<Field, $this> */

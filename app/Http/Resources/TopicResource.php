@@ -26,7 +26,7 @@ class TopicResource extends JsonResource
     }
 
     /**
-     * @return array{ID: int, Name: array{de: string, en: string}, Summary: array{de: string, en: string}, Email: string, Fields: list<array<string, mixed>>, Admins: list<array<string, mixed>>}
+     * @return array{ID: int, Name: array{de: string, en: string}, Summary: array{de: string, en: string}, Email: string, RequireLogin: bool, Fields: list<array<string, mixed>>, Admins: list<array<string, mixed>>}
      */
     public function toArray(Request $request): array
     {
@@ -43,6 +43,7 @@ class TopicResource extends JsonResource
                 'en' => (string) $topic->summary_en,
             ],
             'Email' => (string) $topic->email,
+            'RequireLogin' => (bool) $topic->require_login,
             'Fields' => array_values(FieldResource::collection($topic->fields)->resolve($request)),
             'Admins' => array_values(AdminResource::collection($topic->admins)->resolve($request)),
         ];

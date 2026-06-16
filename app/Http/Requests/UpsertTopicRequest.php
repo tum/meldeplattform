@@ -45,6 +45,8 @@ class UpsertTopicRequest extends FormRequest
             'Admins' => ['nullable', 'array'],
             'Admins.*.ID' => ['nullable', 'integer'],
             'Admins.*.UserID' => ['nullable', 'string'],
+
+            'RequireLogin' => ['nullable', 'boolean'],
         ];
     }
 }

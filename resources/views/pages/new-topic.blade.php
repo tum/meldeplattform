@@ -61,6 +61,8 @@
                 'savedOk' => __('topic_saved'),
                 'savedErr' => __('topic_saved_error'),
                 'name' => 'Name',
+                'requireLogin' => __('require_login'),
+                'requireLoginDesc' => __('require_login_desc'),
             ],
         ];
     @endphp

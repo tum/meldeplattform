@@ -16,6 +16,9 @@
                 <div class="topic-body">
                     <h3><a href="{{ route('form.show', $t) }}">{{ $t->name($lang) }}</a></h3>
                     <p class="muted">{{ $t->summary($lang) }}</p>
+                    @if ($t->require_login)
+                        <p class="muted"><small>{{ __('login_required_badge') }}</small></p>
+                    @endif
                 </div>
                 <div class="actions">
                     <a class="button button-small" href="{{ route('form.show', $t) }}">{{ __('report') }}</a>

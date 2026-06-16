@@ -44,7 +44,7 @@ class DevLoginController
         $request->session()->regenerate(true);
         Auth::login($user);
 
-        return redirect('/');
+        return redirect()->intended('/');
     }
 
     public function logout(Request $request): RedirectResponse

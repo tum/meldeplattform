@@ -7,6 +7,7 @@ use App\Http\Requests\SubmitReportRequest;
 use App\Models\File as FileModel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class SubmitController
@@ -16,6 +17,10 @@ class SubmitController
     public function store(SubmitReportRequest $request): RedirectResponse
     {
         $topic = $request->topic();
+
+        if ($topic->require_login && ! Auth::check()) {
+            abort(403);
+        }
 
         $messageBody = '';
         /** @var list<FileModel> $storedFiles */
@@ -48,7 +53,12 @@ class SubmitController
             }
         }
 
-        $report = $this->action->execute($topic, $messageBody, $request->emailOrNull(), $storedFiles);
+        $authUser = Auth::user();
+        $creator = ($topic->require_login && $authUser !== null)
+            ? ($authUser->email ?? $authUser->uid)
+            : $request->emailOrNull();
+
+        $report = $this->action->execute($topic, $messageBody, $creator, $storedFiles);
 
         return redirect()->route('report.show', ['reporterToken' => $report->reporter_token]);
     }
