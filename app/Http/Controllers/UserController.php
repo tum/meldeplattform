@@ -142,6 +142,14 @@ class UserController
                 ->withInput();
         }
 
+        // is_global_admin lives only on the users table, so it cannot be
+        // pre-assigned before the user has ever logged in.
+        if ($isGlobal && $existingUser === null) {
+            return back()
+                ->withErrors(['is_global_admin' => __('users_cannot_set_global_admin_pending')])
+                ->withInput();
+        }
+
         DB::transaction(function () use ($uid, $isGlobal, $topicIds, $existingUser): void {
             $validIds = Topic::whereIn('id', $topicIds)->pluck('id')->all();
 
