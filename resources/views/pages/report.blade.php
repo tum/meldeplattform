@@ -87,13 +87,14 @@
                     $statusUrl = route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]);
                     $listUrl = route('topic.reports', $report->topic_id);
                 @endphp
-                @if ($report->isClosed())
+                @unless ($report->state === \App\Enums\ReportState::Open)
                     <button class="button button-success"
                             data-status-url="{{ $statusUrl }}"
                             data-status="open">
                         {{ __('reopen') }}
                     </button>
-                @else
+                @endunless
+                @unless ($report->isClosed())
                     <button class="button button-success"
                             data-status-url="{{ $statusUrl }}"
                             data-status="close"
@@ -101,8 +102,8 @@
                             data-status-confirm="{{ __('confirm_close') }}">
                         {{ __('close') }}
                     </button>
-                @endif
-                @if (! $report->isSpam())
+                @endunless
+                @unless ($report->isSpam())
                     <button class="button button-danger"
                             data-status-url="{{ $statusUrl }}"
                             data-status="spam"
@@ -110,7 +111,7 @@
                             data-status-confirm="{{ __('confirm_spam') }}">
                         {{ __('spam') }}
                     </button>
-                @endif
+                @endunless
             </div>
         </section>
     @endif

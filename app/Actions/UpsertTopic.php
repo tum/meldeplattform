@@ -85,5 +85,9 @@ class UpsertTopic
             $adminIds[] = $admin->id;
         }
         $topic->admins()->sync($adminIds);
+
+        // Remove Admin records that are no longer assigned to any topic so
+        // they don't linger as invisible orphans in the database.
+        Admin::doesntHave('topics')->delete();
     }
 }

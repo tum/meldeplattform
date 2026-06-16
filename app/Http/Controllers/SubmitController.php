@@ -8,6 +8,7 @@ use App\Models\File as FileModel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class SubmitController
@@ -58,7 +59,18 @@ class SubmitController
             ? ($authUser->email ?? $authUser->uid)
             : $request->emailOrNull();
 
-        $report = $this->action->execute($topic, $messageBody, $creator, $storedFiles);
+        try {
+            $report = $this->action->execute($topic, $messageBody, $creator, $storedFiles);
+        } catch (\Throwable $e) {
+            // Roll back orphaned files: the DB transaction in execute() already
+            // reverted the Report/Message rows, but the File records and physical
+            // files were created before the transaction started, so clean them up.
+            foreach ($storedFiles as $file) {
+                Storage::disk($file->disk)->delete($file->path);
+                $file->delete();
+            }
+            throw $e;
+        }
 
         return redirect()->route('report.show', ['reporterToken' => $report->reporter_token]);
     }
