@@ -86,6 +86,81 @@ class AdminApiTest extends TestCase
         ])->assertStatus(422)->assertJsonValidationErrors(['Fields']);
     }
 
+    public function test_upsert_rejects_topic_with_no_name_in_any_language(): void
+    {
+        // Both name keys present but blank (the shape the editor posts) must
+        // still be rejected — required_without can't catch present-but-empty.
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
+            'ID' => 0,
+            'Name' => ['de' => '', 'en' => ''],
+            'Fields' => [[
+                'Name' => ['de' => 'N', 'en' => 'N'],
+                'Type' => 'text',
+            ]],
+        ])->assertStatus(422)->assertJsonValidationErrors(['Name.en']);
+    }
+
+    public function test_upsert_accepts_topic_named_in_one_language(): void
+    {
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
+            'ID' => 0,
+            'Name' => ['de' => '', 'en' => 'English only'],
+            'Fields' => [[
+                'Name' => ['de' => 'N', 'en' => 'N'],
+                'Type' => 'text',
+            ]],
+        ])->assertOk()->assertJson(['saved' => true]);
+    }
+
+    public function test_upsert_rejects_field_with_no_name_in_any_language(): void
+    {
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
+            'ID' => 0,
+            'Name' => ['de' => 'x', 'en' => 'x'],
+            'Fields' => [[
+                'Name' => ['de' => '', 'en' => ''],
+                'Type' => 'text',
+            ]],
+        ])->assertStatus(422)->assertJsonValidationErrors(['Fields.0.Name.en']);
+    }
+
+    public function test_set_status_does_not_bump_updated_at(): void
+    {
+        $t = Topic::create(['name_de' => 't', 'name_en' => 't', 'summary_de' => '', 'summary_en' => '']);
+        $r = Report::create(['topic_id' => $t->id]);
+        Message::create(['report_id' => $r->id, 'content' => 'init', 'is_admin' => false]);
+        $before = $r->fresh()?->updated_at;
+        $this->assertNotNull($before);
+
+        $this->travel(5)->seconds();
+        $this->actingAsGlobalAdmin()->postJson("/api/topic/{$t->id}/report/{$r->id}/status", ['s' => 'close'])
+            ->assertOk();
+
+        $after = Report::findOrFail($r->id);
+        $this->assertSame(ReportState::Done, $after->state);
+        $this->assertNotNull($after->updated_at);
+        $this->assertTrue($after->updated_at->equalTo($before), 'status change must not touch updated_at');
+    }
+
+    public function test_bulk_set_status_does_not_bump_updated_at(): void
+    {
+        $t = Topic::create(['name_de' => 't', 'name_en' => 't', 'summary_de' => '', 'summary_en' => '']);
+        $r = Report::create(['topic_id' => $t->id]);
+        Message::create(['report_id' => $r->id, 'content' => 'init', 'is_admin' => false]);
+        $before = $r->fresh()?->updated_at;
+        $this->assertNotNull($before);
+
+        $this->travel(5)->seconds();
+        $this->actingAsGlobalAdmin()
+            ->postJson("/api/topic/{$t->id}/reports/status", ['ids' => [$r->id], 's' => 'spam'])
+            ->assertOk()->assertJson(['updated' => 1]);
+
+        $after = Report::findOrFail($r->id);
+        $this->assertSame(ReportState::Spam, $after->state);
+        $this->assertNotNull($after->updated_at);
+        $this->assertTrue($after->updated_at->equalTo($before), 'bulk status change must not touch updated_at');
+    }
+
     public function test_set_status_transitions(): void
     {
         $t = Topic::create(['name_de' => 't', 'name_en' => 't', 'summary_de' => '', 'summary_en' => '']);

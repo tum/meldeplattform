@@ -72,4 +72,20 @@ class UnreadIndicatorTest extends TestCase
 
         $this->actingAs($user)->get('/')->assertOk()->assertDontSee('unread-badge', escape: false);
     }
+
+    public function test_unread_counts_are_scoped_to_managed_topics(): void
+    {
+        // The user administers `mine` but not `other`; both have reports.
+        [$mine, $user] = $this->topicWithAdmin('scopedadmin');
+        $other = Topic::create(['name_de' => 'O', 'name_en' => 'O', 'summary_de' => '', 'summary_en' => '']);
+        Report::create(['topic_id' => $mine->id]);
+        Report::create(['topic_id' => $other->id]);
+
+        $response = $this->actingAs($user)->get('/')->assertOk();
+
+        /** @var array<int, int> $unread */
+        $unread = $response->viewData('unreadByTopic');
+        $this->assertArrayHasKey($mine->id, $unread);
+        $this->assertArrayNotHasKey($other->id, $unread, 'unread must not be computed for unmanaged topics');
+    }
 }

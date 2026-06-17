@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ReportState;
 use App\Models\Message;
 use App\Models\Report;
 use App\Models\Topic;
@@ -86,5 +87,42 @@ class ReportFlowTest extends TestCase
         $this->post('/report?reporterToken='.$r->reporter_token, [
             'reply' => '',
         ])->assertSessionHasErrors('reply');
+    }
+
+    public function test_reporter_sees_closed_notice_instead_of_form_on_closed_report(): void
+    {
+        $r = $this->seedReport();
+        $r->update(['state' => ReportState::Done]);
+
+        $this->get('/report?reporterToken='.$r->reporter_token)
+            ->assertOk()
+            ->assertSee(__('report_closed_no_reply'))
+            ->assertDontSee('name="reply"', escape: false);
+    }
+
+    public function test_admin_still_sees_reply_form_on_closed_report(): void
+    {
+        $r = $this->seedReport();
+        $r->update(['state' => ReportState::Spam]);
+
+        $this->get('/report?administratorToken='.$r->administrator_token)
+            ->assertOk()
+            ->assertSee('name="reply"', escape: false)
+            ->assertDontSee(__('report_closed_no_reply'));
+    }
+
+    public function test_reporter_cannot_reply_to_closed_report(): void
+    {
+        $r = $this->seedReport();
+        $r->update(['state' => ReportState::Done]);
+
+        $this->post('/report?reporterToken='.$r->reporter_token, [
+            'reply' => 'too late',
+        ])->assertStatus(403);
+
+        $this->assertDatabaseMissing('messages', [
+            'report_id' => $r->id,
+            'content' => 'too late',
+        ]);
     }
 }

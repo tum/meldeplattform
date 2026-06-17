@@ -59,6 +59,7 @@
     "role_admin": "Administrator",
     "role_reporter": "Reporter",
     "reply_placeholder": "Your reply…",
+    "report_closed_no_reply": "This report is closed. You can no longer reply to it.",
     "status_open": "Open",
     "status_done": "Done",
     "status_spam": "Spam",
@@ -120,5 +121,7 @@
     "require_login": "Login required (no anonymous reports)",
     "require_login_desc": "Reporters must authenticate with their TUM login. Their identity is recorded automatically.",
     "login_required_badge": "Login required",
-    "login_required_identity_note": "Your identity will be associated with this report."
+    "login_required_identity_note": "Your identity will be associated with this report.",
+    "validation_topic_name_required": "Provide a topic name in at least one language.",
+    "validation_field_name_required": "Provide a field name in at least one language."
 }

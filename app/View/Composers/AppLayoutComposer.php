@@ -4,6 +4,7 @@ namespace App\View\Composers;
 
 use App\Models\Topic;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -21,17 +22,38 @@ class AppLayoutComposer
         $topics = Topic::with('admins')->get();
         $user = Auth::user();
 
-        /** @var list<int> $topicIds */
-        $topicIds = $topics->pluck('id')->values()->all();
-
+        // The unread badge only renders for topics the user can manage
+        // (see pages/index.blade.php `@can('update', $t)`), so scope the
+        // count query to exactly those — both to match the UI and to avoid
+        // aggregating reports the user can't see.
         $unreadCounts = $user instanceof User
-            ? $this->unreadCountsFor($user, $topicIds)
+            ? $this->unreadCountsFor($user, $this->managedTopicIds($user, $topics))
             : [];
 
         $view->with([
             'topicsAll' => $topics,
             'unreadByTopic' => $unreadCounts,
         ]);
+    }
+
+    /**
+     * The subset of topic IDs the user is allowed to manage (global admins
+     * see all; topic-admins only their own). `admins` is already eager-loaded
+     * so the policy check costs no extra queries.
+     *
+     * @param Collection<int, Topic> $topics
+     * @return list<int>
+     */
+    private function managedTopicIds(User $user, Collection $topics): array
+    {
+        /** @var list<int> $ids */
+        $ids = $topics
+            ->filter(static fn (Topic $t): bool => $user->can('update', $t))
+            ->pluck('id')
+            ->values()
+            ->all();
+
+        return $ids;
     }
 
     /**
