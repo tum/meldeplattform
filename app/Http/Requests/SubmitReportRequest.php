@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\FieldType;
+use App\Models\Field;
 use App\Models\Topic;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -67,10 +68,52 @@ class SubmitReportRequest extends FormRequest
                 continue;
             }
 
-            $rules[$name] = $field->required ? ['required', 'string'] : ['nullable', 'string'];
+            $rules[$name] = array_merge(
+                [$field->required ? 'required' : 'nullable'],
+                $this->valueRules($field),
+            );
         }
 
         return $rules;
+    }
+
+    /**
+     * Type-specific value rules for a non-file field. The declared FieldType
+     * drives server-side validation so the editor's type choice is actually
+     * enforced (not just an HTML5 input hint a client can bypass). A leading
+     * `required`/`nullable` is prepended by the caller; `nullable` short-
+     * circuits these for empty input.
+     *
+     * @return list<string|ValidationRule>
+     */
+    private function valueRules(Field $field): array
+    {
+        switch ($field->type) {
+            case FieldType::Email:
+                return ['string', 'email:rfc'];
+            case FieldType::Number:
+                return ['numeric'];
+            case FieldType::Date:
+                return ['date'];
+            case FieldType::Url:
+                return ['string', 'url'];
+            case FieldType::Select:
+                /** @var list<string> $choices */
+                $choices = array_values(array_filter(
+                    is_array($field->choices) ? $field->choices : [],
+                    'is_string',
+                ));
+
+                // Only constrain to the configured options when there are
+                // any; a choice-less select degrades to a free string rather
+                // than rejecting every value.
+                return $choices === [] ? ['string'] : ['string', Rule::in($choices)];
+            case FieldType::Text:
+            case FieldType::Textarea:
+            case FieldType::Checkbox:
+            default:
+                return ['string'];
+        }
     }
 
     public function topic(): Topic

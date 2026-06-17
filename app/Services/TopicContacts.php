@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Topic;
-use App\Services\Messengers\MatrixContact;
 
 /**
  * Typed view of a Topic's notification fan-out configuration. Hides the
@@ -15,7 +14,6 @@ readonly class TopicContacts
 {
     public function __construct(
         public ?string $emailTarget,
-        public ?MatrixContact $matrix,
         public ?string $webhookTarget,
     ) {}
 
@@ -26,7 +24,6 @@ readonly class TopicContacts
 
         return new self(
             emailTarget: self::nestedString($contacts, 'email', 'target'),
-            matrix: MatrixContact::fromArray($contacts['matrix'] ?? null),
             webhookTarget: self::nestedString($contacts, 'webhook', 'target'),
         );
     }

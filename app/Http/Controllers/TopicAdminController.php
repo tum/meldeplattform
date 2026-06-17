@@ -104,6 +104,11 @@ class TopicAdminController
             return response()->json(['error' => 'invalid status'], 400);
         }
         $report->state = $map[$status];
+        // A status change is admin housekeeping, not new thread activity, so
+        // it must not bump `updated_at` — that column drives the home-page
+        // unread badge (reports.updated_at > topic_views.last_seen_at) and
+        // re-surfacing a report the admin just triaged is misleading.
+        $report->timestamps = false;
         $report->save();
 
         return response()->json(['ok' => true]);
@@ -141,9 +146,14 @@ class TopicAdminController
         }
 
         $newState = $map[$status];
+        // Mirror setStatus(): a bulk status change is housekeeping, so leave
+        // `updated_at` untouched to avoid inflating the unread badge. Drop to
+        // the base query builder via toBase() because Eloquent's Builder
+        // auto-injects `updated_at` into every update().
         $updated = Report::where('topic_id', $topic->id)
             ->whereIn('id', $ids)
-            ->update(['state' => $newState->value, 'updated_at' => now()]);
+            ->toBase()
+            ->update(['state' => $newState->value]);
 
         return response()->json(['ok' => true, 'updated' => $updated]);
     }

@@ -6,6 +6,7 @@ use App\Enums\FieldType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpsertTopicRequest extends FormRequest
 {
@@ -48,5 +49,41 @@ class UpsertTopicRequest extends FormRequest
 
             'RequireLogin' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * The per-language name keys are individually nullable (a topic needs a
+     * name in at least one language, not both), but the editor always posts
+     * both keys — empty strings included — so `required_without` can't catch
+     * the all-empty case. Enforce "at least one non-blank name" here for the
+     * topic and for every field.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ($this->bothBlank('Name.de', 'Name.en')) {
+                $validator->errors()->add('Name.en', __('validation_topic_name_required'));
+            }
+
+            /** @var array<int, mixed> $fields */
+            $fields = (array) $this->input('Fields', []);
+            foreach (array_keys($fields) as $i) {
+                if ($this->bothBlank("Fields.{$i}.Name.de", "Fields.{$i}.Name.en")) {
+                    $validator->errors()->add("Fields.{$i}.Name.en", __('validation_field_name_required'));
+                }
+            }
+        });
+    }
+
+    private function bothBlank(string $keyA, string $keyB): bool
+    {
+        return $this->isBlank($keyA) && $this->isBlank($keyB);
+    }
+
+    private function isBlank(string $key): bool
+    {
+        $value = $this->input($key);
+
+        return ! is_string($value) || trim($value) === '';
     }
 }

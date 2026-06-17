@@ -60,17 +60,27 @@
         @endforeach
     </div>
 
-    <form method="post" class="card mt-4">
-        @csrf
-        <label for="reply">{{ __('reply') }}</label>
-        <textarea id="reply" name="reply" required placeholder="{{ __('reply_placeholder') }}">{{ old('reply') }}</textarea>
-        @error('reply')
-            <span class="field-error">{{ $message }}</span>
-        @enderror
-        <div class="text-right mt-3">
-            <button type="submit">{{ __('send') }}</button>
-        </div>
-    </form>
+    @php
+        // Admins can always reply; reporters only while the report is Open.
+        // Mirrors the server-side guard in ReportController::reply() so we
+        // never render a form that is guaranteed to 403 on submit.
+        $canReply = $isAdministrator || $report->state->allowsReply();
+    @endphp
+    @if ($canReply)
+        <form method="post" class="card mt-4">
+            @csrf
+            <label for="reply">{{ __('reply') }}</label>
+            <textarea id="reply" name="reply" required placeholder="{{ __('reply_placeholder') }}">{{ old('reply') }}</textarea>
+            @error('reply')
+                <span class="field-error">{{ $message }}</span>
+            @enderror
+            <div class="text-right mt-3">
+                <button type="submit">{{ __('send') }}</button>
+            </div>
+        </form>
+    @else
+        <div class="alert alert-info mt-4">{{ __('report_closed_no_reply') }}</div>
+    @endif
 
     @if ($isAdministrator)
         <section class="mt-5">

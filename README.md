@@ -44,7 +44,7 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
 - **Optionale Kontakt-E-Mail** für Update-Benachrichtigungen an Melder*innen.
 - **Dateiupload** mit Erweiterungs-Allowlist, UUID-Speichernamen,
   3-facher Größenbegrenzung und Path-Traversal-Schutz.
-- **Benachrichtigungen** pro Thema über E-Mail, Matrix und Webhook
+- **Benachrichtigungen** pro Thema über E-Mail und Webhook
   (konfigurierbar via JSON-Spalte `topics.contacts`).
 - **SAML-SSO** zum TUM Shibboleth-IdP mit Attribut-Mapping für
   `uid` / `displayName` / `mail`.
@@ -62,7 +62,7 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
 | DB | MySQL 5.7+ / MariaDB 10.6+ (SQLite :memory: in Tests) |
 | SAML | `onelogin/php-saml` |
 | Markdown | `league/commonmark` + `mews/purifier` |
-| HTTP (Matrix/Webhook) | Guzzle via Laravel `Http` Facade |
+| HTTP (Webhook) | Guzzle via Laravel `Http` Facade |
 | Qualität | Laravel Pint, PHPStan (larastan) Level 9, PHPUnit 12 |
 | CI | GitHub Actions (lint, stan, tests × SQLite + MariaDB) |
 | Container | PHP-FPM + nginx + Supervisord, MariaDB 11 via Compose |
@@ -227,13 +227,12 @@ Jedes Topic hat:
 ```json
 {
   "email":   { "target": "it-sec@tum.de" },
-  "matrix":  { "homeServer": "matrix.tum.de", "roomID": "!abc:tum.de", "accessToken": "…" },
   "webhook": { "target": "https://hook.example/endpoint" }
 }
 ```
 
 Versand erfolgt über `App\Services\MessengerDispatcher` – Mail via Laravel
-Mailable, Matrix via HTTP Client, Webhook via HTTP Client.
+Mailable, Webhook via HTTP Client.
 
 ## Entwicklung
 
