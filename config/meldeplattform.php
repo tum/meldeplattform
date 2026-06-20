@@ -38,6 +38,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Data retention
+    |--------------------------------------------------------------------------
+    | Global fallback retention window in days for topics that don't set their
+    | own `retention_days`. Reports with no activity for longer than this are
+    | deleted by the scheduled `reports:prune` command (GDPR data
+    | minimisation). Leave unset/empty to keep reports forever by default.
+    */
+    'default_retention_days' => is_numeric(env('MELDE_DEFAULT_RETENTION_DAYS'))
+        ? (int) env('MELDE_DEFAULT_RETENTION_DAYS')
+        : null,
+
+    /*
+    |--------------------------------------------------------------------------
     | Dev login bypass
     |--------------------------------------------------------------------------
     | When true AND APP_ENV != "production", an in-app form at /dev/login

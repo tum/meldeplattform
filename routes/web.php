@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\DevLoginController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ReportAccessController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SamlController;
 use App\Http\Controllers\SubmitController;
@@ -31,6 +33,12 @@ Route::post('/submit', [SubmitController::class, 'store'])
 Route::middleware('throttle:report')->group(function (): void {
     Route::get('/report', [ReportController::class, 'show'])->name('report.show');
     Route::post('/report', [ReportController::class, 'reply'])->name('report.reply');
+
+    // Anonymous return access: a reporter re-enters their one-time receipt
+    // code to get back into their report. Throttled to blunt brute-forcing
+    // the 16-digit code space.
+    Route::get('/track', [ReportAccessController::class, 'create'])->name('report.track');
+    Route::post('/track', [ReportAccessController::class, 'store'])->name('report.track.submit');
 });
 
 // File download – rate-limit to slow exfiltration once a UUID leaks.
@@ -101,6 +109,9 @@ Route::middleware('auth')->group(function (): void {
     // identifiers like `ge42tum`); the route constraint keeps stray
     // characters out of the URL and forces a 404 instead of a 500.
     Route::middleware('can:manage,'.User::class)->group(function (): void {
+        // Compliance/rogue-admin viewer — global admins only, mirroring /users.
+        Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
+
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{uid}/edit', [UserController::class, 'edit'])

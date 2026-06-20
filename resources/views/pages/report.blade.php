@@ -24,6 +24,19 @@
 @endsection
 
 @section('content')
+    @if (! $isAdministrator && session('receipt_code'))
+        @php
+            $receiptCode = (string) session('receipt_code');
+            $receiptGroups = implode(' ', str_split($receiptCode, 4));
+        @endphp
+        <div class="alert alert-warning">
+            <strong>{{ __('receipt_heading') }}</strong>
+            <p style="margin-top: 0.5rem;">{{ __('receipt_instructions') }}</p>
+            <p style="font-family: monospace; font-size: 1.4rem; letter-spacing: 0.1em; margin: 0.75rem 0;">{{ $receiptGroups }}</p>
+            <p class="muted"><small>{{ __('receipt_track_hint') }}</small></p>
+        </div>
+    @endif
+
     @if (! $isAdministrator)
         <div class="alert alert-warning">
             <div>{{ __('reportOpened') }}</div>

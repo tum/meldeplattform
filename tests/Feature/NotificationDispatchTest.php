@@ -71,6 +71,32 @@ class NotificationDispatchTest extends TestCase
         Mail::assertQueued(ReportNotification::class);
     }
 
+    public function test_webhook_notification_is_content_free(): void
+    {
+        Http::fake();
+
+        $topic = Topic::create([
+            'name_de' => 'T', 'name_en' => 'T', 'summary_de' => 's', 'summary_en' => 's',
+            'contacts' => ['webhook' => ['target' => 'https://hook.example/notify']],
+        ]);
+        $report = Report::create(['topic_id' => $topic->id]);
+        $message = Message::create([
+            'report_id' => $report->id, 'content' => 'SECRET-allegation-text', 'is_admin' => false,
+        ]);
+
+        app(MessengerDispatcher::class)->sendNow($topic, 'Title', $message, 'https://app/report');
+
+        Http::assertSent(function (ClientRequest $request) use ($report): bool {
+            $data = $request->data();
+
+            return $request->url() === 'https://hook.example/notify'
+                && ! array_key_exists('message', $data)
+                && ! str_contains((string) json_encode($data), 'SECRET-allegation-text')
+                && ($data['report_id'] ?? null) === $report->id
+                && ($data['url'] ?? null) === 'https://app/report';
+        });
+    }
+
     public function test_webhook_payload_is_hmac_signed_when_secret_configured(): void
     {
         config(['meldeplattform.webhook_secret' => 'topsecret']);

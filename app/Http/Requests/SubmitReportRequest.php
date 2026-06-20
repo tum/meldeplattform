@@ -12,6 +12,9 @@ use Illuminate\Validation\Rule;
 
 class SubmitReportRequest extends FormRequest
 {
+    /** Upper bound on any single free-text field value (DoS amplification guard). */
+    private const MAX_VALUE_LENGTH = 50000;
+
     private ?Topic $cachedTopic = null;
 
     public function authorize(): bool
@@ -88,15 +91,17 @@ class SubmitReportRequest extends FormRequest
      */
     private function valueRules(Field $field): array
     {
+        $max = 'max:'.self::MAX_VALUE_LENGTH;
+
         switch ($field->type) {
             case FieldType::Email:
-                return ['string', 'email:rfc'];
+                return ['string', 'email:rfc', $max];
             case FieldType::Number:
                 return ['numeric'];
             case FieldType::Date:
                 return ['date'];
             case FieldType::Url:
-                return ['string', 'url'];
+                return ['string', 'url', $max];
             case FieldType::Select:
                 /** @var list<string> $choices */
                 $choices = array_values(array_filter(
@@ -107,12 +112,12 @@ class SubmitReportRequest extends FormRequest
                 // Only constrain to the configured options when there are
                 // any; a choice-less select degrades to a free string rather
                 // than rejecting every value.
-                return $choices === [] ? ['string'] : ['string', Rule::in($choices)];
+                return $choices === [] ? ['string', $max] : ['string', Rule::in($choices)];
             case FieldType::Text:
             case FieldType::Textarea:
             case FieldType::Checkbox:
             default:
-                return ['string'];
+                return ['string', $max];
         }
     }
 

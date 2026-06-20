@@ -21,12 +21,12 @@ class EmailMessenger implements Messenger
             return;
         }
 
+        // Notification-only: the report body is never emailed (confidentiality).
         // Do NOT swallow failures: a transient mail error must propagate so the
         // queued job retries it instead of silently dropping the notification.
         Mail::to($this->target)->send(new ReportNotification(
             subjectLine: $title,
             heading: $title,
-            bodyHtml: $message->renderedBody(),
             linkUrl: $reportUrl,
         ));
     }

@@ -10,6 +10,7 @@
                 <a href="{{ route('dashboard') }}">{{ __('dashboard') }}</a>
                 @can('manage', App\Models\User::class)
                     <a href="{{ route('users.index') }}">{{ __('users') }}</a>
+                    <a href="{{ route('audit.index') }}">{{ __('audit_title') }}</a>
                 @endcan
                 @if (Route::has('dev.logout'))
                     <a href="{{ route('dev.logout') }}">{{ __('logout') }}</a>
