@@ -164,6 +164,29 @@ class Report extends Model
         return $query->whereIn('state', [ReportState::Open->value, ReportState::InProgress->value]);
     }
 
+    /**
+     * Reports that are actually past a deadline right now — the SQL mirror of
+     * isAcknowledgementOverdue() / isFeedbackOverdue(), so a count() over this
+     * scope stays accurate under pagination (unlike filtering a single page).
+     *
+     * @param Builder<Report> $query
+     * @return Builder<Report>
+     */
+    public function scopeOverdueNow(Builder $query): Builder
+    {
+        $now = Carbon::now();
+        $ackCutoff = $now->copy()->subDays(self::ackDeadlineDays());
+        $feedbackCutoff = $now->copy()->subDays(self::feedbackDeadlineDays());
+
+        return $query
+            ->whereIn('state', [ReportState::Open->value, ReportState::InProgress->value])
+            ->where(function (Builder $q) use ($ackCutoff, $feedbackCutoff): void {
+                $q->where(function (Builder $q) use ($ackCutoff): void {
+                    $q->whereNull('acknowledged_at')->where('created_at', '<', $ackCutoff);
+                })->orWhere('created_at', '<', $feedbackCutoff);
+            });
+    }
+
     private static function ackDeadlineDays(): int
     {
         $days = config('meldeplattform.acknowledgement_deadline_days', 7);

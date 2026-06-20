@@ -48,6 +48,7 @@ class UpsertTopicRequest extends FormRequest
             'Admins.*.UserID' => ['nullable', 'string', 'alpha_num'],
 
             'RequireLogin' => ['nullable', 'boolean'],
+            'RetentionDays' => ['nullable', 'integer', 'min:1', 'max:36500'],
         ];
     }
 

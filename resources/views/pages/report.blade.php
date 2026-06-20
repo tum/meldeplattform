@@ -38,7 +38,7 @@
     @endif
 
     @if (! $isAdministrator)
-        <div class="alert alert-warning">
+        <div class="alert alert-info">
             <div>{{ __('reportOpened') }}</div>
             <div class="copy-link" style="margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                 <input type="text" readonly value="{{ url()->current().'?reporterToken='.$report->reporter_token }}"
@@ -99,6 +99,7 @@
         <section class="mt-5">
             <div class="section-header">
                 <h2>{{ __('status') }}</h2>
+                <span class="status-pill {{ $report->state->value }}">{{ $report->statusLabel() }}</span>
             </div>
 
             {{-- EU Whistleblowing Directive deadlines: acknowledgement (7d) and feedback (3mo). --}}
@@ -111,10 +112,10 @@
                         <span class="status-pill open">{{ __('not_acknowledged') }}</span>
                     @endif
                     @if ($report->isAcknowledgementOverdue())
-                        <span class="unread-badge">{{ __('ack_overdue') }}</span>
+                        <span class="unread-badge overdue">{{ __('ack_overdue') }}</span>
                     @endif
                     @if ($report->isFeedbackOverdue())
-                        <span class="unread-badge">{{ __('feedback_overdue') }}</span>
+                        <span class="unread-badge overdue">{{ __('feedback_overdue') }}</span>
                     @endif
                 </p>
                 <p class="muted" style="margin: 0;">

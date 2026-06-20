@@ -34,6 +34,26 @@ class SlaDeadlineTest extends TestCase
         $this->assertTrue($report->feedbackDueAt()?->equalTo($created->copy()->addDays(90)));
     }
 
+    public function test_overdue_now_scope_counts_only_truly_overdue_reports(): void
+    {
+        $topic = $this->makeTopic();
+        $overdue = Report::create(['topic_id' => $topic->id]);   // will age past the window
+        $fresh = Report::create(['topic_id' => $topic->id]);     // stays recent
+
+        $this->travel(8)->days();
+        // Keep `$fresh` recent by touching its created_at to now.
+        $fresh->forceFill(['created_at' => Carbon::now()])->saveQuietly();
+
+        $ids = Report::query()->overdueNow()->pluck('id')->all();
+        $this->assertContains($overdue->id, $ids);
+        $this->assertNotContains($fresh->id, $ids);
+
+        // Acknowledging + closing removes it from the overdue set.
+        $overdue->acknowledge();
+        $overdue->update(['state' => ReportState::Done]);
+        $this->assertSame(0, Report::query()->overdueNow()->count());
+    }
+
     public function test_acknowledgement_overdue_when_older_than_window_and_clears_on_acknowledge(): void
     {
         $report = Report::create(['topic_id' => $this->makeTopic()->id]);

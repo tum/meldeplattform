@@ -8,16 +8,20 @@
             <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ __('dashboard') }}</h1>
             <p class="muted">
-                {{ trans_choice('reports_across_topics', $topics->count(), ['topics' => $topics->count(), 'reports' => $reports->total()]) }}
+                @php
+                    // Pluralise reports and topics independently — a single
+                    // trans_choice can only agree with one of the two counts.
+                    $reportsStr = trans_choice('reports_count', $reports->total(), ['count' => $reports->total()]);
+                    $topicsStr = trans_choice('topics_count', $topics->count(), ['count' => $topics->count()]);
+                @endphp
+                {{ __('reports_across_topics', ['reports' => $reportsStr, 'topics' => $topicsStr]) }}
             </p>
-            @php
-                $overdueCount = $reports->filter(
-                    fn ($r) => $r->isAcknowledgementOverdue() || $r->isFeedbackOverdue(),
-                )->count();
-            @endphp
+            {{-- $overdueCount is computed in the controller across ALL manageable
+                 reports (not just the current page), so it stays accurate under
+                 pagination. --}}
             @if ($overdueCount > 0)
                 <p style="margin-top: 0.5rem;">
-                    <span class="unread-badge">{{ trans_choice('overdue_summary', $overdueCount, ['count' => $overdueCount]) }}</span>
+                    <span class="unread-badge overdue">{{ trans_choice('overdue_summary', $overdueCount, ['count' => $overdueCount]) }}</span>
                 </p>
             @endif
         </div>
@@ -102,10 +106,10 @@
                                 </div>
                             </details>
                             @if ($r->isAcknowledgementOverdue())
-                                <span class="unread-badge" title="{{ __('ack_overdue') }}">{{ __('ack_overdue') }}</span>
+                                <span class="unread-badge overdue" title="{{ __('ack_overdue') }}">{{ __('ack_overdue') }}</span>
                             @endif
                             @if ($r->isFeedbackOverdue())
-                                <span class="unread-badge" title="{{ __('feedback_overdue') }}">{{ __('feedback_overdue') }}</span>
+                                <span class="unread-badge overdue" title="{{ __('feedback_overdue') }}">{{ __('feedback_overdue') }}</span>
                             @endif
                         </td>
                         <td>{{ $r->messages->count() }}</td>
