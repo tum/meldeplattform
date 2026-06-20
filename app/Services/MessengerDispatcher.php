@@ -13,6 +13,23 @@ use RuntimeException;
 
 class MessengerDispatcher
 {
+    /**
+     * Resolve the case-handler mailbox for a topic: `contacts.email.target`
+     * overrides the legacy `topics.email` column; fall back to that column
+     * when no per-contacts email is configured so older topics keep notifying
+     * their original mailbox. Returns null when neither is set.
+     */
+    public function emailTarget(Topic $topic): ?string
+    {
+        $emailTarget = TopicContacts::fromTopic($topic)->emailTarget;
+        if ($emailTarget === null) {
+            $topicEmail = is_string($topic->email) ? trim($topic->email) : '';
+            $emailTarget = $topicEmail === '' ? null : $topicEmail;
+        }
+
+        return $emailTarget;
+    }
+
     /** @return list<Messenger> */
     public function forTopic(Topic $topic): array
     {
@@ -20,14 +37,7 @@ class MessengerDispatcher
         /** @var list<Messenger> $messengers */
         $messengers = [];
 
-        // `contacts.email.target` overrides the legacy `topics.email` column;
-        // fall back to that column when no per-contacts email is configured
-        // so older topics keep notifying their original mailbox.
-        $emailTarget = $contacts->emailTarget;
-        if ($emailTarget === null) {
-            $topicEmail = is_string($topic->email) ? trim($topic->email) : '';
-            $emailTarget = $topicEmail === '' ? null : $topicEmail;
-        }
+        $emailTarget = $this->emailTarget($topic);
         if ($emailTarget !== null) {
             $messengers[] = new EmailMessenger($emailTarget);
         }

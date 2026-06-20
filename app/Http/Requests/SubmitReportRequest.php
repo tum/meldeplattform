@@ -54,11 +54,27 @@ class SubmitReportRequest extends FormRequest
         $extensionRule = 'extensions:'.$joined;
         $mimesRule = 'mimes:'.$joined;
 
+        // An audio field accepts only the audio allowlist (oral reporting),
+        // intersected with the global allowlist so MIME detection stays valid.
+        /** @var list<string> $audioExtensions */
+        $audioExtensions = array_values(array_intersect(
+            array_values(array_filter(
+                Config::array('meldeplattform.allowed_audio_extensions', []),
+                'is_string',
+            )),
+            $extensions,
+        ));
+        $audioJoined = implode(',', $audioExtensions);
+
         foreach ($topic->fields as $field) {
             $name = (string) $field->id;
 
             if ($field->type->isFileUpload()) {
-                $fileRules = ['file', $extensionRule, $mimesRule, "max:{$maxKb}"];
+                if ($field->type->isAudio() && $audioJoined !== '') {
+                    $fileRules = ['file', 'extensions:'.$audioJoined, 'mimes:'.$audioJoined, "max:{$maxKb}"];
+                } else {
+                    $fileRules = ['file', $extensionRule, $mimesRule, "max:{$maxKb}"];
+                }
 
                 if ($field->type === FieldType::Files) {
                     $rules[$name] = $field->required ? ['required', 'array', 'min:1'] : ['nullable', 'array'];

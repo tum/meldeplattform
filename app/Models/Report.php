@@ -22,6 +22,7 @@ use Illuminate\Support\Str;
  * @property string|null $receipt_hash
  * @property ReportState $state
  * @property Carbon|null $acknowledged_at
+ * @property Carbon|null $closed_at
  * @property string|null $creator
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -48,6 +49,7 @@ class Report extends Model
     protected $casts = [
         'state' => ReportState::class,
         'acknowledged_at' => 'datetime',
+        'closed_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -56,7 +58,49 @@ class Report extends Model
             $report->reporter_token ??= (string) Str::uuid();
             $report->administrator_token ??= (string) Str::uuid();
             $report->state ??= ReportState::Open;
+            // A report seeded directly in a concluded state still needs its
+            // retention anchor. (Normal flow always creates Open and concludes
+            // later, which the updating hook below handles.)
+            if ($report->isConcluded() && $report->closed_at === null) {
+                $report->closed_at = Carbon::now();
+            }
         });
+
+        // Keep `closed_at` in lock-step with the workflow state so retention
+        // (HinSchG §11(5): delete 3 years after the procedure is concluded)
+        // is anchored on conclusion. Stamped when a report first becomes
+        // Done/Spam; cleared if it is reopened. Mass updates that bypass model
+        // events (bulkSetStatus) maintain the column explicitly instead.
+        static::updating(function (Report $report): void {
+            if ($report->isDirty('state')) {
+                $report->syncClosedAt();
+            }
+        });
+    }
+
+    /**
+     * A report's procedure is concluded once it is closed (Done) or filed as
+     * spam — both end the case for retention purposes.
+     */
+    public function isConcluded(): bool
+    {
+        return $this->state === ReportState::Done || $this->state === ReportState::Spam;
+    }
+
+    /**
+     * Stamp/clear `closed_at` to match the current state. Stamping is
+     * idempotent so reopening then re-closing does not reset the original
+     * conclusion date until the report is actually reopened.
+     */
+    private function syncClosedAt(): void
+    {
+        if ($this->isConcluded()) {
+            $this->closed_at ??= Carbon::now();
+
+            return;
+        }
+
+        $this->closed_at = null;
     }
 
     /** @return BelongsTo<Topic, $this> */
@@ -162,6 +206,48 @@ class Report extends Model
     public function scopeOverdue(Builder $query): Builder
     {
         return $query->whereIn('state', [ReportState::Open->value, ReportState::InProgress->value]);
+    }
+
+    /**
+     * Alias of scopeOverdue with an intent-revealing name for the reminder job.
+     *
+     * @param Builder<Report> $query
+     * @return Builder<Report>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $this->scopeOverdue($query);
+    }
+
+    /**
+     * True when the acknowledgement deadline is within $leadDays from now (or
+     * already passed) while the report still awaits acknowledgement — i.e. a
+     * reminder to the case handlers is warranted. Concluded reports never are.
+     */
+    public function needsAcknowledgementReminder(int $leadDays): bool
+    {
+        if ($this->isAcknowledged() || $this->isClosed() || $this->isSpam()) {
+            return false;
+        }
+
+        $due = $this->acknowledgementDueAt();
+
+        return $due !== null && Carbon::now()->addDays($leadDays)->greaterThanOrEqualTo($due);
+    }
+
+    /**
+     * True when the feedback deadline is within $leadDays from now (or already
+     * passed) while the report is still being handled.
+     */
+    public function needsFeedbackReminder(int $leadDays): bool
+    {
+        if ($this->isClosed() || $this->isSpam()) {
+            return false;
+        }
+
+        $due = $this->feedbackDueAt();
+
+        return $due !== null && Carbon::now()->addDays($leadDays)->greaterThanOrEqualTo($due);
     }
 
     /**

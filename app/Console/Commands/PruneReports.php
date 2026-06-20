@@ -10,13 +10,15 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Delete reports (and their messages + uploaded files) that have had no
- * activity for longer than their topic's retention window. This enforces
- * GDPR data minimisation: a whistleblowing report should not be kept longer
- * than necessary.
+ * Delete reports (and their messages + uploaded files) whose procedure was
+ * concluded longer ago than their topic's retention window. This enforces the
+ * statutory deletion duty (HinSchG §11(5): delete documentation three years
+ * after the procedure is concluded) and GDPR data minimisation.
  *
- * "No activity" is measured by `reports.updated_at`, so an active thread with
- * recent replies is never pruned — only dormant reports past the window are.
+ * The window is measured from `reports.closed_at` (set when a report is moved
+ * to Done/Spam), so only concluded cases are ever pruned — a report whose
+ * procedure is still open or in progress is never deleted, no matter how long
+ * it has been dormant.
  */
 class PruneReports extends Command
 {
@@ -39,15 +41,16 @@ class PruneReports extends Command
 
             Report::query()
                 ->where('topic_id', $topic->id)
-                ->where('updated_at', '<', $cutoff)
+                ->whereNotNull('closed_at')
+                ->where('closed_at', '<', $cutoff)
                 ->with('messages.files')
                 ->each(function (Report $report) use ($dryRun, &$total): void {
                     $total++;
                     if ($dryRun) {
                         $this->line(sprintf(
-                            'would prune report #%d (last activity %s)',
+                            'would prune report #%d (concluded %s)',
                             $report->id,
-                            $report->updated_at?->toDateTimeString() ?? 'unknown',
+                            $report->closed_at?->toDateTimeString() ?? 'unknown',
                         ));
 
                         return;

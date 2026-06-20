@@ -74,6 +74,11 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', [TopicAdminController::class, 'dashboard'])
         ->name('dashboard');
 
+    // CSV export of the (filtered) dashboard reports for audits / leadership
+    // reporting. Scoped to the user's manageable topics, same as the dashboard.
+    Route::get('/dashboard/export', [TopicAdminController::class, 'exportCsv'])
+        ->name('dashboard.export');
+
     // Create-new lives on its own URL so route-model binding can handle the
     // edit case without colliding with the `0`-sentinel that used to mean
     // "no topic yet".
