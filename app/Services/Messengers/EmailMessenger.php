@@ -20,10 +20,10 @@ class EmailMessenger implements Messenger
         }
 
         try {
+            // Notification-only: the report body is never emailed (confidentiality).
             Mail::to($this->target)->send(new ReportNotification(
                 subjectLine: $title,
                 heading: $title,
-                bodyHtml: $message->renderedBody(),
                 linkUrl: $reportUrl,
             ));
         } catch (\Throwable $e) {

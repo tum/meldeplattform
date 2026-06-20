@@ -58,10 +58,11 @@ class ReportController
 
         if ($isAdmin && $report->creator !== null && filter_var($report->creator, FILTER_VALIDATE_EMAIL) !== false) {
             try {
+                // Notification-only: the admin's reply text is not emailed to the
+                // reporter; they open it via their secure reporter link.
                 Mail::to($report->creator)->send(new ReportNotification(
                     subjectLine: sprintf('[%s]: report #%d updated', $topic->name('en'), $report->id),
                     heading: sprintf('Update zu Meldung #%d', $report->id),
-                    bodyHtml: $message->renderedBody(),
                     linkUrl: $reporterUrl,
                 ));
             } catch (\Throwable $e) {

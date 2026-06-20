@@ -11,6 +11,8 @@ use App\Models\Topic;
 use App\Services\MessengerDispatcher;
 use App\Services\Messengers\EmailMessenger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as ClientRequest;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -66,5 +68,31 @@ class NotificationDispatchTest extends TestCase
         // ReportNotification implements ShouldQueue, so the fake records it as
         // queued rather than sent.
         Mail::assertQueued(ReportNotification::class);
+    }
+
+    public function test_webhook_notification_is_content_free(): void
+    {
+        Http::fake();
+
+        $topic = Topic::create([
+            'name_de' => 'T', 'name_en' => 'T', 'summary_de' => 's', 'summary_en' => 's',
+            'contacts' => ['webhook' => ['target' => 'https://hook.example/notify']],
+        ]);
+        $report = Report::create(['topic_id' => $topic->id]);
+        $message = Message::create([
+            'report_id' => $report->id, 'content' => 'SECRET-allegation-text', 'is_admin' => false,
+        ]);
+
+        app(MessengerDispatcher::class)->sendNow($topic, 'Title', $message, 'https://app/report');
+
+        Http::assertSent(function (ClientRequest $request) use ($report): bool {
+            $data = $request->data();
+
+            return $request->url() === 'https://hook.example/notify'
+                && ! array_key_exists('message', $data)
+                && ! str_contains((string) json_encode($data), 'SECRET-allegation-text')
+                && ($data['report_id'] ?? null) === $report->id
+                && ($data['url'] ?? null) === 'https://app/report';
+        });
     }
 }
