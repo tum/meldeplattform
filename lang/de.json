@@ -125,5 +125,13 @@
     "login_required_badge": "Anmeldung erforderlich",
     "login_required_identity_note": "Ihre Identität wird mit dieser Meldung verknüpft.",
     "validation_topic_name_required": "Geben Sie einen Themennamen in mindestens einer Sprache an.",
-    "validation_field_name_required": "Geben Sie einen Feldnamen in mindestens einer Sprache an."
+    "validation_field_name_required": "Geben Sie einen Feldnamen in mindestens einer Sprache an.",
+    "audit_title": "Audit-Protokoll",
+    "audit_intro": "Revisionssicheres Protokoll sicherheitsrelevanter Administrator-Aktionen.",
+    "audit_date": "Zeitpunkt",
+    "audit_actor": "Akteur",
+    "audit_action": "Aktion",
+    "audit_subject": "Objekt",
+    "audit_metadata": "Details",
+    "audit_none": "Keine Einträge vorhanden."
 }

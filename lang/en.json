@@ -125,5 +125,13 @@
     "login_required_badge": "Login required",
     "login_required_identity_note": "Your identity will be associated with this report.",
     "validation_topic_name_required": "Provide a topic name in at least one language.",
-    "validation_field_name_required": "Provide a field name in at least one language."
+    "validation_field_name_required": "Provide a field name in at least one language.",
+    "audit_title": "Audit log",
+    "audit_intro": "Tamper-evident record of security-relevant administrator actions.",
+    "audit_date": "Time",
+    "audit_actor": "Actor",
+    "audit_action": "Action",
+    "audit_subject": "Subject",
+    "audit_metadata": "Details",
+    "audit_none": "No entries yet."
 }

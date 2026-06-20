@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Models\Admin;
+use App\Models\AuditLog;
 use App\Models\Field;
 use App\Models\Topic;
 use Illuminate\Support\Facades\DB;
@@ -30,8 +31,14 @@ class UpsertTopic
             $topic->require_login = (bool) ($payload['RequireLogin'] ?? false);
             $topic->save();
 
+            // wasRecentlyCreated is true only on the insert that just happened,
+            // which distinguishes a freshly created topic from an update.
+            $action = $topic->wasRecentlyCreated ? 'topic.created' : 'topic.updated';
+
             $this->syncFields($topic, $payload['Fields']);
             $this->syncAdmins($topic, $payload['Admins'] ?? []);
+
+            AuditLog::record($action, $topic, ['topic_id' => $topic->id]);
 
             return $topic;
         });
