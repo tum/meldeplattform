@@ -13,9 +13,12 @@ class WebhookMessenger implements Messenger
     public function send(string $title, Message $message, string $reportUrl): void
     {
         try {
+            // Notification-only: send a content-free event (id + link), never
+            // the report body — the webhook target is operator-configured and
+            // potentially external, so the allegation text must not be sent.
             Http::timeout(10)->post($this->target, [
                 'title' => $title,
-                'message' => $message->renderedBody(),
+                'report_id' => $message->report_id,
                 'url' => $reportUrl,
             ]);
         } catch (\Throwable $e) {
