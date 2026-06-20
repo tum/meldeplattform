@@ -84,6 +84,7 @@ class SendDeadlineReminders extends Command
                         'target' => $target,
                         'error' => $e->getMessage(),
                     ]);
+
                     continue;
                 }
             }

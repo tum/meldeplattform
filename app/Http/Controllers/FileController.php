@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\File as FileModel;
 use App\Models\Report;
+use App\Models\Topic;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -78,10 +79,9 @@ class FileController
 
         $user = $request->user();
         if ($user !== null) {
+            $manageableTopicIds = Topic::query()->manageableBy($user)->pluck('id');
             $valid = Report::whereIn('id', $reportIds)
-                ->whereHas('topic', static function ($q) use ($user): void {
-                    $q->manageableBy($user);
-                })
+                ->whereIn('topic_id', $manageableTopicIds)
                 ->exists();
 
             if ($valid) {
