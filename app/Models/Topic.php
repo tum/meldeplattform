@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\TopicFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -74,6 +75,29 @@ class Topic extends Model
     public function admins(): BelongsToMany
     {
         return $this->belongsToMany(Admin::class, 'topic_admins');
+    }
+
+    /**
+     * Constrain a query to the topics the given user may manage. Mirrors
+     * TopicPolicy: a global admin (env allowlist or `is_global_admin`) sees
+     * every topic; everyone else is limited to topics whose `topic_admins`
+     * pivot names their UID. Pushing this into SQL keeps the dashboard and
+     * the layout composer scalable instead of loading every topic and
+     * filtering in PHP.
+     *
+     * @param Builder<Topic> $query
+     * @return Builder<Topic>
+     */
+    public function scopeManageableBy(Builder $query, User $user): Builder
+    {
+        if ($user->isGlobalAdmin()) {
+            return $query;
+        }
+
+        return $query->whereHas('admins', static function (Builder $q) use ($user): void {
+            /** @var Builder<Admin> $q */
+            $q->where('user_id', $user->uid);
+        });
     }
 
     public function name(string $lang): string

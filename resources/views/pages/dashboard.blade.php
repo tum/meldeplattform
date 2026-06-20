@@ -7,10 +7,8 @@
         <div class="container">
             <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ __('dashboard') }}</h1>
-            <p class="muted" data-dashboard-summary
-               data-template-shown="{{ __('dashboard_count_shown') }}"
-               data-template-total="{{ trans_choice('reports_across_topics', $topics->count(), ['topics' => $topics->count(), 'reports' => ':total']) }}">
-                {{ trans_choice('reports_across_topics', $topics->count(), ['topics' => $topics->count(), 'reports' => $reports->count()]) }}
+            <p class="muted">
+                {{ trans_choice('reports_across_topics', $topics->count(), ['topics' => $topics->count(), 'reports' => $reports->total()]) }}
             </p>
             @php
                 $overdueCount = $reports->filter(
@@ -27,30 +25,34 @@
 @endsection
 
 @section('content')
-    @if ($reports->isEmpty())
-        <div class="alert alert-info">{{ __('no_reports_yet') }}</div>
-    @else
-        <div class="card card-soft mb-4" data-dashboard-filter
-             style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;">
-            <label style="font-weight: 500; margin: 0; display: flex; gap: 0.4rem; align-items: center;">
-                {{ __('topic') }}:
-                <select id="filter-topic" style="width: auto;">
-                    <option value="">{{ __('dashboard_filter_all_topics') }}</option>
-                    @foreach ($topics as $t)
-                        <option value="{{ $t->id }}">{{ $t->name($lang) }}</option>
-                    @endforeach
-                </select>
-            </label>
-            <label style="font-weight: 500; margin: 0;">
-                <input type="checkbox" id="filter-hide-closed" checked>
-                {{ __('hide_closed') }}
-            </label>
-            <label style="font-weight: 500; margin: 0;">
-                <input type="checkbox" id="filter-hide-spam" checked>
-                {{ __('hide_spam') }}
-            </label>
-        </div>
+    <form method="GET" action="{{ route('dashboard') }}" class="card card-soft mb-4"
+          style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;">
+        {{-- Marks a deliberate filter submit so the controller can tell an
+             unchecked box apart from a fresh visit (which uses the defaults). --}}
+        <input type="hidden" name="filters" value="1">
+        <label style="font-weight: 500; margin: 0; display: flex; gap: 0.4rem; align-items: center;">
+            {{ __('topic') }}:
+            <select name="topic" style="width: auto;">
+                <option value="">{{ __('dashboard_filter_all_topics') }}</option>
+                @foreach ($topics as $t)
+                    <option value="{{ $t->id }}" @selected($selectedTopic === $t->id)>{{ $t->name($lang) }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label style="font-weight: 500; margin: 0;">
+            <input type="checkbox" name="hide_closed" value="1" @checked($hideClosed)>
+            {{ __('hide_closed') }}
+        </label>
+        <label style="font-weight: 500; margin: 0;">
+            <input type="checkbox" name="hide_spam" value="1" @checked($hideSpam)>
+            {{ __('hide_spam') }}
+        </label>
+        <button type="submit" class="button button-small">{{ __('apply_filters') }}</button>
+    </form>
 
+    @if ($reports->isEmpty())
+        <div class="alert alert-info">{{ $topics->isEmpty() ? __('no_reports_yet') : __('dashboard_no_matches') }}</div>
+    @else
         <table>
             <thead>
                 <tr>
@@ -68,10 +70,7 @@
                     @php
                         $statusUrl = route('report.status', ['topic' => $r->topic_id, 'report' => $r->id]);
                     @endphp
-                    <tr class="dashboard-row"
-                        data-topic-id="{{ $r->topic_id }}"
-                        data-closed="{{ $r->isClosed() ? '1' : '0' }}"
-                        data-spam="{{ $r->isSpam() ? '1' : '0' }}">
+                    <tr class="dashboard-row">
                         <td>#{{ $r->id }}</td>
                         <td>{{ $r->topic->name($lang) }}</td>
                         <td>{{ $r->dateFmt() }}</td>
@@ -116,12 +115,9 @@
                         </td>
                     </tr>
                 @endforeach
-                <tr id="dashboard-empty" hidden>
-                    <td colspan="7" class="muted text-center" style="padding: 1.5rem;">{{ __('dashboard_no_matches') }}</td>
-                </tr>
             </tbody>
         </table>
 
-        <script src="{{ asset('js/dashboard.js') }}" defer></script>
+        {{ $reports->links() }}
     @endif
 @endsection

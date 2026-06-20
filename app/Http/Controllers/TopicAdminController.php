@@ -45,31 +45,67 @@ class TopicAdminController
     }
 
     /**
-     * Cross-topic admin dashboard: every report in every topic the
-     * authenticated user can view, sorted newest first. Uses the existing
-     * TopicPolicy::view check to pick the topic set so the same access
-     * rules apply as on the per-topic /reports/{topic} page.
+     * Cross-topic admin dashboard. Reports are filtered and paginated in SQL,
+     * scoped to the topics the authenticated user may manage (Topic scope +
+     * TopicPolicy share the same rule). Filtering server-side means rows the
+     * filter hides — including the `creator` column — are never shipped to the
+     * browser, and pagination keeps the page bounded as report volume grows.
+     *
+     * Query params (all optional):
+     *  - topic       int   restrict to a single manageable topic
+     *  - hide_closed "1"   omit closed reports
+     *  - hide_spam   "1"   omit spam reports
+     *  - filters     "1"   marks a real filter submit; without it the page
+     *                      uses the historical defaults (hide closed + spam)
      */
     public function dashboard(Request $request): View
     {
         $user = $request->user();
         abort_if($user === null, 403);
 
-        $topics = Topic::with('admins')->get()->filter(
-            fn (Topic $t) => $user->can('view', $t),
-        )->values();
+        $manageable = Topic::query()->manageableBy($user)->orderBy('name_en');
+        $topics = $manageable->get();
 
         /** @var list<int> $topicIds */
         $topicIds = $topics->pluck('id')->all();
 
-        $reports = Report::with(['topic', 'messages'])
-            ->whereIn('topic_id', $topicIds)
+        // A fresh visit (no `filters` marker) applies the historical defaults
+        // the old client-side filter shipped with: hide closed + hide spam.
+        $filtersApplied = $request->boolean('filters');
+        $hideClosed = $filtersApplied ? $request->boolean('hide_closed') : true;
+        $hideSpam = $filtersApplied ? $request->boolean('hide_spam') : true;
+
+        // Only honour a topic filter that is actually in the manageable set so
+        // a hand-crafted `?topic=` can't surface another team's reports.
+        $selectedTopic = $request->integer('topic');
+        if ($selectedTopic > 0 && ! in_array($selectedTopic, $topicIds, true)) {
+            $selectedTopic = 0;
+        }
+
+        $query = Report::with(['topic', 'messages'])
+            ->whereIn('topic_id', $topicIds);
+
+        if ($selectedTopic > 0) {
+            $query->where('topic_id', $selectedTopic);
+        }
+        if ($hideClosed) {
+            $query->where('state', '!=', ReportState::Done->value);
+        }
+        if ($hideSpam) {
+            $query->where('state', '!=', ReportState::Spam->value);
+        }
+
+        $reports = $query
             ->latest('updated_at')
-            ->get();
+            ->paginate(50)
+            ->withQueryString();
 
         return view('pages.dashboard', [
             'topics' => $topics,
             'reports' => $reports,
+            'selectedTopic' => $selectedTopic,
+            'hideClosed' => $hideClosed,
+            'hideSpam' => $hideSpam,
         ]);
     }
 
