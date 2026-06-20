@@ -69,9 +69,18 @@ return [
     | concluded. Set MELDE_DEFAULT_RETENTION_DAYS=0 to disable the global
     | default and keep reports until a per-topic window is configured.
     */
-    'default_retention_days' => is_numeric(env('MELDE_DEFAULT_RETENTION_DAYS'))
-        ? ((int) env('MELDE_DEFAULT_RETENTION_DAYS') > 0 ? (int) env('MELDE_DEFAULT_RETENTION_DAYS') : null)
-        : 1095,
+    'default_retention_days' => (static function (): ?int {
+        $raw = env('MELDE_DEFAULT_RETENTION_DAYS');
+        if ($raw !== null && $raw !== '' && ! is_numeric($raw)) {
+            throw new InvalidArgumentException(
+                'MELDE_DEFAULT_RETENTION_DAYS must be a number (or unset). Got: '.(string) $raw,
+            );
+        }
+
+        return is_numeric($raw)
+            ? ((int) $raw > 0 ? (int) $raw : null)
+            : 1095;
+    })(),
 
     /*
     |--------------------------------------------------------------------------

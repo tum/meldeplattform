@@ -27,7 +27,10 @@ class AuditLogTest extends TestCase
         $this->assertSame('globaladmin', $entry->actor);
         $this->assertSame('report', $entry->subject_type);
         $this->assertSame($report->id, $entry->subject_id);
-        $this->assertSame(['from' => 'open', 'to' => 'done'], $entry->metadata);
+        $this->assertSame('open', $entry->metadata['from'] ?? null);
+        $this->assertSame('done', $entry->metadata['to'] ?? null);
+        // globaladmin is env-only in tests, so the flag should be present.
+        $this->assertTrue($entry->metadata['admin_via_env'] ?? false);
     }
 
     public function test_bulk_status_change_records_summary_entry(): void

@@ -138,6 +138,8 @@ class Report extends Model
     /**
      * Record the first administrator acknowledgement. Idempotent: an already
      * acknowledged report is left untouched so the original timestamp stands.
+     * Uses an atomic WHERE NULL update to prevent a race where two concurrent
+     * requests both pass the in-memory guard before either write commits.
      */
     public function acknowledge(): void
     {
@@ -145,8 +147,14 @@ class Report extends Model
             return;
         }
 
-        $this->acknowledged_at = Carbon::now();
-        $this->save();
+        $now = Carbon::now();
+        $rows = self::where('id', $this->id)
+            ->whereNull('acknowledged_at')
+            ->update(['acknowledged_at' => $now]);
+
+        if ($rows > 0) {
+            $this->acknowledged_at = $now;
+        }
     }
 
     public function isAcknowledged(): bool
@@ -288,16 +296,18 @@ class Report extends Model
     }
 
     /**
-     * Generate a fresh 16-digit numeric receipt code, store its keyed hash,
-     * and return the plaintext (also kept on $plainReceiptCode). The plaintext
+     * Generate a fresh 24-character hex receipt code (12 random bytes = 96 bits
+     * of entropy), store its keyed HMAC hash, and return the plaintext uppercase
+     * code (also kept on $plainReceiptCode for single display). The plaintext
      * is shown to the reporter exactly once and never persisted.
+     *
+     * Legacy 16-digit numeric codes remain valid: normaliseReceipt strips
+     * non-hex characters and lowercases, so digits-only codes still hash
+     * identically under the new normaliser.
      */
     public function issueReceiptCode(): string
     {
-        $code = '';
-        for ($i = 0; $i < 16; $i++) {
-            $code .= (string) random_int(0, 9);
-        }
+        $code = strtoupper(bin2hex(random_bytes(12)));
 
         $this->receipt_hash = self::hashReceipt($code);
         $this->save();
@@ -325,6 +335,9 @@ class Report extends Model
 
     private static function normalizeReceipt(string $code): string
     {
-        return preg_replace('/\D+/', '', $code) ?? '';
+        // Strip anything that isn't a hex digit; lowercase for consistent
+        // hashing. Legacy numeric-only codes (0-9) are a subset of hex and
+        // hash identically to before.
+        return strtolower(preg_replace('/[^0-9a-fA-F]+/', '', $code) ?? '');
     }
 }

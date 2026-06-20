@@ -104,15 +104,18 @@ Route::middleware('auth')->group(function (): void {
         ->whereNumber('topic')->whereNumber('report')
         ->scopeBindings()
         ->can('update', 'topic')
+        ->middleware('throttle:admin-write')
         ->name('report.status');
     Route::post('/api/topic/{topic}/report/{report}/acknowledge', [TopicAdminController::class, 'acknowledge'])
         ->whereNumber('topic')->whereNumber('report')
         ->scopeBindings()
         ->can('update', 'topic')
+        ->middleware('throttle:admin-write')
         ->name('report.acknowledge');
     Route::post('/api/topic/{topic}/reports/status', [TopicAdminController::class, 'bulkSetStatus'])
         ->whereNumber('topic')
         ->can('update', 'topic')
+        ->middleware('throttle:admin-write')
         ->name('report.status.bulk');
 
     // User management — only global admins. UIDs are alphanumeric (TUM
