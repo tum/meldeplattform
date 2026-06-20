@@ -15,6 +15,7 @@ use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use RuntimeException;
 use Tests\TestCase;
 
 class NotificationDispatchTest extends TestCase
@@ -94,5 +95,63 @@ class NotificationDispatchTest extends TestCase
                 && ($data['report_id'] ?? null) === $report->id
                 && ($data['url'] ?? null) === 'https://app/report';
         });
+    }
+
+    public function test_webhook_payload_is_hmac_signed_when_secret_configured(): void
+    {
+        config(['meldeplattform.webhook_secret' => 'topsecret']);
+        Http::fake();
+
+        $topic = Topic::create([
+            'name_de' => 'T', 'name_en' => 'T', 'summary_de' => 's', 'summary_en' => 's',
+            'contacts' => ['webhook' => ['target' => 'https://hook.example/notify']],
+        ]);
+        $report = Report::create(['topic_id' => $topic->id]);
+        $message = Message::create([
+            'report_id' => $report->id, 'content' => 'hi', 'is_admin' => false,
+        ]);
+
+        app(MessengerDispatcher::class)->sendNow($topic, 'Title', $message, 'https://app/report');
+
+        Http::assertSent(function (ClientRequest $request): bool {
+            $sent = $request->header('X-SafeSignal-Signature')[0] ?? '';
+            $expected = 'sha256='.hash_hmac('sha256', $request->body(), 'topsecret');
+
+            return hash_equals($expected, $sent);
+        });
+    }
+
+    public function test_failed_channel_bubbles_up_so_the_job_can_retry(): void
+    {
+        Http::fake(['hook.example/*' => Http::response('boom', 500)]);
+
+        $topic = Topic::create([
+            'name_de' => 'T', 'name_en' => 'T', 'summary_de' => 's', 'summary_en' => 's',
+            'contacts' => ['webhook' => ['target' => 'https://hook.example/notify']],
+        ]);
+        $report = Report::create(['topic_id' => $topic->id]);
+        $message = Message::create([
+            'report_id' => $report->id, 'content' => 'hi', 'is_admin' => false,
+        ]);
+
+        $this->expectException(RuntimeException::class);
+
+        app(MessengerDispatcher::class)->sendNow($topic, 'Title', $message, 'https://app/report');
+    }
+
+    public function test_dispatch_job_is_retryable(): void
+    {
+        $topic = Topic::create([
+            'name_de' => 'T', 'name_en' => 'T', 'summary_de' => 's', 'summary_en' => 's',
+        ]);
+        $report = Report::create(['topic_id' => $topic->id]);
+        $message = Message::create([
+            'report_id' => $report->id, 'content' => 'hi', 'is_admin' => false,
+        ]);
+
+        $job = new DispatchTopicNotifications($topic, 'Title', $message, 'https://app/report');
+
+        $this->assertSame(3, $job->tries);
+        $this->assertSame([10, 60, 300], $job->backoff());
     }
 }

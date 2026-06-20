@@ -24,17 +24,36 @@ class WebhookMessenger implements Messenger
             return;
         }
 
-        try {
-            // Notification-only: send a content-free event (id + link), never
-            // the report body — the webhook target is operator-configured and
-            // potentially external, so the allegation text must not be sent.
-            Http::timeout(10)->post($this->target, [
-                'title' => $title,
-                'report_id' => $message->report_id,
-                'url' => $reportUrl,
+        // Notification-only: send a content-free event (id + link), never the
+        // report body — the webhook target is operator-configured and
+        // potentially external, so the allegation text must not be sent.
+        $body = (string) json_encode([
+            'title' => $title,
+            'report_id' => $message->report_id,
+            'url' => $reportUrl,
+        ], JSON_THROW_ON_ERROR);
+
+        $request = Http::timeout(10)->withBody($body, 'application/json');
+
+        $secret = $this->signingSecret();
+        if ($secret !== null) {
+            // HMAC-SHA256 over the exact bytes we send so the receiver can
+            // verify authenticity and integrity of the payload.
+            $request = $request->withHeaders([
+                'X-SafeSignal-Signature' => 'sha256='.hash_hmac('sha256', $body, $secret),
             ]);
-        } catch (\Throwable $e) {
-            Log::error('WebhookMessenger: send failed', ['error' => $e->getMessage()]);
         }
+
+        // Do NOT swallow failures: let transport/HTTP errors propagate so the
+        // queued DispatchTopicNotifications job retries them. A silently dropped
+        // webhook is an unhandled report notification.
+        $request->post($this->target)->throw();
+    }
+
+    private function signingSecret(): ?string
+    {
+        $secret = config('meldeplattform.webhook_secret');
+
+        return is_string($secret) && $secret !== '' ? $secret : null;
     }
 }
