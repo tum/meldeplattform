@@ -79,17 +79,6 @@ class FileDownloadTest extends TestCase
             ->assertHeader('content-disposition', 'attachment; filename=example.txt');
     }
 
-    public function test_valid_stored_file_is_served_with_administrator_token(): void
-    {
-        Storage::fake('uploads');
-        Storage::disk('uploads')->put('example.txt', 'hello world');
-
-        [$file, $report] = $this->makeFileWithReport();
-
-        $this->get('/file/example.txt?id='.$file->uuid.'&token='.$report->administrator_token)
-            ->assertOk();
-    }
-
     public function test_valid_stored_file_is_served_to_authenticated_admin(): void
     {
         Storage::fake('uploads');

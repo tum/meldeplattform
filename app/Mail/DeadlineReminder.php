@@ -2,12 +2,9 @@
 
 namespace App\Mail;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Queue\SerializesModels;
 
 /**
  * Notification-only digest reminding a topic's case handlers about reports
@@ -17,10 +14,11 @@ use Illuminate\Queue\SerializesModels;
  * Like ReportNotification it carries NO report content — only report IDs and
  * the relevant deadline, so nothing confidential travels through mail relays.
  * Handlers click through to the secure dashboard to act.
+ *
+ * Sent synchronously by SendDeadlineReminders — does not implement ShouldQueue.
  */
-class DeadlineReminder extends Mailable implements ShouldQueue
+class DeadlineReminder extends Mailable
 {
-    use Queueable, SerializesModels;
 
     /**
      * @param list<array{id: int, type: string, due: string, overdue: bool}> $items

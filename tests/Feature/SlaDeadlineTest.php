@@ -104,10 +104,10 @@ class SlaDeadlineTest extends TestCase
         Message::create(['report_id' => $report->id, 'content' => 'hello', 'is_admin' => false]);
         $this->assertFalse($report->isAcknowledged());
 
-        $this->post('/report', [
-            'administratorToken' => $report->administrator_token,
-            'reply' => 'We received your report.',
-        ])->assertRedirect();
+        $this->actingAsGlobalAdmin()
+            ->post("/reports/{$topic->id}/{$report->id}/reply", [
+                'reply' => 'We received your report.',
+            ])->assertRedirect();
 
         $this->assertTrue(Report::findOrFail($report->id)->isAcknowledged());
     }

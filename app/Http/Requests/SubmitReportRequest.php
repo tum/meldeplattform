@@ -129,9 +129,10 @@ class SubmitReportRequest extends FormRequest
                 // any; a choice-less select degrades to a free string rather
                 // than rejecting every value.
                 return $choices === [] ? ['string', $max] : ['string', Rule::in($choices)];
+            case FieldType::Checkbox:
+                return ['boolean'];
             case FieldType::Text:
             case FieldType::Textarea:
-            case FieldType::Checkbox:
             default:
                 return ['string', $max];
         }

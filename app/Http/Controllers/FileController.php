@@ -42,8 +42,8 @@ class FileController
     /**
      * Verify the requester has access to the report this file belongs to.
      * Access is granted when:
-     *  – a `token` query param matches the reporter_token or administrator_token
-     *    of any report that contains the file via its message chain, OR
+     *  – a `token` query param matches the reporter_token of any report that
+     *    contains the file via its message chain, OR
      *  – the authenticated user manages the topic of such a report.
      *
      * Orphaned files (not attached to any message/report) are always denied.
@@ -67,8 +67,7 @@ class FileController
         if ($token !== '') {
             $valid = Report::whereIn('id', $reportIds)
                 ->where(static function ($q) use ($token): void {
-                    $q->where('reporter_token', $token)
-                        ->orWhere('administrator_token', $token);
+                    $q->where('reporter_token', $token);
                 })
                 ->exists();
 

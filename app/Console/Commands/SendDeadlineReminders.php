@@ -33,9 +33,9 @@ class SendDeadlineReminders extends Command
         $ackLead = Config::integer('meldeplattform.reminder_ack_lead_days', 2);
         $feedbackLead = Config::integer('meldeplattform.reminder_feedback_lead_days', 14);
         $dashboardUrl = route('dashboard');
-        $sent = 0;
+        $dispatched = 0;
 
-        foreach (Topic::all() as $topic) {
+        foreach (Topic::query()->lazy() as $topic) {
             $target = $dispatcher->emailTarget($topic);
             if ($target === null) {
                 continue; // No mailbox configured — nothing to remind.
@@ -49,15 +49,21 @@ class SendDeadlineReminders extends Command
                 ->active()
                 ->orderBy('created_at')
                 ->each(function (Report $report) use (&$items, $ackLead, $feedbackLead): void {
-                    if ($report->needsAcknowledgementReminder($ackLead)) {
+                    $needsAck = $report->needsAcknowledgementReminder($ackLead);
+                    $needsFeedback = $report->needsFeedbackReminder($feedbackLead);
+
+                    if ($needsAck) {
                         $items[] = [
                             'id' => $report->id,
                             'type' => 'acknowledgement',
                             'due' => $report->acknowledgementDueAt()?->format('d.m.Y') ?? '',
                             'overdue' => $report->isAcknowledgementOverdue(),
                         ];
-                    }
-                    if ($report->needsFeedbackReminder($feedbackLead)) {
+                    } elseif ($needsFeedback) {
+                        // Only emit the feedback deadline when no ack reminder was already
+                        // added for this report, so each report appears at most once in the
+                        // digest. Acknowledgement is the more urgent obligation and takes
+                        // precedence.
                         $items[] = [
                             'id' => $report->id,
                             'type' => 'feedback',
@@ -78,6 +84,7 @@ class SendDeadlineReminders extends Command
             } else {
                 try {
                     Mail::to($target)->send(new DeadlineReminder($subject, $topic->name('en'), $dashboardUrl, $items));
+                    $dispatched++;
                 } catch (\Throwable $e) {
                     Log::error('Deadline reminder delivery failed', [
                         'topic_id' => $topic->id,
@@ -88,11 +95,10 @@ class SendDeadlineReminders extends Command
                     continue;
                 }
             }
-            $sent++;
         }
 
         $verb = $dryRun ? 'Would send' : 'Sent';
-        $this->info(sprintf('%s %d reminder digest(s).', $verb, $sent));
+        $this->info(sprintf('%s %d reminder digest(s).', $verb, $dispatched));
 
         return self::SUCCESS;
     }

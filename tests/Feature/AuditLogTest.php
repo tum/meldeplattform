@@ -56,7 +56,9 @@ class AuditLogTest extends TestCase
         $topic = Topic::create(['name_de' => 't', 'name_en' => 't', 'summary_de' => '', 'summary_en' => '']);
         $report = Report::create(['topic_id' => $topic->id]);
 
-        $this->get('/report?administratorToken='.$report->administrator_token)->assertOk();
+        $this->actingAsGlobalAdmin()
+            ->get("/reports/{$topic->id}/{$report->id}")
+            ->assertOk();
 
         $entry = AuditLog::where('action', 'report.accessed')->firstOrFail();
         $this->assertSame('report', $entry->subject_type);

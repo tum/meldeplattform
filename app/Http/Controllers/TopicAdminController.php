@@ -4,21 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Actions\UpsertTopic;
 use App\Enums\ReportState;
+use App\Http\Requests\ReplyRequest;
 use App\Http\Requests\UpsertTopicRequest;
 use App\Http\Resources\TopicResource;
+use App\Mail\ReportNotification;
 use App\Models\AuditLog;
+use App\Models\Message;
 use App\Models\Report;
 use App\Models\Topic;
 use App\Models\TopicView;
+use App\Services\MessengerDispatcher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TopicAdminController
 {
+    public function __construct(private readonly MessengerDispatcher $messengers) {}
+
     public function create(): View
     {
         return view('pages.new-topic', ['topic' => null]);
@@ -32,7 +41,11 @@ class TopicAdminController
     public function reportsOfTopic(Topic $topic, Request $request): View
     {
         $topic->load(['fields', 'admins']);
-        $reports = Report::with('messages')->where('topic_id', $topic->id)->latest()->get();
+        $reports = Report::with('messages')
+            ->where('topic_id', $topic->id)
+            ->latest()
+            ->limit(5000)
+            ->get();
 
         // Mark the topic as just-seen for this admin so the home-page
         // unread badge clears.
@@ -45,6 +58,59 @@ class TopicAdminController
             'topic' => $topic,
             'reports' => $reports,
         ]);
+    }
+
+    public function showReport(Topic $topic, Report $report, Request $request): View
+    {
+        // Scope binding ensures $report belongs to $topic.
+        $report->load('messages.files', 'topic');
+        AuditLog::record('report.accessed', $report);
+
+        return view('pages.report', [
+            'report' => $report,
+            'isAdministrator' => true,
+        ]);
+    }
+
+    public function replyToReport(ReplyRequest $request, Topic $topic, Report $report): RedirectResponse
+    {
+        $reply = $request->string('reply')->toString();
+
+        $message = Message::create([
+            'report_id' => $report->id,
+            'content' => $reply,
+            'is_admin' => true,
+        ]);
+
+        // An administrator reply is implicit acknowledgement of the report
+        // (EU Whistleblowing Directive 7-day window). Idempotent.
+        $report->acknowledge();
+
+        AuditLog::record('report.replied', $report);
+
+        $adminUrl = route('admin.report.show', ['topic' => $topic->id, 'report' => $report->id]);
+        $reporterUrl = route('report.show', ['reporterToken' => $report->reporter_token]);
+
+        $this->messengers->dispatch(
+            $topic,
+            sprintf('[%s]: report #%d updated', $topic->name('en'), $report->id),
+            $message,
+            $adminUrl,
+        );
+
+        if ($report->creator !== null && filter_var($report->creator, FILTER_VALIDATE_EMAIL) !== false) {
+            try {
+                Mail::to($report->creator)->send(new ReportNotification(
+                    subjectLine: sprintf('[%s]: report #%d updated', $topic->name('en'), $report->id),
+                    heading: sprintf('Update zu Meldung #%d', $report->id),
+                    linkUrl: $reporterUrl,
+                ));
+            } catch (\Throwable $e) {
+                Log::error('Failed to notify reporter', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return redirect()->route('admin.report.show', ['topic' => $topic->id, 'report' => $report->id]);
     }
 
     /**
@@ -260,6 +326,7 @@ class TopicAdminController
     public function acknowledge(Request $request, Topic $topic, Report $report): JsonResponse
     {
         $report->acknowledge();
+        AuditLog::record('report.acknowledged', $report);
 
         return response()->json(['ok' => true, 'acknowledged_at' => $report->acknowledged_at?->toIso8601String()]);
     }
@@ -315,6 +382,13 @@ class TopicAdminController
             $scoped()->whereNull('closed_at')->update(['closed_at' => now()]);
         } else {
             $scoped()->whereNotNull('closed_at')->update(['closed_at' => null]);
+        }
+
+        // Mirror setStatus(): moving to InProgress is an explicit act of taking
+        // on the report — treat as acknowledgement for the EU Directive 7-day
+        // window. Stamp only rows that aren't already acknowledged.
+        if ($newState === ReportState::InProgress) {
+            $scoped()->whereNull('acknowledged_at')->update(['acknowledged_at' => now()]);
         }
 
         // Bulk-status design: we record a SINGLE summary `report.bulk_status_changed`

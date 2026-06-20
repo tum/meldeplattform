@@ -28,14 +28,14 @@ class PublicPagesTest extends TestCase
 
     public function test_set_lang_persists_cookie(): void
     {
-        $this->get('/setLang?lang=de')
+        $this->post('/setLang', ['lang' => 'de'])
             ->assertRedirect('/')
             ->assertCookie('lang', 'de');
     }
 
     public function test_set_lang_rejects_unknown_lang(): void
     {
-        $this->get('/setLang?lang=zzz')
+        $this->post('/setLang', ['lang' => 'zzz'])
             ->assertRedirect('/')
             ->assertCookie('lang', 'en');
     }
@@ -45,15 +45,15 @@ class PublicPagesTest extends TestCase
         // The lang switch must bounce the user back to their starting page
         // (so deep links survive the language change) without becoming an
         // open-redirect oracle.
-        $this->get('/setLang?lang=de', ['referer' => 'http://localhost/imprint'])
+        $this->post('/setLang', ['lang' => 'de'], ['referer' => 'http://localhost/imprint'])
             ->assertRedirect('/imprint')
             ->assertCookie('lang', 'de');
 
-        $this->get('/setLang?lang=de', ['referer' => 'https://evil.example.com/phish'])
+        $this->post('/setLang', ['lang' => 'de'], ['referer' => 'https://evil.example.com/phish'])
             ->assertRedirect('/')
             ->assertCookie('lang', 'de');
 
-        $this->get('/setLang?lang=de', ['referer' => 'http://localhost/setLang?lang=en'])
+        $this->post('/setLang', ['lang' => 'de'], ['referer' => 'http://localhost/setLang?lang=en'])
             ->assertRedirect('/')
             ->assertCookie('lang', 'de');
     }

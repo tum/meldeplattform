@@ -78,12 +78,18 @@ class UploadSanitizer
 
     private function reencode(GdImage $image, string $absolutePath, string $ext): void
     {
-        match ($ext) {
+        $ok = match ($ext) {
             'jpg', 'jpeg' => imagejpeg($image, $absolutePath, 90),
             'png' => imagepng($image, $absolutePath),
             'gif' => imagegif($image, $absolutePath),
             'webp' => imagewebp($image, $absolutePath),
-            default => false,
+            default => true,
         };
+
+        if ($ok === false) {
+            Log::warning('UploadSanitizer: failed to re-encode image for metadata stripping', [
+                'extension' => $ext,
+            ]);
+        }
     }
 }

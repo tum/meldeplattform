@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/imprint', [HomeController::class, 'imprint'])->name('imprint');
 Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
-Route::get('/setLang', [HomeController::class, 'setLang'])->name('lang.set');
+Route::post('/setLang', [HomeController::class, 'setLang'])->name('lang.set');
 
 // Reporter flow — /submit is rate-limited to blunt storage-exhaustion abuse.
 Route::get('/form/{topic}', [FormController::class, 'show'])->whereNumber('topic')->name('form.show');
@@ -27,16 +27,15 @@ Route::post('/submit', [SubmitController::class, 'store'])
     ->middleware('throttle:submit')
     ->name('form.submit');
 
-// Report view + reply (token-based). The `report` limiter blocks brute-force
-// token guessing even though the 122-bit UUIDv4 space is infeasible in
-// practice.
+// Report view + reply (reporter token-based). The `report` limiter blocks
+// brute-force token guessing even though the 122-bit UUIDv4 space is
+// infeasible in practice.
 Route::middleware('throttle:report')->group(function (): void {
     Route::get('/report', [ReportController::class, 'show'])->name('report.show');
     Route::post('/report', [ReportController::class, 'reply'])->name('report.reply');
 
     // Anonymous return access: a reporter re-enters their one-time receipt
-    // code to get back into their report. Throttled to blunt brute-forcing
-    // the 16-digit code space.
+    // code to get back into their report.
     Route::get('/track', [ReportAccessController::class, 'create'])->name('report.track');
     Route::post('/track', [ReportAccessController::class, 'store'])->name('report.track.submit');
 });
@@ -47,8 +46,7 @@ Route::get('/file/{name}', [FileController::class, 'download'])
     ->name('file.download');
 
 // Dev login bypass – requires BOTH non-production env AND the explicit
-// `meldeplattform.dev_login_enabled` config flag, so a misconfigured APP_ENV
-// alone can't expose it.
+// `meldeplattform.dev_login_enabled` config flag.
 if (! app()->environment('production') && (bool) config('meldeplattform.dev_login_enabled', false)) {
     Route::middleware('throttle:dev-login')->group(function (): void {
         Route::get('/dev/login', [DevLoginController::class, 'show'])->name('dev.login');
@@ -61,27 +59,21 @@ if (! app()->environment('production') && (bool) config('meldeplattform.dev_logi
 Route::get('/saml/metadata', [SamlController::class, 'metadata'])->name('saml.metadata');
 Route::get('/saml/out', [SamlController::class, 'login'])
     ->middleware('throttle:saml')->name('saml.login');
-Route::get('/saml/logout', [SamlController::class, 'logout'])->name('saml.logout');
-// HTTP-Redirect binding uses GET; HTTP-POST binding uses POST. Accept both
-// so the SP works regardless of which binding the IdP picks at runtime.
+Route::get('/saml/logout', [SamlController::class, 'logout'])
+    ->middleware('throttle:saml')->name('saml.logout');
 Route::match(['get', 'post'], '/saml/slo', [SamlController::class, 'singleLogout'])->name('saml.slo');
 Route::post('/shib', [SamlController::class, 'acs'])
     ->middleware('throttle:saml')->name('saml.acs');
 
 // Admin of a topic — `auth` ensures a User is bound; `can:` runs the policy.
 Route::middleware('auth')->group(function (): void {
-    // Cross-topic admin landing page: every report the user can see.
+    // Cross-topic admin landing page.
     Route::get('/dashboard', [TopicAdminController::class, 'dashboard'])
         ->name('dashboard');
 
-    // CSV export of the (filtered) dashboard reports for audits / leadership
-    // reporting. Scoped to the user's manageable topics, same as the dashboard.
     Route::get('/dashboard/export', [TopicAdminController::class, 'exportCsv'])
         ->name('dashboard.export');
 
-    // Create-new lives on its own URL so route-model binding can handle the
-    // edit case without colliding with the `0`-sentinel that used to mean
-    // "no topic yet".
     Route::get('/newTopic', [TopicAdminController::class, 'create'])
         ->can('create', Topic::class)
         ->name('topic.create');
@@ -96,6 +88,20 @@ Route::middleware('auth')->group(function (): void {
         ->whereNumber('topic')->can('update', 'topic')->name('topic.edit');
     Route::get('/reports/{topic}', [TopicAdminController::class, 'reportsOfTopic'])
         ->whereNumber('topic')->can('view', 'topic')->name('topic.reports');
+
+    // Admin report view and reply — requires login + topic membership.
+    Route::get('/reports/{topic}/{report}', [TopicAdminController::class, 'showReport'])
+        ->whereNumber('topic')->whereNumber('report')
+        ->scopeBindings()
+        ->can('view', 'topic')
+        ->name('admin.report.show');
+    Route::post('/reports/{topic}/{report}/reply', [TopicAdminController::class, 'replyToReport'])
+        ->whereNumber('topic')->whereNumber('report')
+        ->scopeBindings()
+        ->can('view', 'topic')
+        ->middleware('throttle:admin-write')
+        ->name('admin.report.reply');
+
     Route::get('/api/topic/{topic}', [TopicAdminController::class, 'show'])
         ->whereNumber('topic')->can('view', 'topic')->name('topic.show');
     Route::post('/api/topic/{topic}', [TopicAdminController::class, 'update'])
@@ -118,13 +124,8 @@ Route::middleware('auth')->group(function (): void {
         ->middleware('throttle:admin-write')
         ->name('report.status.bulk');
 
-    // User management — only global admins. UIDs are alphanumeric (TUM
-    // identifiers like `ge42tum`); the route constraint keeps stray
-    // characters out of the URL and forces a 404 instead of a 500.
     Route::middleware('can:manage,'.User::class)->group(function (): void {
-        // Compliance/rogue-admin viewer — global admins only, mirroring /users.
         Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
-
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{uid}/edit', [UserController::class, 'edit'])

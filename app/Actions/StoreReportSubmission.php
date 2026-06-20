@@ -83,7 +83,7 @@ class StoreReportSubmission
                 $topic,
                 sprintf('[%s]: report #%d opened', $topic->name('en'), $report->id),
                 $firstMessage,
-                route('report.show', ['administratorToken' => $report->administrator_token]),
+                route('admin.report.show', ['topic' => $topic->id, 'report' => $report->id]),
             );
         }
 
@@ -122,9 +122,8 @@ class StoreReportSubmission
             $uploadList = array_values(is_array($uploads) ? $uploads : [$uploads]);
 
             foreach ($uploadList as $upload) {
-                $file = $this->storeUpload($upload);
+                $file = $this->storeUpload($upload, $storedPaths);
                 $files[] = $file;
-                $storedPaths[] = $file->path;
 
                 $messageBody .= '['.$file->name.']('
                     .route('file.download', ['name' => $file->name, 'id' => $file->uuid, 'token' => $reporterToken])
@@ -135,7 +134,7 @@ class StoreReportSubmission
         return $messageBody;
     }
 
-    private function storeUpload(UploadedFile $upload): File
+    private function storeUpload(UploadedFile $upload, array &$storedPaths): File
     {
         // Prefer the server-detected extension over the client-supplied one;
         // fall back to the original extension when MIME-based detection fails
@@ -152,6 +151,10 @@ class StoreReportSubmission
             throw new \RuntimeException('Failed to store uploaded file.');
         }
         $path = $stored;
+
+        // Register path for rollback BEFORE sanitization so a sanitization
+        // failure does not leave a physical file without a cleanup reference.
+        $storedPaths[] = $path;
 
         // Strip identifying metadata (e.g. image EXIF/GPS) from the stored file.
         $this->sanitizer->stripImageMetadata(Storage::disk($disk)->path($path), $ext);
