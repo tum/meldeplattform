@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\StoreReportSubmission;
 use App\Http\Requests\SubmitReportRequest;
 use App\Models\File as FileModel;
+use App\Support\UploadSanitizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +14,10 @@ use Illuminate\Support\Str;
 
 class SubmitController
 {
-    public function __construct(private readonly StoreReportSubmission $action) {}
+    public function __construct(
+        private readonly StoreReportSubmission $action,
+        private readonly UploadSanitizer $sanitizer,
+    ) {}
 
     public function store(SubmitReportRequest $request): RedirectResponse
     {
@@ -91,21 +95,25 @@ class SubmitController
             ->lower()
             ->toString();
 
-        $safeName = basename($upload->getClientOriginalName());
-        if ($safeName === '' || $safeName === '.') {
-            $safeName = (string) Str::uuid();
-        }
-
         $uuid = (string) Str::uuid();
         $storageName = $ext === '' ? $uuid : $uuid.'.'.$ext;
         $disk = 'uploads';
-        $path = $upload->storeAs('', $storageName, $disk);
+        $stored = $upload->storeAs('', $storageName, $disk);
+        if (! is_string($stored)) {
+            throw new \RuntimeException('Failed to store uploaded file.');
+        }
+        $path = $stored;
 
+        // Strip identifying metadata (e.g. image EXIF/GPS) from the stored file.
+        $this->sanitizer->stripImageMetadata(Storage::disk($disk)->path($path), $ext);
+
+        // Do NOT persist the client's original filename: it can itself
+        // deanonymise the reporter (e.g. "max_mustermann_kündigung.pdf").
         return FileModel::create([
             'uuid' => $uuid,
             'path' => $path,
             'disk' => $disk,
-            'name' => $safeName,
+            'name' => $this->sanitizer->neutralFilename($uuid, $ext),
         ]);
     }
 }

@@ -63,12 +63,14 @@
                                data-file-input
                                @if ($field->required) required @endif>
                         <span class="desc">{{ __('upload_limit', ['mb' => $maxUploadMb]) }}</span>
+                        <span class="desc">{{ __('upload_metadata_warning') }}</span>
                         @break
                     @case('file')
                         <input type="file" id="field-{{ $field->id }}" name="{{ $name }}"
                                data-file-input
                                @if ($field->required) required @endif>
                         <span class="desc">{{ __('upload_limit', ['mb' => $maxUploadMb]) }}</span>
+                        <span class="desc">{{ __('upload_metadata_warning') }}</span>
                         @break
                     @default
                         <input type="{{ $field->type->value }}" id="field-{{ $field->id }}" name="{{ $name }}"

@@ -78,6 +78,7 @@
     "field_type_url": "URL",
     "please_fix_errors": "Please fix the highlighted fields and submit again.",
     "upload_limit": "Max :mb MB per file.",
+    "upload_metadata_warning": "Note: image metadata (e.g. GPS/EXIF) is stripped on upload. Documents (PDF, Office) and the file name itself may still reveal your identity — please remove such details beforehand.",
     "report_link_label": "Link to your report",
     "copy_link": "Copy link",
     "receipt_heading": "Your access code – write it down now",
