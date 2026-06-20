@@ -4,7 +4,6 @@ namespace App\View\Composers;
 
 use App\Models\Topic;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -27,7 +26,7 @@ class AppLayoutComposer
         // count query to exactly those — both to match the UI and to avoid
         // aggregating reports the user can't see.
         $unreadCounts = $user instanceof User
-            ? $this->unreadCountsFor($user, $this->managedTopicIds($user, $topics))
+            ? $this->unreadCountsFor($user, $this->managedTopicIds($user))
             : [];
 
         $view->with([
@@ -38,19 +37,18 @@ class AppLayoutComposer
 
     /**
      * The subset of topic IDs the user is allowed to manage (global admins
-     * see all; topic-admins only their own). `admins` is already eager-loaded
-     * so the policy check costs no extra queries.
+     * see all; topic-admins only their own). Filtering happens in SQL via
+     * Topic::manageableBy so the cost scales with the user's topics, not the
+     * total topic count.
      *
-     * @param Collection<int, Topic> $topics
      * @return list<int>
      */
-    private function managedTopicIds(User $user, Collection $topics): array
+    private function managedTopicIds(User $user): array
     {
         /** @var list<int> $ids */
-        $ids = $topics
-            ->filter(static fn (Topic $t): bool => $user->can('update', $t))
+        $ids = Topic::query()
+            ->manageableBy($user)
             ->pluck('id')
-            ->values()
             ->all();
 
         return $ids;

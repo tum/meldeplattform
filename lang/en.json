@@ -120,6 +120,7 @@
     "dashboard_filter_all_topics": "All topics",
     "dashboard_count_shown": ":shown of :total reports shown",
     "dashboard_no_matches": "No reports match the current filters.",
+    "apply_filters": "Apply filters",
     "require_login": "Login required (no anonymous reports)",
     "require_login_desc": "Reporters must authenticate with their TUM login. Their identity is recorded automatically.",
     "login_required_badge": "Login required",

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\UpsertUserAccess;
+use App\Http\Requests\UpsertUserRequest;
 use App\Models\Admin;
 use App\Models\Topic;
 use App\Models\User;
@@ -57,17 +59,9 @@ class UserController
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(UpsertUserRequest $request, UpsertUserAccess $action): RedirectResponse
     {
-        $uid = $this->normalizeUid($request->string('uid', '')->toString());
-        if ($uid === '') {
-            return back()->withErrors(['uid' => __('users_uid_required')])->withInput();
-        }
-        if (! ctype_alnum($uid)) {
-            return back()->withErrors(['uid' => __('users_uid_invalid')])->withInput();
-        }
-
-        return $this->persist($request, $uid);
+        return $this->persist($request, $action);
     }
 
     public function edit(string $uid): View
@@ -86,9 +80,9 @@ class UserController
         ]);
     }
 
-    public function update(Request $request, string $uid): RedirectResponse
+    public function update(UpsertUserRequest $request, UpsertUserAccess $action): RedirectResponse
     {
-        return $this->persist($request, $this->normalizeUid($uid));
+        return $this->persist($request, $action);
     }
 
     public function destroy(Request $request, string $uid): RedirectResponse
@@ -111,62 +105,16 @@ class UserController
     }
 
     /**
-     * Shared implementation for store/update: apply global-admin flag and
-     * topic-admin pivot for the given UID. Creates an `admins` row on
-     * demand so pre-assigning access for someone who hasn't logged in
-     * yet works the same as updating an existing user.
+     * Shared implementation for store/update. Validation (UID shape) and the
+     * self-demote / global-admin-on-pending-user lockouts are enforced in
+     * UpsertUserRequest; the topic-sync + flag persistence lives in
+     * UpsertUserAccess. This method just wires the two together.
      */
-    private function persist(Request $request, string $uid): RedirectResponse
+    private function persist(UpsertUserRequest $request, UpsertUserAccess $action): RedirectResponse
     {
-        $isGlobal = $request->boolean('is_global_admin');
+        $uid = $request->uid();
 
-        $rawIds = $request->input('topic_ids', []);
-        if (! is_array($rawIds)) {
-            $rawIds = [];
-        }
-        /** @var list<int> $topicIds */
-        $topicIds = array_values(array_unique(array_filter(array_map(
-            static fn (mixed $v): int => is_numeric($v) ? (int) $v : 0,
-            $rawIds,
-        ), static fn (int $i): bool => $i > 0)));
-
-        $actor = $request->user();
-        $existingUser = User::where('uid', $uid)->first();
-
-        // Lockout guard: a global admin must not be able to demote
-        // themselves via this UI. They can still drop out of the env list
-        // by editing config — that path is intentional ops work.
-        if ($actor !== null && $actor->uid === $uid && ! $isGlobal && $existingUser?->is_global_admin) {
-            return back()
-                ->withErrors(['is_global_admin' => __('users_cannot_self_demote')])
-                ->withInput();
-        }
-
-        // is_global_admin lives only on the users table, so it cannot be
-        // pre-assigned before the user has ever logged in.
-        if ($isGlobal && $existingUser === null) {
-            return back()
-                ->withErrors(['is_global_admin' => __('users_cannot_set_global_admin_pending')])
-                ->withInput();
-        }
-
-        DB::transaction(function () use ($uid, $isGlobal, $topicIds, $existingUser): void {
-            $validIds = Topic::whereIn('id', $topicIds)->pluck('id')->all();
-
-            if ($validIds !== []) {
-                $admin = Admin::firstOrCreate(['user_id' => $uid]);
-                $admin->topics()->sync($validIds);
-            } else {
-                // No topics selected → drop the admin assignment entirely
-                // so the row doesn't linger as an empty pivot.
-                Admin::where('user_id', $uid)->delete();
-            }
-
-            if ($existingUser !== null) {
-                $existingUser->is_global_admin = $isGlobal;
-                $existingUser->save();
-            }
-        });
+        $action->execute($uid, $request->wantsGlobalAdmin(), $request->topicIds());
 
         return redirect()->route('users.index')
             ->with('flash.success', __('users_saved', ['uid' => $uid]));
