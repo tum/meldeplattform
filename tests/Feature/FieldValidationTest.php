@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Http\Requests\SubmitReportRequest;
 use App\Models\Field;
 use App\Models\Topic;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -100,5 +103,33 @@ class FieldValidationTest extends TestCase
         // A non-required email field must not reject an empty submission.
         $field = $this->topicWithField('email', required: false);
         $this->submit($field, '')->assertRedirect();
+    }
+
+    public function test_audio_field_accepts_audio_but_rejects_other_allowed_types(): void
+    {
+        // Verify the real rules SubmitReportRequest builds for an audio field:
+        // an audio upload passes, while a PDF — allowed for general file fields
+        // but NOT on the audio allowlist — is rejected. Exercised through an
+        // in-process Validator because the test HTTP client does not carry
+        // multipart uploads in this environment.
+        $field = $this->topicWithField('audio', required: true);
+        $key = (string) $field->id;
+
+        $request = SubmitReportRequest::create('/submit', 'POST', ['topic' => $field->topic_id]);
+        $request->setContainer($this->app);
+        $rules = $request->rules();
+        $this->assertArrayHasKey($key, $rules);
+
+        $mp3 = UploadedFile::fake()->create('voice-message.mp3', 100, 'audio/mpeg');
+        $this->assertTrue(
+            Validator::make([$key => $mp3], [$key => $rules[$key]])->passes(),
+            'audio upload should pass the audio field rules',
+        );
+
+        $pdf = UploadedFile::fake()->create('notes.pdf', 100, 'application/pdf');
+        $this->assertTrue(
+            Validator::make([$key => $pdf], [$key => $rules[$key]])->fails(),
+            'PDF should be rejected by the audio field rules',
+        );
     }
 }

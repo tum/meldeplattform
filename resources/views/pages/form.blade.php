@@ -72,6 +72,29 @@
                         <span class="desc">{{ __('upload_limit', ['mb' => $maxUploadMb]) }}</span>
                         <span class="desc">{{ __('upload_metadata_warning') }}</span>
                         @break
+                    @case('audio')
+                        {{-- Oral reporting: record in-browser (MediaRecorder) or
+                             upload an existing audio file. Both feed the same
+                             single-file input the server stores. --}}
+                        <div data-audio-recorder>
+                            <div class="audio-recorder-controls" style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+                                <button type="button" class="button button-small" data-audio-record hidden>
+                                    ● {{ __('audio_record') }}
+                                </button>
+                                <button type="button" class="button button-small button-danger" data-audio-stop hidden>
+                                    ■ {{ __('audio_stop') }}
+                                </button>
+                                <span class="desc" data-audio-status></span>
+                            </div>
+                            <audio data-audio-preview controls hidden style="margin-top:.5rem; width:100%;"></audio>
+                            <input type="file" id="field-{{ $field->id }}" name="{{ $name }}"
+                                   accept="audio/*" data-file-input data-audio-input
+                                   @if ($field->required) required @endif>
+                        </div>
+                        <span class="desc">{{ __('audio_hint') }}</span>
+                        <span class="desc">{{ __('upload_limit', ['mb' => $maxUploadMb]) }}</span>
+                        <span class="desc">{{ __('upload_metadata_warning') }}</span>
+                        @break
                     @default
                         <input type="{{ $field->type->value }}" id="field-{{ $field->id }}" name="{{ $name }}"
                                value="{{ old($name) }}"
@@ -113,4 +136,5 @@
 
     <script src="{{ asset('js/file-input.js') }}" defer></script>
     <script src="{{ asset('js/form-draft.js') }}" defer></script>
+    <script src="{{ asset('js/audio-recorder.js') }}" defer></script>
 @endsection

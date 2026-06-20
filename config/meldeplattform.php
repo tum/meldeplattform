@@ -49,17 +49,29 @@ return [
     'feedback_deadline_days' => (int) env('MELDE_FEEDBACK_DEADLINE_DAYS', 90),
 
     /*
+    | Lead time (in days) before a deadline at which the scheduled
+    | `reports:remind` command starts emailing the topic's case handlers, so a
+    | report is flagged *before* — not only after — it breaches the window.
+    */
+    'reminder_ack_lead_days' => (int) env('MELDE_REMINDER_ACK_LEAD_DAYS', 2),
+    'reminder_feedback_lead_days' => (int) env('MELDE_REMINDER_FEEDBACK_LEAD_DAYS', 14),
+
+    /*
     |--------------------------------------------------------------------------
     | Data retention
     |--------------------------------------------------------------------------
     | Global fallback retention window in days for topics that don't set their
-    | own `retention_days`. Reports with no activity for longer than this are
-    | deleted by the scheduled `reports:prune` command (GDPR data
-    | minimisation). Leave unset/empty to keep reports forever by default.
+    | own `retention_days`. Concluded reports (Done/Spam) whose `closed_at` is
+    | older than this are deleted by the scheduled `reports:prune` command.
+    |
+    | Defaults to 1095 days (3 years), matching HinSchG §11(5), which requires
+    | report documentation to be deleted three years after the procedure is
+    | concluded. Set MELDE_DEFAULT_RETENTION_DAYS=0 to disable the global
+    | default and keep reports until a per-topic window is configured.
     */
     'default_retention_days' => is_numeric(env('MELDE_DEFAULT_RETENTION_DAYS'))
-        ? (int) env('MELDE_DEFAULT_RETENTION_DAYS')
-        : null,
+        ? ((int) env('MELDE_DEFAULT_RETENTION_DAYS') > 0 ? (int) env('MELDE_DEFAULT_RETENTION_DAYS') : null)
+        : 1095,
 
     /*
     |--------------------------------------------------------------------------
@@ -86,8 +98,20 @@ return [
         'pdf', 'doc', 'docx', 'xls', 'xlsx',
         'txt', 'csv', 'odt', 'ods', 'rtf',
         'zip', 'tar', 'gz', '7z',
-        'mp4', 'webm', 'mp3', 'wav',
+        'mp4', 'webm', 'mp3', 'wav', 'ogg', 'm4a',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Oral reporting (voice message) intake
+    |--------------------------------------------------------------------------
+    | Extensions accepted by an `audio` field — the EU Directive Art. 9(2) /
+    | HinSchG §16 oral-reporting channel. The set covers what browsers produce
+    | via in-page recording (webm/mp4/ogg) plus common uploads (mp3/wav/m4a).
+    | NOTE: audio is NOT re-encoded to strip metadata (only raster images are),
+    | so reporters are warned that a recording may carry identifying metadata.
+    */
+    'allowed_audio_extensions' => ['webm', 'mp4', 'ogg', 'mp3', 'wav', 'm4a'],
 
     /*
     |--------------------------------------------------------------------------

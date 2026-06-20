@@ -52,6 +52,14 @@
             {{ __('hide_spam') }}
         </label>
         <button type="submit" class="button button-small">{{ __('apply_filters') }}</button>
+        {{-- Export mirrors the current filter selection. --}}
+        <a class="button button-small button-ghost"
+           href="{{ route('dashboard.export', array_filter([
+               'filters' => '1',
+               'topic' => $selectedTopic ?: null,
+               'hide_closed' => $hideClosed ? '1' : null,
+               'hide_spam' => $hideSpam ? '1' : null,
+           ])) }}">{{ __('export_csv') }}</a>
     </form>
 
     @if ($reports->isEmpty())

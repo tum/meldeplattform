@@ -10,9 +10,12 @@ use App\Models\AuditLog;
 use App\Models\Report;
 use App\Models\Topic;
 use App\Models\TopicView;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TopicAdminController
 {
@@ -69,33 +72,10 @@ class TopicAdminController
         /** @var list<int> $topicIds */
         $topicIds = $topics->pluck('id')->all();
 
-        // A fresh visit (no `filters` marker) applies the historical defaults
-        // the old client-side filter shipped with: hide closed + hide spam.
-        $filtersApplied = $request->boolean('filters');
-        $hideClosed = $filtersApplied ? $request->boolean('hide_closed') : true;
-        $hideSpam = $filtersApplied ? $request->boolean('hide_spam') : true;
-
-        // Only honour a topic filter that is actually in the manageable set so
-        // a hand-crafted `?topic=` can't surface another team's reports.
-        $selectedTopic = $request->integer('topic');
-        if ($selectedTopic > 0 && ! in_array($selectedTopic, $topicIds, true)) {
-            $selectedTopic = 0;
-        }
-
-        $query = Report::with(['topic', 'messages'])
-            ->whereIn('topic_id', $topicIds);
-
-        if ($selectedTopic > 0) {
-            $query->where('topic_id', $selectedTopic);
-        }
-        if ($hideClosed) {
-            $query->where('state', '!=', ReportState::Done->value);
-        }
-        if ($hideSpam) {
-            $query->where('state', '!=', ReportState::Spam->value);
-        }
+        [$query, $selectedTopic, $hideClosed, $hideSpam] = $this->filteredReportsQuery($request, $topicIds);
 
         $reports = $query
+            ->with(['topic', 'messages'])
             ->latest('updated_at')
             ->paginate(50)
             ->withQueryString();
@@ -112,6 +92,104 @@ class TopicAdminController
             'hideSpam' => $hideSpam,
             'overdueCount' => $overdueCount,
         ]);
+    }
+
+    /**
+     * Stream the filtered dashboard reports as CSV for audits / leadership
+     * reporting (a feature commercial platforms offer). The export honours the
+     * same manageable-topic scope and filters as the dashboard, and carries
+     * only case metadata — never message bodies — so confidential allegation
+     * content stays inside the authenticated UI. The export itself is audited.
+     */
+    public function exportCsv(Request $request): StreamedResponse
+    {
+        $user = $request->user();
+        abort_if($user === null, 403);
+
+        /** @var list<int> $topicIds */
+        $topicIds = Topic::query()->manageableBy($user)->pluck('id')->all();
+
+        [$query] = $this->filteredReportsQuery($request, $topicIds);
+
+        AuditLog::record('reports.exported', null, [
+            'topic' => $request->integer('topic') ?: 'all',
+            'count' => (clone $query)->count(),
+        ]);
+
+        $filename = 'reports-export-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($query): void {
+            $out = fopen('php://output', 'wb');
+            if ($out === false) {
+                return;
+            }
+            // UTF-8 BOM so Excel renders umlauts in topic names correctly.
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, [
+                'ID', 'Topic', 'State', 'Created', 'Acknowledged', 'Closed',
+                'Ack overdue', 'Feedback overdue', 'Messages', 'Reporter',
+            ]);
+
+            $query->with(['topic', 'messages'])
+                ->latest('updated_at')
+                ->chunk(200, function (Collection $reports) use ($out): void {
+                    foreach ($reports as $report) {
+                        /** @var Report $report */
+                        fputcsv($out, [
+                            $report->id,
+                            $report->topic->name('en'),
+                            $report->state->value,
+                            $report->created_at?->toDateTimeString() ?? '',
+                            $report->acknowledged_at?->toDateTimeString() ?? '',
+                            $report->closed_at?->toDateTimeString() ?? '',
+                            $report->isAcknowledgementOverdue() ? 'yes' : 'no',
+                            $report->isFeedbackOverdue() ? 'yes' : 'no',
+                            $report->messages->count(),
+                            $report->creator ?? '',
+                        ]);
+                    }
+                });
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Build the manageable-scoped, filtered report query shared by the
+     * dashboard and its CSV export. Returns the query plus the resolved filter
+     * state so the view can reflect it.
+     *
+     * @param list<int> $topicIds
+     * @return array{0: Builder<Report>, 1: int, 2: bool, 3: bool}
+     */
+    private function filteredReportsQuery(Request $request, array $topicIds): array
+    {
+        // A fresh visit (no `filters` marker) applies the historical defaults
+        // the old client-side filter shipped with: hide closed + hide spam.
+        $filtersApplied = $request->boolean('filters');
+        $hideClosed = $filtersApplied ? $request->boolean('hide_closed') : true;
+        $hideSpam = $filtersApplied ? $request->boolean('hide_spam') : true;
+
+        // Only honour a topic filter that is actually in the manageable set so
+        // a hand-crafted `?topic=` can't surface another team's reports.
+        $selectedTopic = $request->integer('topic');
+        if ($selectedTopic > 0 && ! in_array($selectedTopic, $topicIds, true)) {
+            $selectedTopic = 0;
+        }
+
+        $query = Report::query()->whereIn('topic_id', $topicIds);
+
+        if ($selectedTopic > 0) {
+            $query->where('topic_id', $selectedTopic);
+        }
+        if ($hideClosed) {
+            $query->where('state', '!=', ReportState::Done->value);
+        }
+        if ($hideSpam) {
+            $query->where('state', '!=', ReportState::Spam->value);
+        }
+
+        return [$query, $selectedTopic, $hideClosed, $hideSpam];
     }
 
     public function createSkeleton(): TopicResource
@@ -217,14 +295,25 @@ class TopicAdminController
         }
 
         $newState = $map[$status];
+        $scoped = fn (): \Illuminate\Database\Query\Builder => Report::where('topic_id', $topic->id)
+            ->whereIn('id', $ids)
+            ->toBase();
+
         // Mirror setStatus(): a bulk status change is housekeeping, so leave
         // `updated_at` untouched to avoid inflating the unread badge. Drop to
         // the base query builder via toBase() because Eloquent's Builder
         // auto-injects `updated_at` into every update().
-        $updated = Report::where('topic_id', $topic->id)
-            ->whereIn('id', $ids)
-            ->toBase()
-            ->update(['state' => $newState->value]);
+        $updated = $scoped()->update(['state' => $newState->value]);
+
+        // The mass update bypasses the model's `updating` hook, so maintain the
+        // retention anchor (`closed_at`) inline. Concluding (Done/Spam) stamps
+        // it only where still null so the original conclusion date stands;
+        // reopening (Open/InProgress) clears it.
+        if ($newState === ReportState::Done || $newState === ReportState::Spam) {
+            $scoped()->whereNull('closed_at')->update(['closed_at' => now()]);
+        } else {
+            $scoped()->whereNotNull('closed_at')->update(['closed_at' => null]);
+        }
 
         // Bulk-status design: we record a SINGLE summary `report.bulk_status_changed`
         // row rather than one row per report. The update above runs as a single

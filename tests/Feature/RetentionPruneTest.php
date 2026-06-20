@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ReportState;
 use App\Models\File;
 use App\Models\Message;
 use App\Models\Report;
@@ -24,10 +25,12 @@ class RetentionPruneTest extends TestCase
     }
 
     /**
-     * Create a report (with one message + one uploaded file) whose timestamps
-     * are $daysAgo days in the past.
+     * Create a report (with one message + one uploaded file) concluded
+     * $daysAgo days in the past. Retention is anchored on `closed_at`, so the
+     * report is closed at that point unless $conclude is false (in which case
+     * it stays Open and must never be pruned).
      */
-    private function makeReportAgedDays(Topic $topic, int $daysAgo): Report
+    private function makeReportAgedDays(Topic $topic, int $daysAgo, bool $conclude = true): Report
     {
         $this->travelTo(now()->subDays($daysAgo));
 
@@ -40,6 +43,13 @@ class RetentionPruneTest extends TestCase
             'path' => 'blob.txt', 'disk' => 'uploads', 'name' => 'evidence.txt',
         ]);
         $message->files()->attach($file->id);
+
+        if ($conclude) {
+            // Closing stamps `closed_at` at the (travelled) current time, which
+            // is the retention anchor the prune command measures against.
+            $report->state = ReportState::Done;
+            $report->save();
+        }
 
         $this->travelBack();
 
@@ -96,6 +106,20 @@ class RetentionPruneTest extends TestCase
         $this->assertSame(0, Artisan::call('reports:prune'));
 
         $this->assertDatabaseMissing('reports', ['id' => $report->id]);
+    }
+
+    public function test_keeps_open_reports_even_when_aged_past_window(): void
+    {
+        // A still-open procedure is never auto-deleted, regardless of age:
+        // the statutory clock (HinSchG §11(5)) only starts at conclusion.
+        Storage::fake('uploads');
+        $topic = $this->makeTopic(30);
+        $report = $this->makeReportAgedDays($topic, 9999, conclude: false);
+
+        $this->assertSame(0, Artisan::call('reports:prune'));
+
+        $this->assertDatabaseHas('reports', ['id' => $report->id]);
+        $this->assertTrue(Storage::disk('uploads')->exists('blob.txt'));
     }
 
     public function test_dry_run_deletes_nothing(): void
