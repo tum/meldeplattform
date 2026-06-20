@@ -9,6 +9,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        $this->assertProductionConfig();
         $this->configureRateLimiting();
 
         // Preserve the legacy top-level JSON shape consumed by the admin
@@ -52,6 +54,30 @@ class AppServiceProvider extends ServiceProvider
         // Only the home page needs the topic list — keep the query out of
         // every other view render.
         View::composer('pages.index', AppLayoutComposer::class);
+    }
+
+    /**
+     * Enforce safety invariants that must hold in production. Throws on a hard
+     * misconfiguration (e.g. insecure session cookie); logs a warning for
+     * degraded-but-functional settings (e.g. synchronous queue).
+     */
+    private function assertProductionConfig(): void
+    {
+        if (! $this->app->environment('production')) {
+            return;
+        }
+
+        // Session cookies are only relevant for HTTP — skip when running Artisan
+        // commands or queue workers so they don't fail the deploy pipeline.
+        if (! $this->app->runningInConsole() && ! (bool) config('session.secure', false)) {
+            throw new \RuntimeException(
+                'SESSION_SECURE_COOKIE must be true in production to prevent session hijacking over HTTP.',
+            );
+        }
+
+        if (config('queue.default', 'sync') === 'sync') {
+            Log::warning('Queue driver is `sync` in production — mail and webhook dispatch will block requests. Set QUEUE_CONNECTION=database or redis.');
+        }
     }
 
     /**
@@ -85,5 +111,9 @@ class AppServiceProvider extends ServiceProvider
 
         // /saml/out and /shib — pre-auth flow start/ACS; always anonymous.
         RateLimiter::for('saml', $perIp(20));
+
+        // Admin write endpoints (status changes, bulk updates, acknowledge).
+        // Keyed by authenticated user so one user can't DoS the audit log.
+        RateLimiter::for('admin-write', $perUserOrIp(120));
     }
 }

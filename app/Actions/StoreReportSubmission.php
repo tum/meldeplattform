@@ -45,14 +45,17 @@ class StoreReportSubmission
 
         try {
             $report = DB::transaction(function () use ($topic, $request, $creator, &$storedPaths): Report {
-                /** @var list<File> $files */
-                $files = [];
-                $messageBody = $this->composeBody($topic, $request, $files, $storedPaths);
-
+                // Create the report first so its reporter_token is available for
+                // embedding into file download URLs inside the message body.
                 $report = Report::create([
                     'topic_id' => $topic->id,
                     'creator' => $creator,
                 ]);
+
+                /** @var list<File> $files */
+                $files = [];
+                $messageBody = $this->composeBody($topic, $request, $files, $storedPaths, $report->reporter_token);
+
                 $message = Message::create([
                     'report_id' => $report->id,
                     'content' => $messageBody,
@@ -91,11 +94,13 @@ class StoreReportSubmission
      * Build the markdown body by looping the topic's fields, storing any
      * uploads as they are encountered. Created File models are appended to
      * $files and their physical paths to $storedPaths (for rollback).
+     * $reporterToken is embedded in each file download URL so the download
+     * endpoint can verify the requester holds access to this report.
      *
      * @param list<File> $files
      * @param list<string> $storedPaths
      */
-    private function composeBody(Topic $topic, SubmitReportRequest $request, array &$files, array &$storedPaths): string
+    private function composeBody(Topic $topic, SubmitReportRequest $request, array &$files, array &$storedPaths, string $reporterToken): string
     {
         $messageBody = '';
 
@@ -122,7 +127,7 @@ class StoreReportSubmission
                 $storedPaths[] = $file->path;
 
                 $messageBody .= '['.$file->name.']('
-                    .route('file.download', ['name' => $file->name, 'id' => $file->uuid])
+                    .route('file.download', ['name' => $file->name, 'id' => $file->uuid, 'token' => $reporterToken])
                     .')';
             }
         }

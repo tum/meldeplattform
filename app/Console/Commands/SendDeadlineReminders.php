@@ -8,6 +8,7 @@ use App\Models\Topic;
 use App\Services\MessengerDispatcher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -75,7 +76,16 @@ class SendDeadlineReminders extends Command
             if ($dryRun) {
                 $this->line(sprintf('would remind %s about %d item(s) for topic "%s"', $target, count($items), $topic->name('en')));
             } else {
-                Mail::to($target)->send(new DeadlineReminder($subject, $topic->name('en'), $dashboardUrl, $items));
+                try {
+                    Mail::to($target)->send(new DeadlineReminder($subject, $topic->name('en'), $dashboardUrl, $items));
+                } catch (\Throwable $e) {
+                    Log::error('Deadline reminder delivery failed', [
+                        'topic_id' => $topic->id,
+                        'target' => $target,
+                        'error' => $e->getMessage(),
+                    ]);
+                    continue;
+                }
             }
             $sent++;
         }

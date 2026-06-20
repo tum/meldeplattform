@@ -77,6 +77,13 @@ class AuditLog extends Model
         $user = Auth::user();
         $actor = $user instanceof User ? $user->uid : 'system';
 
+        // Flag when a global admin's privilege comes solely from the env
+        // allowlist rather than the DB flag, so audit reviewers can see
+        // the distinction without cross-referencing MELDE_ADMIN_USERS.
+        if ($user instanceof User && $user->isGlobalAdminViaEnv() && ! $user->is_global_admin) {
+            $metadata['admin_via_env'] = true;
+        }
+
         $subjectType = null;
         $subjectId = null;
         if ($subject !== null) {

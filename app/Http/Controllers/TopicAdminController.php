@@ -113,6 +113,8 @@ class TopicAdminController
 
         AuditLog::record('reports.exported', null, [
             'topic' => $request->integer('topic') ?: 'all',
+            'hide_closed' => $request->boolean('hide_closed'),
+            'hide_spam' => $request->boolean('hide_spam'),
             'count' => (clone $query)->count(),
         ]);
 

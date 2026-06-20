@@ -57,7 +57,8 @@ class ReceiptCodeTest extends TestCase
         $response->assertSessionHas('receipt_code');
 
         $code = $this->receiptCode();
-        $this->assertMatchesRegularExpression('/^\d{16}$/', $code);
+        // 24 uppercase hex characters (12 random bytes = 96 bits entropy).
+        $this->assertMatchesRegularExpression('/^[0-9A-F]{24}$/', $code);
 
         $report = Report::first();
         $this->assertNotNull($report);
@@ -121,5 +122,55 @@ class ReceiptCodeTest extends TestCase
             ->post('/track', ['code' => '0000000000000000'])
             ->assertRedirect(route('report.track'))
             ->assertSessionHasErrors(['code']);
+    }
+
+    public function test_excessively_long_code_is_rejected_by_validation(): void
+    {
+        $this->from(route('report.track'))
+            ->post('/track', ['code' => str_repeat('1', 101)])
+            ->assertRedirect(route('report.track'))
+            ->assertSessionHasErrors(['code']);
+    }
+
+    public function test_code_with_only_non_hex_chars_does_not_match(): void
+    {
+        Mail::fake();
+        Storage::fake('uploads');
+
+        $field = $this->makeTopicWithField();
+
+        $this->post('/submit', [
+            'topic' => $field->topic_id,
+            (string) $field->id => 'Meldung.',
+        ]);
+
+        // Non-hex characters normalize to an empty string, so findByReceiptCode
+        // returns null without hitting the database.
+        $this->from(route('report.track'))
+            ->post('/track', ['code' => '!@#$%^&*()'])
+            ->assertRedirect(route('report.track'))
+            ->assertSessionHasErrors(['code']);
+    }
+
+    public function test_code_with_spaces_between_hex_groups_is_accepted(): void
+    {
+        Mail::fake();
+        Storage::fake('uploads');
+
+        $field = $this->makeTopicWithField();
+
+        $this->post('/submit', [
+            'topic' => $field->topic_id,
+            (string) $field->id => 'Meldung.',
+        ]);
+
+        $code = $this->receiptCode();
+        $report = Report::firstOrFail();
+
+        // Simulate user grouping the 24-char hex code in blocks of 4.
+        $spaced = implode(' ', str_split($code, 4));
+
+        $this->post('/track', ['code' => $spaced])
+            ->assertRedirect(route('report.show', ['reporterToken' => $report->reporter_token]));
     }
 }
