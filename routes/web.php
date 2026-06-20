@@ -5,6 +5,7 @@ use App\Http\Controllers\DevLoginController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ReportAccessController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SamlController;
 use App\Http\Controllers\SubmitController;
@@ -32,6 +33,12 @@ Route::post('/submit', [SubmitController::class, 'store'])
 Route::middleware('throttle:report')->group(function (): void {
     Route::get('/report', [ReportController::class, 'show'])->name('report.show');
     Route::post('/report', [ReportController::class, 'reply'])->name('report.reply');
+
+    // Anonymous return access: a reporter re-enters their one-time receipt
+    // code to get back into their report. Throttled to blunt brute-forcing
+    // the 16-digit code space.
+    Route::get('/track', [ReportAccessController::class, 'create'])->name('report.track');
+    Route::post('/track', [ReportAccessController::class, 'store'])->name('report.track.submit');
 });
 
 // File download – rate-limit to slow exfiltration once a UUID leaks.

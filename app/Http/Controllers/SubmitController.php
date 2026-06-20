@@ -72,7 +72,14 @@ class SubmitController
             throw $e;
         }
 
-        return redirect()->route('report.show', ['reporterToken' => $report->reporter_token]);
+        // Issue a one-time receipt code so an anonymous reporter can return to
+        // this report later without the URL — flashed to the session and shown
+        // exactly once on the confirmation page.
+        $receiptCode = $report->issueReceiptCode();
+
+        return redirect()
+            ->route('report.show', ['reporterToken' => $report->reporter_token])
+            ->with('receipt_code', $receiptCode);
     }
 
     private function storeUpload(UploadedFile $upload): FileModel
