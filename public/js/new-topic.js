@@ -93,6 +93,23 @@
             body.append(el('p', { className: 'muted', style: 'margin-top:-.5rem;font-size:.875rem;', textContent: tr.requireLoginDesc }));
         }
 
+        const retGroup = el('div', { className: 'form-group' }, el('label', { textContent: tr.retention }));
+        retGroup.append(
+            input(
+                topic.RetentionDays ?? '',
+                (v) => {
+                    const n = parseInt(v, 10);
+                    topic.RetentionDays = Number.isFinite(n) && n > 0 ? n : null;
+                },
+                '',
+                'number',
+            ),
+        );
+        if (tr.retentionDesc) {
+            retGroup.append(el('span', { className: 'desc', textContent: tr.retentionDesc }));
+        }
+        body.append(retGroup);
+
         body.append(el('hr'));
         body.append(el('h3', { textContent: tr.questions }));
 
@@ -248,6 +265,7 @@
             topic.Name ??= { de: '', en: '' };
             topic.Summary ??= { de: '', en: '' };
             topic.RequireLogin ??= false;
+            topic.RetentionDays ??= null;
             topic.Fields ??= [];
             topic.Admins ??= [];
             render();

@@ -100,12 +100,17 @@ class TopicAdminController
             ->paginate(50)
             ->withQueryString();
 
+        // Count overdue reports across ALL manageable topics (independent of the
+        // current page and the hide filters) so the alert badge is accurate.
+        $overdueCount = Report::query()->whereIn('topic_id', $topicIds)->overdueNow()->count();
+
         return view('pages.dashboard', [
             'topics' => $topics,
             'reports' => $reports,
             'selectedTopic' => $selectedTopic,
             'hideClosed' => $hideClosed,
             'hideSpam' => $hideSpam,
+            'overdueCount' => $overdueCount,
         ]);
     }
 

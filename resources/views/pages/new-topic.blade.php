@@ -63,6 +63,8 @@
                 'name' => 'Name',
                 'requireLogin' => __('require_login'),
                 'requireLoginDesc' => __('require_login_desc'),
+                'retention' => __('retention_days_label'),
+                'retentionDesc' => __('retention_days_desc'),
             ],
         ];
     @endphp

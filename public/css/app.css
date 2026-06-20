@@ -519,7 +519,10 @@ tbody tr:last-child td { border-bottom: 0; }
     border-radius: 50%;
     background: currentColor;
 }
-.status-pill.open { color: var(--tum-red); background: #f8d7da; }
+/* Open = the normal active state, so it reads neutral/blue rather than red.
+   Red is reserved for genuinely-attention states (overdue badges, spam). */
+.status-pill.open { color: var(--tum-primary); background: var(--tum-soft); }
+.status-pill.in_progress { color: #664d03; background: #fff3cd; }
 .status-pill.done { color: var(--tum-green); background: #d1e7dd; }
 .status-pill.spam { color: var(--tum-muted); background: var(--tum-bg); }
 
@@ -534,6 +537,8 @@ tbody tr:last-child td { border-bottom: 0; }
     font-weight: 700;
     line-height: 1.4;
 }
+/* Overdue is the one report signal that warrants red. */
+.unread-badge.overdue { background: var(--tum-red); }
 
 /* Sticky action bar shown when one or more reports are selected. */
 .bulk-bar {

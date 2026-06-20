@@ -16,7 +16,7 @@ class UpsertTopic
      * payload are deleted; admin UIDs are firstOrCreate'd so pre-assigning
      * access for someone who hasn't logged in yet still works.
      *
-     * @param array{ID: int, Name: array{de?: string|null, en?: string|null}, Summary?: array{de?: string|null, en?: string|null}|null, Email?: string|null, RequireLogin?: bool|null, Fields: list<array{ID?: int|null, Name: array{de?: string|null, en?: string|null}, Description?: array{de?: string|null, en?: string|null}|null, Type: string, Required?: bool|null, Choices?: list<string>|null}>, Admins?: list<array{UserID?: string|null}>|null} $payload
+     * @param array{ID: int, Name: array{de?: string|null, en?: string|null}, Summary?: array{de?: string|null, en?: string|null}|null, Email?: string|null, RequireLogin?: bool|null, RetentionDays?: int|null, Fields: list<array{ID?: int|null, Name: array{de?: string|null, en?: string|null}, Description?: array{de?: string|null, en?: string|null}|null, Type: string, Required?: bool|null, Choices?: list<string>|null}>, Admins?: list<array{UserID?: string|null}>|null} $payload
      */
     public function execute(?Topic $topic, array $payload): Topic
     {
@@ -29,6 +29,8 @@ class UpsertTopic
             $topic->summary_en = (string) ($payload['Summary']['en'] ?? '');
             $topic->email = (string) ($payload['Email'] ?? '');
             $topic->require_login = (bool) ($payload['RequireLogin'] ?? false);
+            $retention = $payload['RetentionDays'] ?? null;
+            $topic->retention_days = is_numeric($retention) ? (int) $retention : null;
             $topic->save();
 
             // wasRecentlyCreated is true only on the insert that just happened,

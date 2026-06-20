@@ -96,10 +96,10 @@
                             </div>
                         </details>
                         @if ($r->isAcknowledgementOverdue())
-                            <span class="unread-badge" title="{{ __('ack_overdue') }}">{{ __('ack_overdue') }}</span>
+                            <span class="unread-badge overdue" title="{{ __('ack_overdue') }}">{{ __('ack_overdue') }}</span>
                         @endif
                         @if ($r->isFeedbackOverdue())
-                            <span class="unread-badge" title="{{ __('feedback_overdue') }}">{{ __('feedback_overdue') }}</span>
+                            <span class="unread-badge overdue" title="{{ __('feedback_overdue') }}">{{ __('feedback_overdue') }}</span>
                         @endif
                     </td>
                     <td>{{ $r->messages->count() }}</td>

@@ -76,6 +76,44 @@ class AdminApiTest extends TestCase
         $this->assertDatabaseHas('admins', ['user_id' => 'ge42tum']);
     }
 
+    public function test_upsert_topic_persists_and_clears_retention_days(): void
+    {
+        $field = [
+            'ID' => 0,
+            'Name' => ['de' => 'F', 'en' => 'F'],
+            'Description' => ['de' => '', 'en' => ''],
+            'Type' => 'textarea',
+            'Required' => true,
+            'Choices' => [],
+        ];
+
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
+            'ID' => 0,
+            'Name' => ['de' => 'R', 'en' => 'R'],
+            'RetentionDays' => 90,
+            'Fields' => [$field],
+            'Admins' => [],
+        ])->assertOk();
+
+        $topic = Topic::where('name_en', 'R')->firstOrFail();
+        $this->assertSame(90, $topic->retention_days);
+
+        // Exposed back through the editor resource.
+        $this->actingAsGlobalAdmin()->getJson("/api/topic/{$topic->id}")
+            ->assertJson(['RetentionDays' => 90]);
+
+        // Clearing it (empty = keep forever) is allowed.
+        $this->actingAsGlobalAdmin()->postJson("/api/topic/{$topic->id}", [
+            'ID' => $topic->id,
+            'Name' => ['de' => 'R', 'en' => 'R'],
+            'RetentionDays' => null,
+            'Fields' => [$field],
+            'Admins' => [],
+        ])->assertOk();
+
+        $this->assertNull($topic->fresh()?->retention_days);
+    }
+
     public function test_upsert_topic_requires_fields(): void
     {
         // FormRequest validation rejects empty Fields with 422.
