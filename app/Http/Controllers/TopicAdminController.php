@@ -19,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
@@ -302,14 +303,15 @@ class TopicAdminController
         // unread badge (reports.updated_at > topic_views.last_seen_at) and
         // re-surfacing a report the admin just triaged is misleading.
         $report->timestamps = false;
+        $report->save();
+
         // Moving a report to "In progress" is an explicit act of taking it on,
         // so treat it as acknowledgement too. (Reopen/Close/Spam do not: they
-        // either move backwards or close the thread.) Timestamps are disabled
-        // above, so acknowledge()'s save won't bump updated_at either.
+        // either move backwards or close the thread.) Called after save() so the
+        // raw DB write in acknowledge() does not conflict with the dirty model.
         if ($newState === ReportState::InProgress) {
             $report->acknowledge();
         }
-        $report->save();
 
         AuditLog::record('report.status_changed', $report, [
             'from' => $from->value,
@@ -368,28 +370,36 @@ class TopicAdminController
             ->whereIn('id', $ids)
             ->toBase();
 
-        // Mirror setStatus(): a bulk status change is housekeeping, so leave
-        // `updated_at` untouched to avoid inflating the unread badge. Drop to
-        // the base query builder via toBase() because Eloquent's Builder
-        // auto-injects `updated_at` into every update().
-        $updated = $scoped()->update(['state' => $newState->value]);
+        // All three raw UPDATE queries must land atomically: if the process dies
+        // after the state change but before closed_at is stamped, a concluded
+        // report would have closed_at=null and be silently skipped by PruneReports,
+        // violating the HinSchG retention guarantee.
+        $updated = DB::transaction(function () use ($scoped, $newState): int {
+            // Mirror setStatus(): a bulk status change is housekeeping, so leave
+            // `updated_at` untouched to avoid inflating the unread badge. Drop to
+            // the base query builder via toBase() because Eloquent's Builder
+            // auto-injects `updated_at` into every update().
+            $updated = $scoped()->update(['state' => $newState->value]);
 
-        // The mass update bypasses the model's `updating` hook, so maintain the
-        // retention anchor (`closed_at`) inline. Concluding (Done/Spam) stamps
-        // it only where still null so the original conclusion date stands;
-        // reopening (Open/InProgress) clears it.
-        if ($newState === ReportState::Done || $newState === ReportState::Spam) {
-            $scoped()->whereNull('closed_at')->update(['closed_at' => now()]);
-        } else {
-            $scoped()->whereNotNull('closed_at')->update(['closed_at' => null]);
-        }
+            // The mass update bypasses the model's `updating` hook, so maintain the
+            // retention anchor (`closed_at`) inline. Concluding (Done/Spam) stamps
+            // it only where still null so the original conclusion date stands;
+            // reopening (Open/InProgress) clears it.
+            if ($newState === ReportState::Done || $newState === ReportState::Spam) {
+                $scoped()->whereNull('closed_at')->update(['closed_at' => now()]);
+            } else {
+                $scoped()->whereNotNull('closed_at')->update(['closed_at' => null]);
+            }
 
-        // Mirror setStatus(): moving to InProgress is an explicit act of taking
-        // on the report — treat as acknowledgement for the EU Directive 7-day
-        // window. Stamp only rows that aren't already acknowledged.
-        if ($newState === ReportState::InProgress) {
-            $scoped()->whereNull('acknowledged_at')->update(['acknowledged_at' => now()]);
-        }
+            // Mirror setStatus(): moving to InProgress is an explicit act of taking
+            // on the report — treat as acknowledgement for the EU Directive 7-day
+            // window. Stamp only rows that aren't already acknowledged.
+            if ($newState === ReportState::InProgress) {
+                $scoped()->whereNull('acknowledged_at')->update(['acknowledged_at' => now()]);
+            }
+
+            return $updated;
+        });
 
         // Bulk-status design: we record a SINGLE summary `report.bulk_status_changed`
         // row rather than one row per report. The update above runs as a single

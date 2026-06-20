@@ -81,6 +81,7 @@ class SendDeadlineReminders extends Command
 
             if ($dryRun) {
                 $this->line(sprintf('would remind %s about %d item(s) for topic "%s"', $target, count($items), $topic->name('en')));
+                $dispatched++;
             } else {
                 try {
                     Mail::to($target)->send(new DeadlineReminder($subject, $topic->name('en'), $dashboardUrl, $items));
