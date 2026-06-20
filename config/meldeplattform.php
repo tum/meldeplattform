@@ -45,6 +45,17 @@ return [
     */
     'dev_login_enabled' => filter_var(env('MELDE_DEV_LOGIN_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Webhook notification signing
+    |--------------------------------------------------------------------------
+    | Shared secret used to HMAC-SHA256 sign outgoing webhook payloads so the
+    | receiving endpoint can verify the request really came from us. Sent in
+    | the `X-SafeSignal-Signature: sha256=<hex>` header. Leave empty to send
+    | webhooks unsigned (not recommended).
+    */
+    'webhook_secret' => (string) env('MELDE_WEBHOOK_SECRET', ''),
+
     'allowed_extensions' => [
         'jpg', 'jpeg', 'png', 'gif', 'webp',
         'pdf', 'doc', 'docx', 'xls', 'xlsx',
