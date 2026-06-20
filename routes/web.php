@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\DevLoginController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\FormController;
@@ -101,6 +102,9 @@ Route::middleware('auth')->group(function (): void {
     // identifiers like `ge42tum`); the route constraint keeps stray
     // characters out of the URL and forces a 404 instead of a 500.
     Route::middleware('can:manage,'.User::class)->group(function (): void {
+        // Compliance/rogue-admin viewer — global admins only, mirroring /users.
+        Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
+
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{uid}/edit', [UserController::class, 'edit'])
