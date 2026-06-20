@@ -49,11 +49,12 @@ return [
     // Security requirements enforced on inbound SAML responses.
     // Mandatory in production; the SP refuses to boot without an IdP certificate.
     'security' => [
+        // The IdP signs the SAML Response (message) envelope, which we require.
         'wantMessagesSigned' => true,
-        // Require the assertion itself to be signed, not just the response
-        // envelope. With Shibboleth the signed assertion carries the trusted
-        // identity attributes; requiring it closes XML-wrapping-style gaps.
-        'wantAssertionsSigned' => true,
+        // The TUM IdP does not separately sign the assertion, so we cannot
+        // require it — doing so rejects every login. Trust is established via
+        // the signed response envelope above plus the IdP certificate.
+        'wantAssertionsSigned' => false,
         'wantAssertionsEncrypted' => false,
         'wantNameIdEncrypted' => false,
         'authnRequestsSigned' => false,
