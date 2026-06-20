@@ -54,6 +54,21 @@
         });
     });
 
+    // Hook buttons with data-acknowledge-url (mark a report acknowledged
+    // without changing its workflow state). Mirrors the status handler but
+    // posts an empty body to the dedicated acknowledge endpoint.
+    document.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-acknowledge-url]');
+        if (!el) return;
+        e.preventDefault();
+        const confirmText = el.getAttribute('data-acknowledge-confirm');
+        if (confirmText && !window.confirm(confirmText)) return;
+        const url = el.getAttribute('data-acknowledge-url');
+        window.md.postJson(url, {}, { reload: true }).catch((err) => {
+            alert('Request failed: ' + err.message);
+        });
+    });
+
     // Generic form-submit confirmation via `data-confirm-submit="…"`. Used
     // instead of inline `onsubmit="return confirm(…)"` because the strict
     // CSP (`script-src 'self'`) blocks inline event handlers — the inline

@@ -100,6 +100,11 @@ Route::middleware('auth')->group(function (): void {
         ->scopeBindings()
         ->can('update', 'topic')
         ->name('report.status');
+    Route::post('/api/topic/{topic}/report/{report}/acknowledge', [TopicAdminController::class, 'acknowledge'])
+        ->whereNumber('topic')->whereNumber('report')
+        ->scopeBindings()
+        ->can('update', 'topic')
+        ->name('report.acknowledge');
     Route::post('/api/topic/{topic}/reports/status', [TopicAdminController::class, 'bulkSetStatus'])
         ->whereNumber('topic')
         ->can('update', 'topic')
