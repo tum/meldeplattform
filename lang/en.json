@@ -52,6 +52,8 @@
     "title": "Title",
     "add_option": "Add Option",
     "skip_to_content": "Skip to content",
+    "welcome_heading": "Welcome to TUM SafeSignal",
+    "about_text": "TUM SafeSignal is the reporting platform of the Technical University of Munich. Members and guests of the university can use it to report problems, misconduct, safety concerns, or other issues to the team responsible for handling them. Pick a topic below, fill in a short form, and your report goes straight to the right people.",
     "intro_text": "Your report reaches the responsible TUM teams – confidentially, anonymously if you wish, and without an account.",
     "no_topics_configured": "No reporting topics have been configured yet.",
     "report_view_admin": "Administrator view.",

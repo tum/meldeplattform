@@ -3,7 +3,8 @@
 @section('intro')
     <section class="page-intro">
         <div class="container">
-            <h1>{{ __('select_topic_prompt') }}</h1>
+            <h1>{{ __('welcome_heading') }}</h1>
+            <p>{{ __('about_text') }}</p>
             <p>{{ __('intro_text') }}</p>
         </div>
     </section>
@@ -11,6 +12,7 @@
 
 @section('content')
     <div class="stack">
+        <h2>{{ __('select_topic_prompt') }}</h2>
         @foreach ($topicsAll as $t)
             <article class="card topic-card">
                 <div class="topic-body">

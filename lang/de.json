@@ -52,6 +52,8 @@
     "title": "Titel",
     "add_option": "Option hinzufügen",
     "skip_to_content": "Zum Inhalt springen",
+    "welcome_heading": "Willkommen bei TUM SafeSignal",
+    "about_text": "TUM SafeSignal ist die Meldeplattform der Technischen Universität München. Angehörige und Gäste der Universität können hier Probleme, Fehlverhalten, Sicherheitsbedenken oder andere Anliegen an das jeweils zuständige Team melden. Wählen Sie unten ein Thema, füllen Sie ein kurzes Formular aus, und Ihre Meldung erreicht direkt die richtigen Ansprechpartner*innen.",
     "intro_text": "Ihre Meldung erreicht die zuständigen TUM-Teams – vertraulich, auf Wunsch anonym und ohne Registrierung.",
     "no_topics_configured": "Aktuell sind noch keine Meldethemen konfiguriert.",
     "report_view_admin": "Bearbeitung als Administrator*in.",
