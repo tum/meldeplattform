@@ -12,6 +12,16 @@
                data-template-total="{{ trans_choice('reports_across_topics', $topics->count(), ['topics' => $topics->count(), 'reports' => ':total']) }}">
                 {{ trans_choice('reports_across_topics', $topics->count(), ['topics' => $topics->count(), 'reports' => $reports->count()]) }}
             </p>
+            @php
+                $overdueCount = $reports->filter(
+                    fn ($r) => $r->isAcknowledgementOverdue() || $r->isFeedbackOverdue(),
+                )->count();
+            @endphp
+            @if ($overdueCount > 0)
+                <p style="margin-top: 0.5rem;">
+                    <span class="unread-badge">{{ trans_choice('overdue_summary', $overdueCount, ['count' => $overdueCount]) }}</span>
+                </p>
+            @endif
         </div>
     </section>
 @endsection
@@ -76,6 +86,10 @@
                                         <button type="button" role="menuitem"
                                                 data-status-url="{{ $statusUrl }}" data-status="open">{{ __('reopen') }}</button>
                                     @endunless
+                                    @unless ($r->state === \App\Enums\ReportState::InProgress || $r->isClosed() || $r->isSpam())
+                                        <button type="button" role="menuitem"
+                                                data-status-url="{{ $statusUrl }}" data-status="progress">{{ __('mark_in_progress') }}</button>
+                                    @endunless
                                     @unless ($r->isClosed())
                                         <button type="button" role="menuitem"
                                                 data-status-url="{{ $statusUrl }}" data-status="close"
@@ -88,6 +102,12 @@
                                     @endunless
                                 </div>
                             </details>
+                            @if ($r->isAcknowledgementOverdue())
+                                <span class="unread-badge" title="{{ __('ack_overdue') }}">{{ __('ack_overdue') }}</span>
+                            @endif
+                            @if ($r->isFeedbackOverdue())
+                                <span class="unread-badge" title="{{ __('feedback_overdue') }}">{{ __('feedback_overdue') }}</span>
+                            @endif
                         </td>
                         <td>{{ $r->messages->count() }}</td>
                         <td class="text-right">

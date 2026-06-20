@@ -46,6 +46,12 @@ class ReportController
             'is_admin' => $isAdmin,
         ]);
 
+        // An administrator reply is implicit acknowledgement of the report
+        // (EU Whistleblowing Directive 7-day window). Idempotent.
+        if ($isAdmin) {
+            $report->acknowledge();
+        }
+
         $adminUrl = route('report.show', ['administratorToken' => $report->administrator_token]);
         $reporterUrl = route('report.show', ['reporterToken' => $report->reporter_token]);
 

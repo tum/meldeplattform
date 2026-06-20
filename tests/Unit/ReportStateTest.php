@@ -25,5 +25,18 @@ class ReportStateTest extends TestCase
         $this->assertFalse($r->isClosed());
         $this->assertTrue($r->isSpam());
         $this->assertSame(__('status_spam'), $r->statusLabel());
+
+        $r->state = ReportState::InProgress;
+        $this->assertFalse($r->isClosed());
+        $this->assertFalse($r->isSpam());
+        $this->assertSame(__('status_in_progress'), $r->statusLabel());
+    }
+
+    public function test_allows_reply(): void
+    {
+        $this->assertTrue(ReportState::Open->allowsReply());
+        $this->assertTrue(ReportState::InProgress->allowsReply());
+        $this->assertFalse(ReportState::Done->allowsReply());
+        $this->assertFalse(ReportState::Spam->allowsReply());
     }
 }

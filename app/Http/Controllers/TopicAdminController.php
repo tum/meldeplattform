@@ -97,13 +97,23 @@ class TopicAdminController
         $status = $request->string('s', '')->toString();
         $map = [
             'open' => ReportState::Open,
+            'progress' => ReportState::InProgress,
             'close' => ReportState::Done,
             'spam' => ReportState::Spam,
         ];
         if (! isset($map[$status])) {
             return response()->json(['error' => 'invalid status'], 400);
         }
-        $report->state = $map[$status];
+        $newState = $map[$status];
+        $report->state = $newState;
+        // Moving a report to "In progress" is an explicit act of taking it on,
+        // so treat it as acknowledgement too. (Reopen/Close/Spam do not: they
+        // either move backwards or close the thread.) acknowledge() saves the
+        // model on its own with timestamps enabled — but acknowledged_at is
+        // separate from updated_at, so the unread badge is unaffected.
+        if ($newState === ReportState::InProgress) {
+            $report->acknowledge();
+        }
         // A status change is admin housekeeping, not new thread activity, so
         // it must not bump `updated_at` — that column drives the home-page
         // unread badge (reports.updated_at > topic_views.last_seen_at) and
@@ -112,6 +122,17 @@ class TopicAdminController
         $report->save();
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Explicitly mark a report acknowledged (EU Whistleblowing Directive
+     * 7-day window) without changing its workflow state. Idempotent.
+     */
+    public function acknowledge(Request $request, Topic $topic, Report $report): JsonResponse
+    {
+        $report->acknowledge();
+
+        return response()->json(['ok' => true, 'acknowledged_at' => $report->acknowledged_at?->toIso8601String()]);
     }
 
     /**
@@ -124,6 +145,7 @@ class TopicAdminController
         $status = $request->string('s', '')->toString();
         $map = [
             'open' => ReportState::Open,
+            'progress' => ReportState::InProgress,
             'close' => ReportState::Done,
             'spam' => ReportState::Spam,
         ];

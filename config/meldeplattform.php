@@ -38,6 +38,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | EU Whistleblowing Directive (2019/1937) deadlines
+    |--------------------------------------------------------------------------
+    |
+    | Acknowledge a report within 7 days; provide feedback within 3 months
+    | (≈90 days). Both measured from the report's creation time.
+    |
+    */
+    'acknowledgement_deadline_days' => (int) env('MELDE_ACK_DEADLINE_DAYS', 7),
+    'feedback_deadline_days' => (int) env('MELDE_FEEDBACK_DEADLINE_DAYS', 90),
+
+    /*
+    |--------------------------------------------------------------------------
     | Dev login bypass
     |--------------------------------------------------------------------------
     | When true AND APP_ENV != "production", an in-app form at /dev/login
