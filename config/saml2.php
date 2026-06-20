@@ -50,7 +50,10 @@ return [
     // Mandatory in production; the SP refuses to boot without an IdP certificate.
     'security' => [
         'wantMessagesSigned' => true,
-        'wantAssertionsSigned' => false,
+        // Require the assertion itself to be signed, not just the response
+        // envelope. With Shibboleth the signed assertion carries the trusted
+        // identity attributes; requiring it closes XML-wrapping-style gaps.
+        'wantAssertionsSigned' => true,
         'wantAssertionsEncrypted' => false,
         'wantNameIdEncrypted' => false,
         'authnRequestsSigned' => false,

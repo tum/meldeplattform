@@ -6,6 +6,7 @@
             <h1>{{ __('welcome_heading') }}</h1>
             <p>{{ __('about_text') }}</p>
             <p>{{ __('intro_text') }}</p>
+            <p><a href="{{ route('report.track') }}">{{ __('track_link') }}</a></p>
         </div>
     </section>
 @endsection

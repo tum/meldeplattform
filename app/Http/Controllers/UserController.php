@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Admin;
+use App\Models\AuditLog;
 use App\Models\Topic;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -106,6 +107,8 @@ class UserController
             User::where('uid', $uid)->update(['is_global_admin' => false]);
         });
 
+        AuditLog::record('admin.revoked', null, ['target_uid' => $uid]);
+
         return redirect()->route('users.index')
             ->with('flash.success', __('users_revoked', ['uid' => $uid]));
     }
@@ -167,6 +170,12 @@ class UserController
                 $existingUser->save();
             }
         });
+
+        AuditLog::record('admin.granted', null, [
+            'target_uid' => $uid,
+            'is_global_admin' => $isGlobal,
+            'topic_ids' => $topicIds,
+        ]);
 
         return redirect()->route('users.index')
             ->with('flash.success', __('users_saved', ['uid' => $uid]));

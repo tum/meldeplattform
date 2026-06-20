@@ -19,6 +19,7 @@ use Illuminate\Support\Str;
  * @property int $topic_id
  * @property string $reporter_token
  * @property string $administrator_token
+ * @property string|null $receipt_hash
  * @property ReportState $state
  * @property Carbon|null $acknowledged_at
  * @property string|null $creator
@@ -31,6 +32,12 @@ class Report extends Model
 {
     /** @use HasFactory<ReportFactory> */
     use HasFactory;
+
+    /**
+     * Transient plaintext receipt code, populated by issueReceiptCode() so the
+     * caller can show it once. Never persisted — only its HMAC lives in the DB.
+     */
+    public ?string $plainReceiptCode = null;
 
     /** @var list<string> */
     protected $fillable = [
@@ -169,5 +176,46 @@ class Report extends Model
         $days = config('meldeplattform.feedback_deadline_days', 90);
 
         return is_int($days) ? $days : (int) (is_numeric($days) ? $days : 90);
+    }
+
+    /**
+     * Generate a fresh 16-digit numeric receipt code, store its keyed hash,
+     * and return the plaintext (also kept on $plainReceiptCode). The plaintext
+     * is shown to the reporter exactly once and never persisted.
+     */
+    public function issueReceiptCode(): string
+    {
+        $code = '';
+        for ($i = 0; $i < 16; $i++) {
+            $code .= (string) random_int(0, 9);
+        }
+
+        $this->receipt_hash = self::hashReceipt($code);
+        $this->save();
+
+        return $this->plainReceiptCode = $code;
+    }
+
+    public static function findByReceiptCode(string $code): ?self
+    {
+        $normalized = self::normalizeReceipt($code);
+        if ($normalized === '') {
+            return null;
+        }
+
+        return self::where('receipt_hash', self::hashReceipt($normalized))->first();
+    }
+
+    protected static function hashReceipt(string $code): string
+    {
+        $key = config('app.key');
+        $key = is_string($key) ? $key : '';
+
+        return hash_hmac('sha256', self::normalizeReceipt($code), $key);
+    }
+
+    private static function normalizeReceipt(string $code): string
+    {
+        return preg_replace('/\D+/', '', $code) ?? '';
     }
 }

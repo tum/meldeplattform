@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ReplyRequest;
 use App\Mail\ReportNotification;
+use App\Models\AuditLog;
 use App\Models\Message;
 use App\Models\Report;
 use App\Services\MessengerDispatcher;
@@ -20,6 +21,13 @@ class ReportController
     public function show(Request $request): View
     {
         [$report, $isAdmin] = $this->resolveReport($request);
+
+        // Rogue-admin detection: record only the administrator-side view. The
+        // reporter-side access is deliberately NOT logged — logging it could
+        // help correlate and deanonymize a reporter.
+        if ($isAdmin) {
+            AuditLog::record('report.accessed', $report);
+        }
 
         $report->load('messages.files', 'topic');
 
@@ -64,10 +72,11 @@ class ReportController
 
         if ($isAdmin && $report->creator !== null && filter_var($report->creator, FILTER_VALIDATE_EMAIL) !== false) {
             try {
+                // Notification-only: the admin's reply text is not emailed to the
+                // reporter; they open it via their secure reporter link.
                 Mail::to($report->creator)->send(new ReportNotification(
                     subjectLine: sprintf('[%s]: report #%d updated', $topic->name('en'), $report->id),
                     heading: sprintf('Update zu Meldung #%d', $report->id),
-                    bodyHtml: $message->renderedBody(),
                     linkUrl: $reporterUrl,
                 ));
             } catch (\Throwable $e) {

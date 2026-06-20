@@ -6,6 +6,7 @@ use App\Actions\UpsertTopic;
 use App\Enums\ReportState;
 use App\Http\Requests\UpsertTopicRequest;
 use App\Http\Resources\TopicResource;
+use App\Models\AuditLog;
 use App\Models\Report;
 use App\Models\Topic;
 use App\Models\TopicView;
@@ -104,22 +105,29 @@ class TopicAdminController
         if (! isset($map[$status])) {
             return response()->json(['error' => 'invalid status'], 400);
         }
+        // Capture the prior state before mutating so the audit entry can
+        // record the exact transition.
+        $from = $report->state;
         $newState = $map[$status];
         $report->state = $newState;
-        // Moving a report to "In progress" is an explicit act of taking it on,
-        // so treat it as acknowledgement too. (Reopen/Close/Spam do not: they
-        // either move backwards or close the thread.) acknowledge() saves the
-        // model on its own with timestamps enabled — but acknowledged_at is
-        // separate from updated_at, so the unread badge is unaffected.
-        if ($newState === ReportState::InProgress) {
-            $report->acknowledge();
-        }
         // A status change is admin housekeeping, not new thread activity, so
         // it must not bump `updated_at` — that column drives the home-page
         // unread badge (reports.updated_at > topic_views.last_seen_at) and
         // re-surfacing a report the admin just triaged is misleading.
         $report->timestamps = false;
+        // Moving a report to "In progress" is an explicit act of taking it on,
+        // so treat it as acknowledgement too. (Reopen/Close/Spam do not: they
+        // either move backwards or close the thread.) Timestamps are disabled
+        // above, so acknowledge()'s save won't bump updated_at either.
+        if ($newState === ReportState::InProgress) {
+            $report->acknowledge();
+        }
         $report->save();
+
+        AuditLog::record('report.status_changed', $report, [
+            'from' => $from->value,
+            'to' => $report->state->value,
+        ]);
 
         return response()->json(['ok' => true]);
     }
@@ -176,6 +184,20 @@ class TopicAdminController
             ->whereIn('id', $ids)
             ->toBase()
             ->update(['state' => $newState->value]);
+
+        // Bulk-status design: we record a SINGLE summary `report.bulk_status_changed`
+        // row rather than one row per report. The update above runs as a single
+        // mass-update query (no models are hydrated), so emitting per-report rows
+        // would require re-loading the affected ids purely to log them. A summary
+        // row carrying the target state, the affected ids and the count keeps the
+        // hot bulk path cheap while still being auditable. Subject = the topic.
+        if ($updated > 0) {
+            AuditLog::record('report.bulk_status_changed', $topic, [
+                'to' => $newState->value,
+                'report_ids' => $ids,
+                'count' => $updated,
+            ]);
+        }
 
         return response()->json(['ok' => true, 'updated' => $updated]);
     }

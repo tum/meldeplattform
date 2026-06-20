@@ -19,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $email
  * @property array<string, array<string, string>>|null $contacts
  * @property bool $require_login
+ * @property int|null $retention_days
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Field> $fields
@@ -32,14 +33,30 @@ class Topic extends Model
 
     /** @var list<string> */
     protected $fillable = [
-        'name_de', 'name_en', 'summary_de', 'summary_en', 'email', 'contacts', 'require_login',
+        'name_de', 'name_en', 'summary_de', 'summary_en', 'email', 'contacts', 'require_login', 'retention_days',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'contacts' => 'array',
         'require_login' => 'boolean',
+        'retention_days' => 'integer',
     ];
+
+    /**
+     * Effective data-retention window in days: the topic's own value, else the
+     * global default, else null (keep forever / pruning disabled).
+     */
+    public function effectiveRetentionDays(): ?int
+    {
+        if ($this->retention_days !== null) {
+            return $this->retention_days;
+        }
+
+        $default = config('meldeplattform.default_retention_days');
+
+        return is_int($default) ? $default : null;
+    }
 
     /** @return HasMany<Field, $this> */
     public function fields(): HasMany
