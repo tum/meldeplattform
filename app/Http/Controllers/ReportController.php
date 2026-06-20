@@ -3,15 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ReplyRequest;
-use App\Mail\ReportNotification;
-use App\Models\AuditLog;
 use App\Models\Message;
 use App\Models\Report;
 use App\Services\MessengerDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class ReportController
@@ -20,28 +16,20 @@ class ReportController
 
     public function show(Request $request): View
     {
-        [$report, $isAdmin] = $this->resolveReport($request);
-
-        // Rogue-admin detection: record only the administrator-side view. The
-        // reporter-side access is deliberately NOT logged — logging it could
-        // help correlate and deanonymize a reporter.
-        if ($isAdmin) {
-            AuditLog::record('report.accessed', $report);
-        }
-
+        $report = $this->resolveReporterReport($request);
         $report->load('messages.files', 'topic');
 
         return view('pages.report', [
             'report' => $report,
-            'isAdministrator' => $isAdmin,
+            'isAdministrator' => false,
         ]);
     }
 
     public function reply(ReplyRequest $request): RedirectResponse
     {
-        [$report, $isAdmin] = $this->resolveReport($request);
+        $report = $this->resolveReporterReport($request);
 
-        if (! $isAdmin && ! $report->state->allowsReply()) {
+        if (! $report->state->allowsReply()) {
             abort(403);
         }
 
@@ -51,72 +39,34 @@ class ReportController
         $message = Message::create([
             'report_id' => $report->id,
             'content' => $reply,
-            'is_admin' => $isAdmin,
+            'is_admin' => false,
         ]);
-
-        // An administrator reply is implicit acknowledgement of the report
-        // (EU Whistleblowing Directive 7-day window). Idempotent.
-        if ($isAdmin) {
-            $report->acknowledge();
-        }
-
-        $adminUrl = route('report.show', ['administratorToken' => $report->administrator_token]);
-        $reporterUrl = route('report.show', ['reporterToken' => $report->reporter_token]);
 
         $this->messengers->dispatch(
             $topic,
             sprintf('[%s]: report #%d updated', $topic->name('en'), $report->id),
             $message,
-            $adminUrl,
+            route('admin.report.show', ['topic' => $topic->id, 'report' => $report->id]),
         );
 
-        if ($isAdmin && $report->creator !== null && filter_var($report->creator, FILTER_VALIDATE_EMAIL) !== false) {
-            try {
-                // Notification-only: the admin's reply text is not emailed to the
-                // reporter; they open it via their secure reporter link.
-                Mail::to($report->creator)->send(new ReportNotification(
-                    subjectLine: sprintf('[%s]: report #%d updated', $topic->name('en'), $report->id),
-                    heading: sprintf('Update zu Meldung #%d', $report->id),
-                    linkUrl: $reporterUrl,
-                ));
-            } catch (\Throwable $e) {
-                Log::error('Failed to notify reporter', ['error' => $e->getMessage()]);
-            }
-        }
-
-        $tokenParam = $isAdmin
-            ? ['administratorToken' => $request->string('administratorToken', '')->toString()]
-            : ['reporterToken' => $request->string('reporterToken', '')->toString()];
-
-        return redirect()->route('report.show', $tokenParam);
+        return redirect()->route('report.show', [
+            'reporterToken' => $request->string('reporterToken', '')->toString(),
+        ]);
     }
 
-    /**
-     * @return array{0: Report, 1: bool}
-     */
-    private function resolveReport(Request $request): array
+    private function resolveReporterReport(Request $request): Report
     {
-        $administratorToken = $request->string('administratorToken', '')->toString();
         $reporterToken = $request->string('reporterToken', '')->toString();
 
-        if ($administratorToken !== '') {
-            $report = Report::where('administrator_token', $administratorToken)->first();
-            if ($report === null) {
-                abort(404);
-            }
-
-            return [$report, true];
+        if ($reporterToken === '') {
+            abort(404);
         }
 
-        if ($reporterToken !== '') {
-            $report = Report::where('reporter_token', $reporterToken)->first();
-            if ($report === null) {
-                abort(404);
-            }
-
-            return [$report, false];
+        $report = Report::where('reporter_token', $reporterToken)->first();
+        if ($report === null) {
+            abort(404);
         }
 
-        abort(404);
+        return $report;
     }
 }

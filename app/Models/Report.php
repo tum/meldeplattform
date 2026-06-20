@@ -18,7 +18,6 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property int $topic_id
  * @property string $reporter_token
- * @property string $administrator_token
  * @property string|null $receipt_hash
  * @property ReportState $state
  * @property Carbon|null $acknowledged_at
@@ -42,7 +41,7 @@ class Report extends Model
 
     /** @var list<string> */
     protected $fillable = [
-        'topic_id', 'reporter_token', 'administrator_token', 'state', 'acknowledged_at', 'creator',
+        'topic_id', 'reporter_token', 'receipt_hash', 'state', 'acknowledged_at', 'closed_at', 'creator',
     ];
 
     /** @var array<string, string> */
@@ -56,7 +55,6 @@ class Report extends Model
     {
         static::creating(function (Report $report): void {
             $report->reporter_token ??= (string) Str::uuid();
-            $report->administrator_token ??= (string) Str::uuid();
             $report->state ??= ReportState::Open;
             // A report seeded directly in a concluded state still needs its
             // retention anchor. (Normal flow always creates Open and concludes
@@ -277,7 +275,9 @@ class Report extends Model
             ->where(function (Builder $q) use ($ackCutoff, $feedbackCutoff): void {
                 $q->where(function (Builder $q) use ($ackCutoff): void {
                     $q->whereNull('acknowledged_at')->where('created_at', '<', $ackCutoff);
-                })->orWhere('created_at', '<', $feedbackCutoff);
+                })->orWhere(function (Builder $q) use ($feedbackCutoff): void {
+                    $q->whereNotNull('acknowledged_at')->where('created_at', '<', $feedbackCutoff);
+                });
             });
     }
 
@@ -309,7 +309,7 @@ class Report extends Model
     {
         $code = strtoupper(bin2hex(random_bytes(12)));
 
-        $this->receipt_hash = self::hashReceipt($code);
+        $this->receipt_hash = self::hashReceipt(strtolower($code)); // normalize before hash
         $this->save();
 
         return $this->plainReceiptCode = $code;
@@ -330,7 +330,7 @@ class Report extends Model
         $key = config('app.key');
         $key = is_string($key) ? $key : '';
 
-        return hash_hmac('sha256', self::normalizeReceipt($code), $key);
+        return hash_hmac('sha256', $code, $key);
     }
 
     private static function normalizeReceipt(string $code): string

@@ -77,9 +77,16 @@ return [
             );
         }
 
-        return is_numeric($raw)
-            ? ((int) $raw > 0 ? (int) $raw : null)
-            : 1095;
+        if (is_numeric($raw)) {
+            $days = (int) $raw;
+            if ($days < 0) {
+                throw new InvalidArgumentException(
+                    'MELDE_DEFAULT_RETENTION_DAYS must be a non-negative number. Got: '.(string) $raw,
+                );
+            }
+            return $days > 0 ? $days : null;
+        }
+        return 1095;
     })(),
 
     /*

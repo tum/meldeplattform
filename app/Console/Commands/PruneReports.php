@@ -31,7 +31,7 @@ class PruneReports extends Command
         $dryRun = (bool) $this->option('dry-run');
         $total = 0;
 
-        foreach (Topic::all() as $topic) {
+        foreach (Topic::query()->lazy() as $topic) {
             $days = $topic->effectiveRetentionDays();
             if ($days === null) {
                 continue;
@@ -88,8 +88,13 @@ class PruneReports extends Command
                 continue;
             }
 
-            Storage::disk($file->disk)->delete($file->path);
-            $file->delete();
+            try {
+                Storage::disk($file->disk)->delete($file->path);
+            } finally {
+                // Always remove the DB row even if the storage call throws,
+                // preventing permanently orphaned File records.
+                $file->delete();
+            }
         }
     }
 }

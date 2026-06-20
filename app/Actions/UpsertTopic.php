@@ -56,10 +56,10 @@ class UpsertTopic
         $position = 0;
         foreach ($fieldsPayload as $f) {
             $fieldId = (int) ($f['ID'] ?? 0);
-            $field = $fieldId > 0 ? Field::find($fieldId) : null;
-            if ($field === null || $field->topic_id !== $topic->id) {
-                $field = new Field(['topic_id' => $topic->id]);
-            }
+            // Restrict lookup to this topic — a field ID from a different topic
+            // simply creates a new field (safe) without loading cross-topic data.
+            $field = ($fieldId > 0) ? Field::where('id', $fieldId)->where('topic_id', $topic->id)->first() : null;
+            $field ??= new Field(['topic_id' => $topic->id]);
 
             $field->fill([
                 'topic_id' => $topic->id,
@@ -83,6 +83,7 @@ class UpsertTopic
      */
     private function syncAdmins(Topic $topic, array $adminsPayload): void
     {
+        $syncedUserIds = [];
         /** @var list<int> $adminIds */
         $adminIds = [];
         foreach ($adminsPayload as $a) {
@@ -92,11 +93,15 @@ class UpsertTopic
             }
             $admin = Admin::firstOrCreate(['user_id' => $userId]);
             $adminIds[] = $admin->id;
+            $syncedUserIds[] = $userId;
         }
         $topic->admins()->sync($adminIds);
 
-        // Remove Admin records that are no longer assigned to any topic so
-        // they don't linger as invisible orphans in the database.
-        Admin::doesntHave('topics')->delete();
+        // Only remove admins whose UIDs were touched by this sync and who now
+        // have no topic assignments — avoids a race where a global sweep deletes
+        // an admin mid-sync in a concurrent request.
+        if ($syncedUserIds !== []) {
+            Admin::whereIn('user_id', $syncedUserIds)->doesntHave('topics')->delete();
+        }
     }
 }

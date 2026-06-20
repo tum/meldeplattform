@@ -40,8 +40,8 @@ class DeadlineReminderTest extends TestCase
 
         $this->assertSame(0, Artisan::call('reports:remind'));
 
-        // The mailable is ShouldQueue, so Mail::fake records it as queued.
-        Mail::assertQueued(DeadlineReminder::class, function (DeadlineReminder $mail): bool {
+        // DeadlineReminder is sent synchronously (not queued), so assertSent.
+        Mail::assertSent(DeadlineReminder::class, function (DeadlineReminder $mail): bool {
             return $mail->hasTo('handler@example.com') && count($mail->items) >= 1;
         });
     }
@@ -55,7 +55,7 @@ class DeadlineReminderTest extends TestCase
 
         $this->assertSame(0, Artisan::call('reports:remind'));
 
-        Mail::assertNothingQueued();
+        Mail::assertNothingSent();
     }
 
     public function test_no_email_when_topic_has_no_mailbox(): void
@@ -66,7 +66,7 @@ class DeadlineReminderTest extends TestCase
 
         $this->assertSame(0, Artisan::call('reports:remind'));
 
-        Mail::assertNothingQueued();
+        Mail::assertNothingSent();
     }
 
     public function test_dry_run_sends_no_mail(): void
@@ -77,6 +77,6 @@ class DeadlineReminderTest extends TestCase
 
         $this->assertSame(0, Artisan::call('reports:remind', ['--dry-run' => true]));
 
-        Mail::assertNothingQueued();
+        Mail::assertNothingSent();
     }
 }

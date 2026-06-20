@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ReportState;
+use App\Models\Admin;
 use App\Models\Message;
 use App\Models\Report;
 use App\Models\Topic;
@@ -68,10 +69,12 @@ class ReportFlowTest extends TestCase
     public function test_admin_reply_is_flagged_as_admin(): void
     {
         $r = $this->seedReport();
+        $topic = $r->topic;
 
-        $this->post('/report?administratorToken='.$r->administrator_token, [
-            'reply' => 'admin follow-up',
-        ])->assertRedirect();
+        $this->actingAsGlobalAdmin()
+            ->post("/reports/{$topic->id}/{$r->id}/reply", [
+                'reply' => 'admin follow-up',
+            ])->assertRedirect();
 
         $this->assertDatabaseHas('messages', [
             'report_id' => $r->id,
@@ -103,9 +106,11 @@ class ReportFlowTest extends TestCase
     public function test_admin_still_sees_reply_form_on_closed_report(): void
     {
         $r = $this->seedReport();
+        $topic = $r->topic;
         $r->update(['state' => ReportState::Spam]);
 
-        $this->get('/report?administratorToken='.$r->administrator_token)
+        $this->actingAsGlobalAdmin()
+            ->get("/reports/{$topic->id}/{$r->id}")
             ->assertOk()
             ->assertSee('name="reply"', escape: false)
             ->assertDontSee(__('report_closed_no_reply'));

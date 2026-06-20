@@ -25,9 +25,12 @@
             @endauth
         </div>
         <div class="right lang-switch">
-            <a href="{{ route('lang.set', ['lang' => 'de']) }}" class="{{ $lang === 'de' ? 'active' : '' }}"><abbr lang="de" title="Deutsch">de</abbr></a>
-            <span class="sep">|</span>
-            <a href="{{ route('lang.set', ['lang' => 'en']) }}" class="{{ $lang === 'en' ? 'active' : '' }}"><abbr lang="en" title="English">en</abbr></a>
+            <form method="POST" action="{{ route('lang.set') }}" style="display:contents">
+                @csrf
+                <button type="submit" name="lang" value="de" class="lang-btn {{ $lang === 'de' ? 'active' : '' }}" style="background:none;border:none;cursor:pointer;padding:0;font:inherit;color:inherit;text-decoration:none;"><abbr lang="de" title="Deutsch">de</abbr></button>
+                <span class="sep">|</span>
+                <button type="submit" name="lang" value="en" class="lang-btn {{ $lang === 'en' ? 'active' : '' }}" style="background:none;border:none;cursor:pointer;padding:0;font:inherit;color:inherit;text-decoration:none;"><abbr lang="en" title="English">en</abbr></button>
+            </form>
         </div>
     </div>
 </div>

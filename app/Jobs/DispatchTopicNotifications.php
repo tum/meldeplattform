@@ -30,7 +30,7 @@ class DispatchTopicNotifications implements ShouldQueue
     public int $tries = 3;
 
     /** Guard against a hung mail/HTTP endpoint holding a worker forever. */
-    public int $timeout = 30;
+    public int $timeout = 90;
 
     public function __construct(
         public readonly Topic $topic,

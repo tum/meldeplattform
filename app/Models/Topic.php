@@ -56,7 +56,7 @@ class Topic extends Model
 
         $default = config('meldeplattform.default_retention_days');
 
-        return is_int($default) ? $default : null;
+        return is_numeric($default) ? (int) $default : null;
     }
 
     /** @return HasMany<Field, $this> */
