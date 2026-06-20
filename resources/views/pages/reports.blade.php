@@ -73,6 +73,12 @@
                                         {{ __('reopen') }}
                                     </button>
                                 @endunless
+                                @unless ($r->state === \App\Enums\ReportState::InProgress || $r->isClosed() || $r->isSpam())
+                                    <button type="button" role="menuitem"
+                                            data-status-url="{{ $statusUrl }}" data-status="progress">
+                                        {{ __('mark_in_progress') }}
+                                    </button>
+                                @endunless
                                 @unless ($r->isClosed())
                                     <button type="button" role="menuitem"
                                             data-status-url="{{ $statusUrl }}" data-status="close"
@@ -89,6 +95,12 @@
                                 @endunless
                             </div>
                         </details>
+                        @if ($r->isAcknowledgementOverdue())
+                            <span class="unread-badge" title="{{ __('ack_overdue') }}">{{ __('ack_overdue') }}</span>
+                        @endif
+                        @if ($r->isFeedbackOverdue())
+                            <span class="unread-badge" title="{{ __('feedback_overdue') }}">{{ __('feedback_overdue') }}</span>
+                        @endif
                     </td>
                     <td>{{ $r->messages->count() }}</td>
                     <td class="text-right">

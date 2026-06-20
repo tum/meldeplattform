@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\UpsertUserAccess;
 use App\Http\Requests\UpsertUserRequest;
 use App\Models\Admin;
+use App\Models\AuditLog;
 use App\Models\Topic;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -100,6 +101,8 @@ class UserController
             User::where('uid', $uid)->update(['is_global_admin' => false]);
         });
 
+        AuditLog::record('admin.revoked', null, ['target_uid' => $uid]);
+
         return redirect()->route('users.index')
             ->with('flash.success', __('users_revoked', ['uid' => $uid]));
     }
@@ -113,8 +116,16 @@ class UserController
     private function persist(UpsertUserRequest $request, UpsertUserAccess $action): RedirectResponse
     {
         $uid = $request->uid();
+        $isGlobal = $request->wantsGlobalAdmin();
+        $topicIds = $request->topicIds();
 
-        $action->execute($uid, $request->wantsGlobalAdmin(), $request->topicIds());
+        $action->execute($uid, $isGlobal, $topicIds);
+
+        AuditLog::record('admin.granted', null, [
+            'target_uid' => $uid,
+            'is_global_admin' => $isGlobal,
+            'topic_ids' => $topicIds,
+        ]);
 
         return redirect()->route('users.index')
             ->with('flash.success', __('users_saved', ['uid' => $uid]));

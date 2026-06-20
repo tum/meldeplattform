@@ -8,6 +8,7 @@ use App\Models\Message;
 use App\Models\Report;
 use App\Models\Topic;
 use App\Services\MessengerDispatcher;
+use App\Support\UploadSanitizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -15,7 +16,10 @@ use Illuminate\Support\Str;
 
 class StoreReportSubmission
 {
-    public function __construct(private readonly MessengerDispatcher $messengers) {}
+    public function __construct(
+        private readonly MessengerDispatcher $messengers,
+        private readonly UploadSanitizer $sanitizer,
+    ) {}
 
     /**
      * Compose the report body from the submitted field values, store any
@@ -135,21 +139,25 @@ class StoreReportSubmission
             ->lower()
             ->toString();
 
-        $safeName = basename($upload->getClientOriginalName());
-        if ($safeName === '' || $safeName === '.') {
-            $safeName = (string) Str::uuid();
-        }
-
         $uuid = (string) Str::uuid();
         $storageName = $ext === '' ? $uuid : $uuid.'.'.$ext;
         $disk = 'uploads';
-        $path = $upload->storeAs('', $storageName, $disk);
+        $stored = $upload->storeAs('', $storageName, $disk);
+        if (! is_string($stored)) {
+            throw new \RuntimeException('Failed to store uploaded file.');
+        }
+        $path = $stored;
 
+        // Strip identifying metadata (e.g. image EXIF/GPS) from the stored file.
+        $this->sanitizer->stripImageMetadata(Storage::disk($disk)->path($path), $ext);
+
+        // Do NOT persist the client's original filename: it can itself
+        // deanonymise the reporter (e.g. "max_mustermann_kündigung.pdf").
         return File::create([
             'uuid' => $uuid,
             'path' => $path,
             'disk' => $disk,
-            'name' => $safeName,
+            'name' => $this->sanitizer->neutralFilename($uuid, $ext),
         ]);
     }
 }

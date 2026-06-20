@@ -5,6 +5,7 @@ namespace App\Enums;
 enum ReportState: string
 {
     case Open = 'open';
+    case InProgress = 'in_progress';
     case Done = 'done';
     case Spam = 'spam';
 
@@ -12,6 +13,7 @@ enum ReportState: string
     {
         return match ($this) {
             self::Open => __('status_open'),
+            self::InProgress => __('status_in_progress'),
             self::Done => __('status_done'),
             self::Spam => __('status_spam'),
         };
@@ -19,6 +21,11 @@ enum ReportState: string
 
     public function allowsReply(): bool
     {
-        return $this === self::Open;
+        // Reporters may still reply while the report is open or actively
+        // being worked; closed (Done) and Spam end the conversation.
+        return match ($this) {
+            self::Open, self::InProgress => true,
+            self::Done, self::Spam => false,
+        };
     }
 }

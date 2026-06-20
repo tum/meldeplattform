@@ -24,6 +24,19 @@
 @endsection
 
 @section('content')
+    @if (! $isAdministrator && session('receipt_code'))
+        @php
+            $receiptCode = (string) session('receipt_code');
+            $receiptGroups = implode(' ', str_split($receiptCode, 4));
+        @endphp
+        <div class="alert alert-warning">
+            <strong>{{ __('receipt_heading') }}</strong>
+            <p style="margin-top: 0.5rem;">{{ __('receipt_instructions') }}</p>
+            <p style="font-family: monospace; font-size: 1.4rem; letter-spacing: 0.1em; margin: 0.75rem 0;">{{ $receiptGroups }}</p>
+            <p class="muted"><small>{{ __('receipt_track_hint') }}</small></p>
+        </div>
+    @endif
+
     @if (! $isAdministrator)
         <div class="alert alert-warning">
             <div>{{ __('reportOpened') }}</div>
@@ -87,6 +100,29 @@
             <div class="section-header">
                 <h2>{{ __('status') }}</h2>
             </div>
+
+            {{-- EU Whistleblowing Directive deadlines: acknowledgement (7d) and feedback (3mo). --}}
+            <div class="card card-soft mb-4">
+                <p style="margin: 0 0 0.5rem;">
+                    @if ($report->isAcknowledged())
+                        <span class="status-pill done">{{ __('acknowledged') }}</span>
+                        <span class="muted">· {{ $report->acknowledged_at?->format('d.m.Y H:i') }}</span>
+                    @else
+                        <span class="status-pill open">{{ __('not_acknowledged') }}</span>
+                    @endif
+                    @if ($report->isAcknowledgementOverdue())
+                        <span class="unread-badge">{{ __('ack_overdue') }}</span>
+                    @endif
+                    @if ($report->isFeedbackOverdue())
+                        <span class="unread-badge">{{ __('feedback_overdue') }}</span>
+                    @endif
+                </p>
+                <p class="muted" style="margin: 0;">
+                    {{ __('ack_due') }}: {{ $report->acknowledgementDueAt()?->format('d.m.Y') }}
+                    · {{ __('feedback_due') }}: {{ $report->feedbackDueAt()?->format('d.m.Y') }}
+                </p>
+            </div>
+
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                 @php
                     // Auto-advance to the reports list after Close/Spam so
@@ -95,13 +131,28 @@
                     // redirect — the admin probably wants to verify the
                     // state change before moving on.
                     $statusUrl = route('report.status', ['topic' => $report->topic_id, 'report' => $report->id]);
+                    $ackUrl = route('report.acknowledge', ['topic' => $report->topic_id, 'report' => $report->id]);
                     $listUrl = route('topic.reports', $report->topic_id);
                 @endphp
+                @unless ($report->isAcknowledged())
+                    <button class="button"
+                            data-acknowledge-url="{{ $ackUrl }}"
+                            data-acknowledge-confirm="{{ __('confirm_acknowledge') }}">
+                        {{ __('acknowledge') }}
+                    </button>
+                @endunless
                 @unless ($report->state === \App\Enums\ReportState::Open)
                     <button class="button button-success"
                             data-status-url="{{ $statusUrl }}"
                             data-status="open">
                         {{ __('reopen') }}
+                    </button>
+                @endunless
+                @unless ($report->state === \App\Enums\ReportState::InProgress || $report->isClosed() || $report->isSpam())
+                    <button class="button"
+                            data-status-url="{{ $statusUrl }}"
+                            data-status="progress">
+                        {{ __('mark_in_progress') }}
                     </button>
                 @endunless
                 @unless ($report->isClosed())

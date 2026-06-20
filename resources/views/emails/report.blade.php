@@ -8,14 +8,21 @@
     <div style="max-width: 600px; margin: 0 auto; background: #fff; border-top: 4px solid #3070B3; border-radius: 6px; padding: 24px;">
         <h1 style="color: #072140; font-size: 20px; margin-top: 0;">{{ $heading }}</h1>
 
-        <div style="font-size: 15px; line-height: 1.55;">
-            {!! $bodyHtml !!}
-        </div>
+        {{-- Notification-only: no report content is included for confidentiality.
+             The recipient opens the secure link to read it in the authenticated UI. --}}
+        <p style="font-size: 15px; line-height: 1.55;">
+            Für die Vertraulichkeit der Meldung enthält diese E-Mail keine Inhalte.
+            Bitte öffnen Sie die Meldung über den gesicherten Link.
+        </p>
+        <p style="font-size: 15px; line-height: 1.55; color: #6A757E;">
+            For confidentiality, this e-mail contains no report content.
+            Please open the report via the secure link below.
+        </p>
 
         <p style="margin-top: 24px;">
             <a href="{{ $linkUrl }}"
                style="display: inline-block; background: #3070B3; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-                {{ app()->getLocale() === 'de' ? 'Zur Meldung' : 'Open report' }}
+                Zur Meldung / Open report
             </a>
         </p>
 
