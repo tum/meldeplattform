@@ -30,24 +30,12 @@
             $receiptGroups = implode(' ', str_split($receiptCode, 4));
         @endphp
         <div class="alert alert-warning">
+            <p style="margin: 0 0 0.75rem;">{{ __('reportOpened') }}</p>
             <strong>{{ __('receipt_heading') }}</strong>
             <p style="margin-top: 0.5rem;">{{ __('receipt_instructions') }}</p>
             <p style="font-family: monospace; font-size: 1.4rem; letter-spacing: 0.1em; margin: 0.75rem 0;">{{ $receiptGroups }}</p>
             <p class="muted"><small>{{ __('receipt_track_hint') }}</small></p>
         </div>
-    @endif
-
-    @if (! $isAdministrator)
-        <div class="alert alert-info">
-            <div>{{ __('reportOpened') }}</div>
-            <div class="copy-link" style="margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                <input type="text" readonly value="{{ url()->current().'?reporterToken='.$report->reporter_token }}"
-                       data-copy-link aria-label="{{ __('report_link_label') }}"
-                       style="flex: 1; min-width: 18rem; font-family: monospace; font-size: 0.9rem;">
-                <button type="button" class="button button-small" data-copy-button>{{ __('copy_link') }}</button>
-            </div>
-        </div>
-        <script src="{{ asset('js/copy-link.js') }}" defer></script>
     @endif
 
     @if ($report->creator)
