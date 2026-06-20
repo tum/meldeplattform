@@ -36,3 +36,6 @@ key.pem
 
 # Archived Go implementation – not carried into the Laravel port.
 _legacy/
+
+# Claude Code metadata (worktrees, settings)
+/.claude/
