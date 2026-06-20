@@ -99,6 +99,7 @@ class StoreReportSubmission
      *
      * @param list<File> $files
      * @param list<string> $storedPaths
+     * @param-out list<string> $storedPaths
      */
     private function composeBody(Topic $topic, SubmitReportRequest $request, array &$files, array &$storedPaths, string $reporterToken): string
     {
@@ -134,6 +135,7 @@ class StoreReportSubmission
         return $messageBody;
     }
 
+    /** @param list<string> $storedPaths */
     private function storeUpload(UploadedFile $upload, array &$storedPaths): File
     {
         // Prefer the server-detected extension over the client-supplied one;

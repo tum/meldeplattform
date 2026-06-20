@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\ReportState;
-use App\Models\Admin;
 use App\Models\Message;
 use App\Models\Report;
 use App\Models\Topic;

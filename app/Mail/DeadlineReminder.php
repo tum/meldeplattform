@@ -19,7 +19,6 @@ use Illuminate\Mail\Mailables\Envelope;
  */
 class DeadlineReminder extends Mailable
 {
-
     /**
      * @param list<array{id: int, type: string, due: string, overdue: bool}> $items
      */

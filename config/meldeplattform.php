@@ -84,8 +84,10 @@ return [
                     'MELDE_DEFAULT_RETENTION_DAYS must be a non-negative number. Got: '.(string) $raw,
                 );
             }
+
             return $days > 0 ? $days : null;
         }
+
         return 1095;
     })(),
 
