@@ -82,6 +82,37 @@ class SubmitFlowTest extends TestCase
         $this->assertCount(1, $report->messages);
     }
 
+    public function test_submit_renders_date_field_as_german_date(): void
+    {
+        Mail::fake();
+        Storage::fake('uploads');
+
+        $topic = Topic::create([
+            'name_de' => 'Test', 'name_en' => 'Test',
+            'summary_de' => 's', 'summary_en' => 's',
+        ]);
+        $field = Field::create([
+            'topic_id' => $topic->id,
+            'name_de' => 'Datum',
+            'name_en' => 'Date',
+            'type' => 'date',
+            'required' => true,
+            'position' => 0,
+        ]);
+
+        // <input type="date"> always submits the ISO yyyy-mm-dd wire format.
+        $this->post('/submit', [
+            'topic' => $topic->id,
+            (string) $field->id => '2026-03-05',
+        ])->assertRedirect();
+
+        $report = Report::first();
+        $this->assertNotNull($report);
+        $body = (string) $report->messages->first()?->content;
+        $this->assertStringContainsString('05.03.2026', $body);
+        $this->assertStringNotContainsString('2026-03-05', $body);
+    }
+
     public function test_submit_rejects_bad_email(): void
     {
         $topic = Topic::create([

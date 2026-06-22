@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\FieldType;
 use App\Http\Requests\SubmitReportRequest;
 use App\Models\File;
 use App\Models\Message;
@@ -10,6 +11,7 @@ use App\Models\Topic;
 use App\Services\MessengerDispatcher;
 use App\Support\UploadSanitizer;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -99,6 +101,7 @@ class StoreReportSubmission
      *
      * @param list<File> $files
      * @param list<string> $storedPaths
+     *
      * @param-out list<string> $storedPaths
      */
     private function composeBody(Topic $topic, SubmitReportRequest $request, array &$files, array &$storedPaths, string $reporterToken): string
@@ -109,7 +112,20 @@ class StoreReportSubmission
             $messageBody .= "\n**".$field->name('en')."**\n";
 
             if (! $field->type->isFileUpload()) {
-                $messageBody .= $request->string((string) $field->id, '')->toString()."\n";
+                $value = $request->string((string) $field->id, '')->toString();
+
+                // Date fields arrive from <input type="date"> as ISO yyyy-mm-dd;
+                // render them as dd.mm.yyyy to match how every other date in the
+                // system is shown.
+                if ($field->type === FieldType::Date && $value !== '') {
+                    try {
+                        $value = Carbon::parse($value)->format('d.m.Y');
+                    } catch (\Throwable) {
+                        // Leave an unparseable value untouched rather than dropping it.
+                    }
+                }
+
+                $messageBody .= $value."\n";
 
                 continue;
             }
