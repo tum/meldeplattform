@@ -28,6 +28,29 @@ class AdminApiTest extends TestCase
         $this->actingAsUser('not-admin')->get('/newTopic')->assertStatus(403);
     }
 
+    public function test_summary_preview_requires_auth(): void
+    {
+        $this->postJson('/api/topic/summary-preview', ['text' => 'x'])->assertUnauthorized();
+    }
+
+    public function test_summary_preview_renders_markdown_and_colors(): void
+    {
+        $res = $this->actingAsGlobalAdmin()
+            ->postJson('/api/topic/summary-preview', ['text' => '{green}done{/green} **bold**']);
+
+        $res->assertOk();
+        $html = (string) $res->json('html');
+        $this->assertStringContainsString('<span class="t-color-green">done</span>', $html);
+        $this->assertStringContainsString('<strong>bold</strong>', $html);
+    }
+
+    public function test_summary_preview_rejects_overlong_text(): void
+    {
+        $this->actingAsGlobalAdmin()
+            ->postJson('/api/topic/summary-preview', ['text' => str_repeat('a', 20001)])
+            ->assertStatus(422);
+    }
+
     public function test_global_admin_can_open_create_form(): void
     {
         $this->actingAsGlobalAdmin()->get('/newTopic')->assertOk();

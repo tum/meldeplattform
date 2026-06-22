@@ -17,6 +17,8 @@
     "german": "German",
     "english": "English",
     "summary": "Summary",
+    "summary_hint": "Markdown formatting is supported (e.g. **bold**, *italic*, lists, [links](https://example.org)). Colours: {green}text{/green} – also red, yellow, blue, grey.",
+    "preview": "Preview",
     "general": "General",
     "questions": "Questions",
     "add_field": "Add Question",

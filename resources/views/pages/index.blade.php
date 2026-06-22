@@ -18,7 +18,7 @@
             <article class="card topic-card">
                 <div class="topic-body">
                     <h3><a href="{{ route('form.show', $t) }}">{{ $t->name($lang) }}</a></h3>
-                    <p class="muted">{{ $t->summary($lang) }}</p>
+                    <div class="muted topic-summary">{!! $t->renderedSummary($lang) !!}</div>
                     @if ($t->require_login)
                         <p class="muted"><small>{{ __('login_required_badge') }}</small></p>
                     @endif

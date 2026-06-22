@@ -7,7 +7,7 @@
         <div class="container">
             <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ $topic->name($lang) }}</h1>
-            <p>{{ $topic->summary($lang) }}</p>
+            <div class="topic-summary">{!! $topic->renderedSummary($lang) !!}</div>
         </div>
     </section>
 @endsection

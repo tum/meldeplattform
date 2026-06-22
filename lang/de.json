@@ -17,6 +17,8 @@
     "german": "Deutsch",
     "english": "Englisch",
     "summary": "Zusammenfassung",
+    "summary_hint": "Formatierung mit Markdown möglich (z. B. **fett**, *kursiv*, Listen, [Links](https://example.org)). Farben: {green}Text{/green} – ebenso red, yellow, blue, grey.",
+    "preview": "Vorschau",
     "general": "Allgemein",
     "questions": "Fragen",
     "add_field": "Frage hinzufügen",

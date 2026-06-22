@@ -84,6 +84,12 @@ Route::middleware('auth')->group(function (): void {
         ->can('create', Topic::class)
         ->name('topic.store');
 
+    // Live summary preview for the editor: renders arbitrary markdown through
+    // the same sanitiser as the public page. Not topic-specific and exposes no
+    // data, so the group's `auth` gate is sufficient.
+    Route::post('/api/topic/summary-preview', [TopicAdminController::class, 'previewSummary'])
+        ->name('topic.summary.preview');
+
     Route::get('/newTopic/{topic}', [TopicAdminController::class, 'edit'])
         ->whereNumber('topic')->can('update', 'topic')->name('topic.edit');
     Route::get('/reports/{topic}', [TopicAdminController::class, 'reportsOfTopic'])

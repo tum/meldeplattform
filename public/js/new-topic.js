@@ -36,6 +36,72 @@
         return i;
     }
 
+    function textarea(value, onInput, placeholder = '') {
+        const t = el('textarea', { value, placeholder, rows: 5 });
+        t.addEventListener('input', (e) => onInput(e.target.value));
+        return t;
+    }
+
+    function debounce(fn, ms) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn(...args), ms);
+        };
+    }
+
+    // Render `text` through the server-side summary sanitiser and drop the
+    // resulting (already-sanitised) HTML into `target`. Empty input clears the
+    // box without a round-trip.
+    function fetchPreview(text, target) {
+        if (!text.trim()) {
+            target.innerHTML = '';
+            return;
+        }
+        fetch('/api/topic/summary-preview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ text }),
+        })
+            .then((r) => (r.ok ? r.json() : { html: '' }))
+            .then((j) => { target.innerHTML = j.html || ''; })
+            .catch(() => {});
+    }
+
+    // Summary editor: a de/en textarea pair, each with a live preview that
+    // mirrors exactly what the public page renders (markdown + brand colours).
+    function summaryField() {
+        const group = el('div', { className: 'form-group' }, el('label', { textContent: tr.summary }));
+
+        const makeLang = (langLabel, getVal, setVal) => {
+            const preview = el('div', { className: 'summary-preview' });
+            const update = debounce((text) => fetchPreview(text, preview), 250);
+            const ta = textarea(getVal(), (v) => { setVal(v); update(v); });
+            fetchPreview(getVal(), preview);
+            return el(
+                'label',
+                { style: 'display:block' },
+                el('span', { className: 'desc', textContent: langLabel }),
+                ta,
+                el('span', { className: 'desc', textContent: tr.preview }),
+                preview,
+            );
+        };
+
+        group.append(
+            makeLang(tr.de, () => topic.Summary?.de ?? '', (v) => (topic.Summary.de = v)),
+            makeLang(tr.en, () => topic.Summary?.en ?? '', (v) => (topic.Summary.en = v)),
+        );
+        if (tr.summaryHint) {
+            group.append(el('span', { className: 'desc', textContent: tr.summaryHint }));
+        }
+        return group;
+    }
+
     function langRow(labelText, deVal, enVal, onDe, onEn, placeholder = {}) {
         return el(
             'div',
@@ -74,15 +140,7 @@
                 { de: 'IT-Sicherheit', en: 'IT-Security' },
             ),
         );
-        body.append(
-            langRow(
-                tr.summary,
-                topic.Summary?.de ?? '',
-                topic.Summary?.en ?? '',
-                (v) => (topic.Summary.de = v),
-                (v) => (topic.Summary.en = v),
-            ),
-        );
+        body.append(summaryField());
 
         const reqLoginLabel = el('label', { className: 'form-group', style: 'display:block;' });
         const reqLoginCb = el('input', { type: 'checkbox', checked: !!topic.RequireLogin });

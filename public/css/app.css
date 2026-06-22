@@ -283,6 +283,35 @@ hr {
     color: var(--tum-primary);
 }
 .topic-card p { margin: 0; color: var(--tum-text); }
+/* Summaries are rendered from markdown (paragraphs, lists, links). Trim the
+   outer block margins so it sits flush like the previous single paragraph,
+   restore spacing between stacked blocks, and keep the muted tone on cards. */
+.topic-summary > :first-child { margin-top: 0; }
+.topic-summary > :last-child { margin-bottom: 0; }
+.topic-summary > * + * { margin-top: 0.5em; }
+.topic-card .topic-summary,
+.topic-card .topic-summary p,
+.topic-card .topic-summary li { color: var(--tum-muted); }
+/* Brand text colours for operator-authored summaries ({green}…{/green} etc.),
+   injected as fixed palette classes by Markdown::sanitizeWithColors(). Element-
+   scoped so they win over the muted inheritance on topic cards above. */
+.t-color-red    { color: var(--tum-red); }
+.t-color-green  { color: var(--tum-green); }
+.t-color-yellow { color: var(--tum-yellow); }
+.t-color-blue   { color: var(--tum-primary); }
+.t-color-grey   { color: var(--tum-muted); }
+/* Live summary preview in the topic editor — mirrors the public rendering. */
+.summary-preview {
+    margin-top: 0.35rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px dashed var(--tum-border);
+    border-radius: var(--radius-sm);
+    background: var(--tum-soft);
+}
+.summary-preview:empty { display: none; }
+.summary-preview > :first-child { margin-top: 0; }
+.summary-preview > :last-child { margin-bottom: 0; }
+.summary-preview > * + * { margin-top: 0.5em; }
 .topic-card .actions {
     position: relative;
     z-index: 2;

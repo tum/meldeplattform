@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Topic;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,6 +15,32 @@ class PublicPagesTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('TUM SafeSignal', false);
+    }
+
+    public function test_topic_summary_renders_markdown(): void
+    {
+        $topic = Topic::create([
+            'name_de' => 'Markdown-Thema',
+            'name_en' => 'Markdown Topic',
+            'summary_de' => 'Bitte {red}**dringend**{/red} melden.',
+            'summary_en' => 'Please report {red}**urgently**{/red}.',
+        ]);
+
+        // Markdown and brand colour shortcodes in the summary must render as
+        // sanitised HTML, not raw markers, on both the topic listing and the
+        // topic's form page.
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('<strong>', false)
+            ->assertSee('class="t-color-red"', false)
+            ->assertDontSee('{red}', false)
+            ->assertDontSee('**dringend**', false)
+            ->assertDontSee('**urgently**', false);
+
+        $this->get("/form/{$topic->id}")
+            ->assertOk()
+            ->assertSee('<strong>', false)
+            ->assertSee('class="t-color-red"', false);
     }
 
     public function test_imprint_renders(): void

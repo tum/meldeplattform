@@ -8,6 +8,10 @@ services:
       APP_DEBUG: ${APP_DEBUG:-true}
       MELDE_ADMIN_USERS: ${MELDE_ADMIN_USERS:-dev,ge25bof}
       MELDE_DEV_LOGIN_ENABLED: ${MELDE_DEV_LOGIN_ENABLED:-true}
+      # Pick up PHP code changes without rebuilding/restarting. The production
+      # image bakes in 0 (OPcache trusts its bytecode); dev needs revalidation
+      # so edits to routes/controllers/models take effect on the next request.
+      PHP_OPCACHE_VALIDATE_TIMESTAMPS: ${PHP_OPCACHE_VALIDATE_TIMESTAMPS:-1}
     # Bind-mount the repo into the container so Pint/PHPStan/Tests
     # executed inside the container edit the files on the host.
     # The production image still ships with the baked-in copy.

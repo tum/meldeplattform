@@ -14,6 +14,7 @@ use App\Models\Report;
 use App\Models\Topic;
 use App\Models\TopicView;
 use App\Services\MessengerDispatcher;
+use App\Support\Markdown;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -37,6 +38,21 @@ class TopicAdminController
     public function edit(Topic $topic): View
     {
         return view('pages.new-topic', ['topic' => $topic]);
+    }
+
+    /**
+     * Render a topic summary's markdown (incl. brand colour shortcodes) to the
+     * exact HTML the public page will show, for the editor's live preview.
+     */
+    public function previewSummary(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'text' => ['nullable', 'string', 'max:20000'],
+        ]);
+
+        return response()->json([
+            'html' => Markdown::sanitizeWithColors((string) ($validated['text'] ?? '')),
+        ]);
     }
 
     public function reportsOfTopic(Topic $topic, Request $request): View

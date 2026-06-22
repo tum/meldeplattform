@@ -48,6 +48,8 @@
                 'admins_desc' => __('admins_desc'),
                 'contactEmail' => __('contactEmail'),
                 'summary' => __('summary'),
+                'summaryHint' => __('summary_hint'),
+                'preview' => __('preview'),
                 'de' => __('german'),
                 'en' => __('english'),
                 'type' => __('type'),

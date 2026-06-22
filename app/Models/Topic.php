@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Markdown;
 use Database\Factories\TopicFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -112,6 +113,17 @@ class Topic extends Model
             : ($this->summary_en ?? $this->summary_de);
 
         return $value ?? '';
+    }
+
+    /**
+     * Render the summary's markdown to sanitised HTML for display. Uses the
+     * same restrictive pipeline as report messages, so operator-authored
+     * formatting (bold, lists, links) is allowed but unsafe HTML is stripped,
+     * plus the brand colour shortcodes ({green}…{/green} etc.).
+     */
+    public function renderedSummary(string $lang): string
+    {
+        return Markdown::sanitizeWithColors($this->summary($lang));
     }
 
     public function isAdmin(?string $uid): bool
