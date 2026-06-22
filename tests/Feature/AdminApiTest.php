@@ -39,7 +39,8 @@ class AdminApiTest extends TestCase
             ->postJson('/api/topic/summary-preview', ['text' => '{green}done{/green} **bold**']);
 
         $res->assertOk();
-        $html = (string) $res->json('html');
+        $html = $res->json('html');
+        $this->assertIsString($html);
         $this->assertStringContainsString('<span class="t-color-green">done</span>', $html);
         $this->assertStringContainsString('<strong>bold</strong>', $html);
     }
