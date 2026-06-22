@@ -23,6 +23,8 @@ use Illuminate\Support\Str;
  * @property Carbon|null $acknowledged_at
  * @property Carbon|null $closed_at
  * @property string|null $creator
+ * @property string|null $otrs_ticket_id
+ * @property string|null $otrs_ticket_number
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Topic $topic
@@ -42,6 +44,7 @@ class Report extends Model
     /** @var list<string> */
     protected $fillable = [
         'topic_id', 'reporter_token', 'receipt_hash', 'state', 'acknowledged_at', 'closed_at', 'creator',
+        'otrs_ticket_id', 'otrs_ticket_number',
     ];
 
     /** @var array<string, string> */

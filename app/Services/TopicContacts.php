@@ -15,6 +15,8 @@ readonly class TopicContacts
     public function __construct(
         public ?string $emailTarget,
         public ?string $webhookTarget,
+        public bool $otrsEnabled,
+        public ?string $otrsQueue,
     ) {}
 
     public static function fromTopic(Topic $topic): self
@@ -25,6 +27,12 @@ readonly class TopicContacts
         return new self(
             emailTarget: self::nestedString($contacts, 'email', 'target'),
             webhookTarget: self::nestedString($contacts, 'webhook', 'target'),
+            // A topic opts into OTRS routing simply by carrying an `otrs` object
+            // in its contacts (`{"otrs": {}}` uses the configured default queue,
+            // `{"otrs": {"queue": "Whistleblowing"}}` overrides it). The OTRS
+            // connection itself lives in global config, not per topic.
+            otrsEnabled: is_array($contacts['otrs'] ?? null),
+            otrsQueue: self::nestedString($contacts, 'otrs', 'queue'),
         );
     }
 

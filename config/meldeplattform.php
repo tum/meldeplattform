@@ -111,6 +111,34 @@ return [
     */
     'webhook_secret' => (string) env('MELDE_WEBHOOK_SECRET', ''),
 
+    /*
+    |--------------------------------------------------------------------------
+    | OTRS / Znuny ticket integration
+    |--------------------------------------------------------------------------
+    | Connection to an OTRS/Znuny GenericInterface "Ticket Connector" REST web
+    | service. A topic opts in per-contacts (`contacts.otrs.queue`); the keys
+    | below hold the shared connection plus ticket defaults.
+    |
+    | UNLIKE the email/webhook channels, this one pushes the FULL report content
+    | into the ticket — so `base_url` MUST be https (the messenger refuses any
+    | other scheme). Leave `base_url` empty to disable OTRS entirely; topics
+    | that request it are then skipped with a logged warning.
+    |
+    | `base_url` is the web-service base, e.g.
+    |   https://otrs.example.org/otrs/nph-genericinterface.pl/Webservice/GenericTicketConnectorREST
+    */
+    'otrs' => [
+        'base_url' => (string) env('MELDE_OTRS_BASE_URL', ''),
+        'user_login' => (string) env('MELDE_OTRS_USER_LOGIN', ''),
+        'password' => (string) env('MELDE_OTRS_PASSWORD', ''),
+        'default_queue' => (string) env('MELDE_OTRS_QUEUE', 'Raw'),
+        'default_priority' => (string) env('MELDE_OTRS_PRIORITY', '3 normal'),
+        'default_state' => (string) env('MELDE_OTRS_STATE', 'new'),
+        'customer_user' => (string) env('MELDE_OTRS_CUSTOMER_USER', 'safesignal'),
+        'ticket_type' => (string) env('MELDE_OTRS_TYPE', ''),
+        'timeout' => (int) env('MELDE_OTRS_TIMEOUT', 10),
+    ],
+
     'allowed_extensions' => [
         'jpg', 'jpeg', 'png', 'gif', 'webp',
         'pdf', 'doc', 'docx', 'xls', 'xlsx',
