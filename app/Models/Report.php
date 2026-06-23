@@ -44,12 +44,15 @@ class Report extends Model
         'topic_id', 'reporter_token', 'receipt_hash', 'state', 'acknowledged_at', 'closed_at', 'creator',
     ];
 
-    /** @var array<string, string> */
-    protected $casts = [
-        'state' => ReportState::class,
-        'acknowledged_at' => 'datetime',
-        'closed_at' => 'datetime',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'state' => ReportState::class,
+            'acknowledged_at' => 'datetime',
+            'closed_at' => 'datetime',
+        ];
+    }
 
     protected static function booted(): void
     {

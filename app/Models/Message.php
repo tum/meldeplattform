@@ -29,10 +29,13 @@ class Message extends Model
     /** @var list<string> */
     protected $fillable = ['report_id', 'content', 'is_admin'];
 
-    /** @var array<string, string> */
-    protected $casts = [
-        'is_admin' => 'boolean',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'is_admin' => 'boolean',
+        ];
+    }
 
     /**
      * Touch the parent Report on save/delete so its `updated_at` reflects

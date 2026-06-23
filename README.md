@@ -10,10 +10,10 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
 > **TUM SafeSignal**.
 
 <p align="center">
-  <img alt="Laravel 13" src="https://img.shields.io/badge/Laravel-13.5-ff2d20?logo=laravel&logoColor=white">
-  <img alt="PHP 8.3" src="https://img.shields.io/badge/PHP-8.3-777bb4?logo=php&logoColor=white">
+  <img alt="Laravel 13" src="https://img.shields.io/badge/Laravel-13.16-ff2d20?logo=laravel&logoColor=white">
+  <img alt="PHP 8.4" src="https://img.shields.io/badge/PHP-8.4-777bb4?logo=php&logoColor=white">
   <img alt="PHPStan level 9" src="https://img.shields.io/badge/PHPStan-level%209-1d4ed8">
-  <img alt="Tests" src="https://img.shields.io/badge/Tests-165%20passing-16a34a">
+  <img alt="Tests" src="https://img.shields.io/badge/Tests-193%20passing-16a34a">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-blue">
 </p>
 
@@ -76,12 +76,12 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
 | Bereich | Komponente |
 |---|---|
 | Framework | Laravel 13 |
-| PHP | 8.3 |
+| PHP | 8.4 |
 | DB | MySQL 5.7+ / MariaDB 10.6+ (SQLite :memory: in Tests) |
 | SAML | `onelogin/php-saml` |
 | Markdown | `league/commonmark` + `mews/purifier` |
 | HTTP (Webhook) | Guzzle via Laravel `Http` Facade |
-| Qualität | Laravel Pint, PHPStan (larastan) Level 9, PHPUnit 12 |
+| Qualität | Laravel Pint, PHPStan (larastan) Level 9, PHPUnit 13 |
 | CI | GitHub Actions (lint, stan, tests × SQLite + MariaDB) |
 | Container | PHP-FPM + nginx + Supervisord, MariaDB 11 via Compose |
 
@@ -137,7 +137,7 @@ Die App ist so gebaut, dass sie auch auf klassischen PHP-Hostings
 
 **Minimal-Voraussetzungen**
 
-- PHP ≥ 8.3 mit Extensions: `pdo_mysql`, `mbstring`, `openssl`,
+- PHP ≥ 8.4 mit Extensions: `pdo_mysql`, `mbstring`, `openssl`,
   `tokenizer`, `xml`, `ctype`, `json`, `zip`, `curl`, `fileinfo`, `gd`,
   `intl`, `bcmath`
 - MySQL / MariaDB
@@ -316,7 +316,7 @@ Hinweise:
 docker compose exec app composer install
 docker compose exec app vendor/bin/pint            # Autoformat
 docker compose exec app vendor/bin/phpstan analyse # Statik, Level 9
-docker compose exec app vendor/bin/phpunit         # 165 Tests
+docker compose exec app vendor/bin/phpunit         # 193 Tests
 ```
 
 Das `docker-compose.override.yml` bind-mounted das Repo in den Container,
@@ -362,7 +362,7 @@ docker compose exec app vendor/bin/phpunit
 
 - **Pint**: Laravel-Preset + Extras (siehe `pint.json`)
 - **PHPStan**: Level 9 (siehe `phpstan.neon`, larastan-Extension)
-- **PHPUnit**: 165 Tests (Unit + Feature), 480 Assertions
+- **PHPUnit**: 193 Tests (Unit + Feature), 561 Assertions
 
 GitHub Actions führt die drei Stufen bei jedem Push/PR aus – Test-Matrix
 gegen SQLite + MariaDB 11.

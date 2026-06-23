@@ -37,13 +37,16 @@ class Field extends Model
         'type', 'required', 'choices', 'position',
     ];
 
-    /** @var array<string, string> */
-    protected $casts = [
-        'type' => FieldType::class,
-        'required' => 'boolean',
-        'choices' => 'array',
-        'position' => 'integer',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'type' => FieldType::class,
+            'required' => 'boolean',
+            'choices' => 'array',
+            'position' => 'integer',
+        ];
+    }
 
     /** @return BelongsTo<Topic, $this> */
     public function topic(): BelongsTo

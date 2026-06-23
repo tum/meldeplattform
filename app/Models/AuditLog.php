@@ -31,10 +31,13 @@ class AuditLog extends Model
     /** @var list<string> */
     protected $fillable = ['actor', 'action', 'subject_type', 'subject_id', 'metadata'];
 
-    /** @var array<string, string> */
-    protected $casts = [
-        'metadata' => 'array',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'metadata' => 'array',
+        ];
+    }
 
     protected static function booted(): void
     {

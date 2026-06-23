@@ -5,7 +5,7 @@
     "keywords": ["tum", "safesignal", "whistleblowing", "reporting", "laravel"],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.4",
         "ext-pdo": "*",
         "guzzlehttp/guzzle": "^7.9",
         "laravel/framework": "^13.0",
@@ -20,7 +20,7 @@
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.4",
         "phpstan/phpstan-deprecation-rules": "^2.0",
-        "phpunit/phpunit": "^12.5",
+        "phpunit/phpunit": "^13.0",
         "spatie/laravel-ignition": "^2.8"
     },
     "autoload": {
@@ -64,7 +64,7 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "platform": {
-            "php": "8.3.30"
+            "php": "8.4.18"
         },
         "allow-plugins": {
             "php-http/discovery": true

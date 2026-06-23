@@ -38,12 +38,15 @@ class Topic extends Model
         'name_de', 'name_en', 'summary_de', 'summary_en', 'email', 'contacts', 'require_login', 'retention_days',
     ];
 
-    /** @var array<string, string> */
-    protected $casts = [
-        'contacts' => 'array',
-        'require_login' => 'boolean',
-        'retention_days' => 'integer',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'contacts' => 'array',
+            'require_login' => 'boolean',
+            'retention_days' => 'integer',
+        ];
+    }
 
     /**
      * Effective data-retention window in days: the topic's own value, else the
