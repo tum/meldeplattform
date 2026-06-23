@@ -138,6 +138,101 @@ class AdminApiTest extends TestCase
         $this->assertNull($topic->fresh()?->retention_days);
     }
 
+    public function test_upsert_topic_persists_contacts_webhook_and_otrs(): void
+    {
+        $field = [
+            'ID' => 0, 'Name' => ['de' => 'F', 'en' => 'F'], 'Description' => ['de' => '', 'en' => ''],
+            'Type' => 'textarea', 'Required' => true, 'Choices' => [],
+        ];
+
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
+            'ID' => 0,
+            'Name' => ['de' => 'C', 'en' => 'C'],
+            'Contacts' => [
+                'Webhook' => 'https://hook.tum.de/in',
+                'Otrs' => ['Enabled' => true, 'Queue' => 'Whistleblowing'],
+            ],
+            'Fields' => [$field],
+            'Admins' => [],
+        ])->assertOk();
+
+        $topic = Topic::where('name_en', 'C')->firstOrFail();
+        $this->assertSame('https://hook.tum.de/in', $topic->contacts['webhook']['target'] ?? null);
+        $this->assertSame('Whistleblowing', $topic->contacts['otrs']['queue'] ?? null);
+
+        // Round-trips back through the editor resource.
+        $this->actingAsGlobalAdmin()->getJson("/api/topic/{$topic->id}")
+            ->assertOk()
+            ->assertJson(['Contacts' => [
+                'Webhook' => 'https://hook.tum.de/in',
+                'Otrs' => ['Enabled' => true, 'Queue' => 'Whistleblowing'],
+            ]]);
+    }
+
+    public function test_upsert_topic_otrs_enabled_without_queue_uses_default(): void
+    {
+        $field = [
+            'ID' => 0, 'Name' => ['de' => 'F', 'en' => 'F'], 'Description' => ['de' => '', 'en' => ''],
+            'Type' => 'textarea', 'Required' => true, 'Choices' => [],
+        ];
+
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
+            'ID' => 0,
+            'Name' => ['de' => 'Q', 'en' => 'Q'],
+            'Contacts' => ['Otrs' => ['Enabled' => true, 'Queue' => '']],
+            'Fields' => [$field],
+            'Admins' => [],
+        ])->assertOk();
+
+        $topic = Topic::where('name_en', 'Q')->firstOrFail();
+        // Empty `otrs` object = enabled, routes to the global default queue.
+        $this->assertSame([], $topic->contacts['otrs'] ?? null);
+        $this->actingAsGlobalAdmin()->getJson("/api/topic/{$topic->id}")
+            ->assertJson(['Contacts' => ['Otrs' => ['Enabled' => true, 'Queue' => '']]]);
+    }
+
+    public function test_upsert_disabling_otrs_removes_it_but_preserves_other_contacts(): void
+    {
+        // A power-user email.target set directly in the DB must survive an edit
+        // that only toggles the channels the editor manages.
+        $topic = Topic::create([
+            'name_de' => 'P', 'name_en' => 'P', 'summary_de' => 's', 'summary_en' => 's',
+            'contacts' => ['email' => ['target' => 'keep@tum.de'], 'otrs' => ['queue' => 'X']],
+        ]);
+        $field = [
+            'ID' => 0, 'Name' => ['de' => 'F', 'en' => 'F'], 'Description' => ['de' => '', 'en' => ''],
+            'Type' => 'textarea', 'Required' => true, 'Choices' => [],
+        ];
+
+        $this->actingAsGlobalAdmin()->postJson("/api/topic/{$topic->id}", [
+            'ID' => $topic->id,
+            'Name' => ['de' => 'P', 'en' => 'P'],
+            'Contacts' => ['Otrs' => ['Enabled' => false, 'Queue' => '']],
+            'Fields' => [$field],
+            'Admins' => [],
+        ])->assertOk();
+
+        $fresh = $topic->fresh();
+        $this->assertNull($fresh?->contacts['otrs'] ?? null);
+        $this->assertSame('keep@tum.de', $fresh?->contacts['email']['target'] ?? null);
+    }
+
+    public function test_upsert_rejects_non_https_webhook(): void
+    {
+        $field = [
+            'ID' => 0, 'Name' => ['de' => 'F', 'en' => 'F'], 'Description' => ['de' => '', 'en' => ''],
+            'Type' => 'textarea', 'Required' => true, 'Choices' => [],
+        ];
+
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
+            'ID' => 0,
+            'Name' => ['de' => 'W', 'en' => 'W'],
+            'Contacts' => ['Webhook' => 'http://insecure.tum.de/in'],
+            'Fields' => [$field],
+            'Admins' => [],
+        ])->assertStatus(422)->assertJsonValidationErrors(['Contacts.Webhook']);
+    }
+
     public function test_upsert_topic_requires_fields(): void
     {
         // FormRequest validation rejects empty Fields with 422.

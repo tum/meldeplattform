@@ -337,8 +337,45 @@
         );
 
         body.append(el('hr'));
-        body.append(el('label', { textContent: tr.contactEmail }));
-        body.append(input(topic.Email ?? '', (v) => (topic.Email = v), 'it-sec@tum.de', 'email'));
+        body.append(el('h3', { textContent: tr.channels }));
+        if (tr.channelsDesc) {
+            body.append(el('p', { className: 'muted', textContent: tr.channelsDesc }));
+        }
+
+        // Email channel (legacy `topics.email` column).
+        const emailGroup = el('div', { className: 'form-group' }, el('label', { textContent: tr.contactEmail }));
+        emailGroup.append(input(topic.Email ?? '', (v) => (topic.Email = v), 'it-sec@tum.de', 'email'));
+        body.append(emailGroup);
+
+        // Webhook channel (contacts.webhook.target).
+        const webhookGroup = el('div', { className: 'form-group' }, el('label', { textContent: tr.webhookUrl }));
+        webhookGroup.append(input(topic.Contacts.Webhook ?? '', (v) => (topic.Contacts.Webhook = v), 'https://…', 'url'));
+        if (tr.webhookDesc) {
+            webhookGroup.append(el('span', { className: 'desc', textContent: tr.webhookDesc }));
+        }
+        body.append(webhookGroup);
+
+        // OTRS channel (contacts.otrs). The queue input only matters when
+        // enabled, so it is hidden until the box is checked; an empty queue
+        // means "use the global default".
+        const otrsLabel = el('label', { className: 'form-group', style: 'display:block;' });
+        const otrsCb = el('input', { type: 'checkbox', checked: !!topic.Contacts.Otrs.Enabled });
+        otrsLabel.append(otrsCb, document.createTextNode(' ' + tr.otrsEnable));
+        body.append(otrsLabel);
+
+        const otrsQueueGroup = el('div', { className: 'form-group' }, el('label', { textContent: tr.otrsQueue }));
+        otrsQueueGroup.append(input(topic.Contacts.Otrs.Queue ?? '', (v) => (topic.Contacts.Otrs.Queue = v), 'Raw'));
+        if (tr.otrsQueueDesc) {
+            otrsQueueGroup.append(el('span', { className: 'desc', textContent: tr.otrsQueueDesc }));
+        }
+        body.append(otrsQueueGroup);
+
+        const syncOtrs = () => { otrsQueueGroup.style.display = topic.Contacts.Otrs.Enabled ? '' : 'none'; };
+        otrsCb.addEventListener('change', (e) => {
+            topic.Contacts.Otrs.Enabled = e.target.checked;
+            syncOtrs();
+        });
+        syncOtrs();
     }
 
     const loadUrl = topicID > 0 ? `/api/topic/${topicID}` : '/api/topic/new';
@@ -350,6 +387,8 @@
             topic.Summary ??= { de: '', en: '' };
             topic.RequireLogin ??= false;
             topic.RetentionDays ??= null;
+            topic.Contacts ??= {};
+            topic.Contacts.Otrs ??= { Enabled: false, Queue: '' };
             topic.Fields ??= [];
             topic.Admins ??= [];
             render();
