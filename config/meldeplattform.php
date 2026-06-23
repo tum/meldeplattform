@@ -137,6 +137,16 @@ return [
         'customer_user' => (string) env('MELDE_OTRS_CUSTOMER_USER', 'safesignal'),
         'ticket_type' => (string) env('MELDE_OTRS_TYPE', ''),
         'timeout' => (int) env('MELDE_OTRS_TIMEOUT', 10),
+
+        // Inbound: when enabled, the scheduled `otrs:poll-replies` command polls
+        // each report's ticket (TicketGet) for NEW agent answers and mirrors
+        // them back as admin replies the reporter sees in the platform. An OTRS
+        // agent marks an article as "for the reporter" simply by making it
+        // customer-visible (IsVisibleForCustomer=1) — our own pushes are always
+        // internal, so they are never re-imported. Needs the TicketGet operation
+        // enabled on the web service; the agent's existing rw on the queue
+        // already permits the read. Disabled by default.
+        'inbound_enabled' => (bool) env('MELDE_OTRS_INBOUND_ENABLED', false),
     ],
 
     'allowed_extensions' => [

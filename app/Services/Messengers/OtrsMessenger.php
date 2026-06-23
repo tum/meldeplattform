@@ -84,6 +84,15 @@ class OtrsMessenger implements Messenger
 
     public function send(string $title, Message $message, string $reportUrl): void
     {
+        // Echo guard: a message imported FROM an OTRS agent answer (source
+        // 'otrs') must never be pushed back into the ticket it originated from,
+        // or the inbound poll and this outbound channel would loop forever. The
+        // reporter/admin still see it in the platform; the OTRS agent already
+        // wrote it, so the ticket already has it.
+        if ($message->source === 'otrs') {
+            return;
+        }
+
         // The report body travels inside this request, so refuse any non-HTTPS
         // endpoint outright. This is a permanent misconfiguration, not a
         // transient error: log and skip (don't throw) so the queued job doesn't

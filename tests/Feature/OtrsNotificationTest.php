@@ -125,6 +125,25 @@ class OtrsNotificationTest extends TestCase
         Http::assertNotSent(fn (ClientRequest $request): bool => $request->method() === 'POST');
     }
 
+    public function test_message_imported_from_otrs_is_not_pushed_back(): void
+    {
+        $this->configureOtrs();
+        Http::fake();
+
+        $topic = $this->otrsTopic(['queue' => 'Whistleblowing']);
+        $report = Report::create(['topic_id' => $topic->id]);
+        $report->forceFill(['otrs_ticket_id' => '4242'])->save();
+        // A reply that originated FROM an OTRS agent answer (the inbound poll
+        // tags it `source = 'otrs'`) must not echo back into the ticket.
+        $message = Message::create([
+            'report_id' => $report->id, 'content' => 'agent answer', 'is_admin' => true, 'source' => 'otrs',
+        ]);
+
+        app(MessengerDispatcher::class)->sendNow($topic, '[T]: report #1 updated', $message, 'https://app/report');
+
+        Http::assertNothingSent();
+    }
+
     public function test_non_https_endpoint_sends_nothing(): void
     {
         $this->configureOtrs(['base_url' => 'http://otrs.test/otrs/nph-genericinterface.pl/Webservice/GTC']);
