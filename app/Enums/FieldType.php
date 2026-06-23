@@ -15,6 +15,18 @@ enum FieldType: string
     case Date = 'date';
     case Number = 'number';
     case Url = 'url';
+    case Info = 'info';
+
+    /**
+     * A display-only field: operator-authored formatted text (markdown + brand
+     * colour shortcodes, exactly like a topic summary) rendered inline on the
+     * form. It has no input control, so it is never validated and never
+     * contributes an answer to the report body.
+     */
+    public function isDisplayOnly(): bool
+    {
+        return $this === self::Info;
+    }
 
     public function isFileUpload(): bool
     {

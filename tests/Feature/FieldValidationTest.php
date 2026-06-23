@@ -105,6 +105,19 @@ class FieldValidationTest extends TestCase
         $this->submit($field, '')->assertRedirect();
     }
 
+    public function test_info_field_produces_no_validation_rule(): void
+    {
+        // Display-only fields submit nothing, so the request must not build a
+        // rule keyed by their field ID.
+        $field = $this->topicWithField('info');
+        $key = (string) $field->id;
+
+        $request = SubmitReportRequest::create('/submit', 'POST', ['topic' => $field->topic_id]);
+        $request->setContainer($this->app);
+
+        $this->assertArrayNotHasKey($key, $request->rules());
+    }
+
     public function test_audio_field_accepts_audio_but_rejects_other_allowed_types(): void
     {
         // Verify the real rules SubmitReportRequest builds for an audio field:

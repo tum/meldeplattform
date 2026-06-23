@@ -25,6 +25,12 @@
         <input type="hidden" name="topic" value="{{ $topic->id }}">
 
         @foreach ($topic->fields as $field)
+            @if ($field->type->isDisplayOnly())
+                {{-- Display-only Info block: operator-authored formatted text,
+                     rendered like a topic summary. No label, input, or error. --}}
+                <div class="form-group topic-summary">{!! $field->renderedDescription($lang) !!}</div>
+                @continue
+            @endif
             @php
                 $name = (string) $field->id;
                 $errorKey = $field->type->isFileUpload() && $field->type === \App\Enums\FieldType::Files

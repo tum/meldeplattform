@@ -67,6 +67,12 @@ class SubmitReportRequest extends FormRequest
         $audioJoined = implode(',', $audioExtensions);
 
         foreach ($topic->fields as $field) {
+            // Display-only fields (Info) have no input control, so nothing is
+            // submitted for them and there is nothing to validate.
+            if ($field->type->isDisplayOnly()) {
+                continue;
+            }
+
             $name = (string) $field->id;
 
             if ($field->type->isFileUpload()) {

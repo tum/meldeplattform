@@ -27,10 +27,13 @@ class User extends Authenticatable
     /** @var list<string> */
     protected $hidden = ['remember_token'];
 
-    /** @var array<string, string> */
-    protected $casts = [
-        'is_global_admin' => 'boolean',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'is_global_admin' => 'boolean',
+        ];
+    }
 
     /**
      * A user is a global admin when either the env-driven allowlist

@@ -22,10 +22,13 @@ class TopicView extends Model
     /** @var list<string> */
     protected $fillable = ['user_id', 'topic_id', 'last_seen_at'];
 
-    /** @var array<string, string> */
-    protected $casts = [
-        'last_seen_at' => 'datetime',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'last_seen_at' => 'datetime',
+        ];
+    }
 
     /**
      * Atomic upsert: mark this topic as "just seen" by the given user.

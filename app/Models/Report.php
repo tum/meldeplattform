@@ -47,12 +47,15 @@ class Report extends Model
         'otrs_ticket_id', 'otrs_ticket_number',
     ];
 
-    /** @var array<string, string> */
-    protected $casts = [
-        'state' => ReportState::class,
-        'acknowledged_at' => 'datetime',
-        'closed_at' => 'datetime',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'state' => ReportState::class,
+            'acknowledged_at' => 'datetime',
+            'closed_at' => 'datetime',
+        ];
+    }
 
     protected static function booted(): void
     {

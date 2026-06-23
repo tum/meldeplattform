@@ -72,16 +72,18 @@
             .catch(() => {});
     }
 
-    // Summary editor: a de/en textarea pair, each with a live preview that
-    // mirrors exactly what the public page renders (markdown + brand colours).
-    function summaryField() {
-        const group = el('div', { className: 'form-group' }, el('label', { textContent: tr.summary }));
+    // A de/en markdown editor: each language gets a textarea with a live
+    // preview that mirrors exactly what the public page renders (markdown +
+    // brand colours). Shared by the topic summary and Info display fields.
+    // `get(lang)` / `set(lang, value)` read and write the bound model.
+    function markdownField(labelText, get, set, hint) {
+        const group = el('div', { className: 'form-group' }, el('label', { textContent: labelText }));
 
-        const makeLang = (langLabel, getVal, setVal) => {
+        const makeLang = (langLabel, lang) => {
             const preview = el('div', { className: 'summary-preview' });
             const update = debounce((text) => fetchPreview(text, preview), 250);
-            const ta = textarea(getVal(), (v) => { setVal(v); update(v); });
-            fetchPreview(getVal(), preview);
+            const ta = textarea(get(lang), (v) => { set(lang, v); update(v); });
+            fetchPreview(get(lang), preview);
             return el(
                 'label',
                 { style: 'display:block' },
@@ -92,14 +94,32 @@
             );
         };
 
-        group.append(
-            makeLang(tr.de, () => topic.Summary?.de ?? '', (v) => (topic.Summary.de = v)),
-            makeLang(tr.en, () => topic.Summary?.en ?? '', (v) => (topic.Summary.en = v)),
-        );
-        if (tr.summaryHint) {
-            group.append(el('span', { className: 'desc', textContent: tr.summaryHint }));
+        group.append(makeLang(tr.de, 'de'), makeLang(tr.en, 'en'));
+        if (hint) {
+            group.append(el('span', { className: 'desc', textContent: hint }));
         }
         return group;
+    }
+
+    // Topic summary editor (markdown + brand colours, de/en with preview).
+    function summaryField() {
+        return markdownField(
+            tr.summary,
+            (lang) => topic.Summary?.[lang] ?? '',
+            (lang, v) => { (topic.Summary ??= {})[lang] = v; },
+            tr.summaryHint,
+        );
+    }
+
+    // Info field content editor: the display-only block's formatted text,
+    // stored in the field's Description and rendered exactly like a summary.
+    function infoContentField(f) {
+        return markdownField(
+            tr.description,
+            (lang) => f.Description?.[lang] ?? '',
+            (lang, v) => { (f.Description ??= {})[lang] = v; },
+            tr.summaryHint,
+        );
     }
 
     function langRow(labelText, deVal, enVal, onDe, onEn, placeholder = {}) {
@@ -188,63 +208,69 @@
             });
             card.append(typeLabel, sel);
 
-            card.append(
-                langRow(
-                    tr.name,
-                    f.Name.de,
-                    f.Name.en,
-                    (v) => (f.Name.de = v),
-                    (v) => (f.Name.en = v),
-                ),
-            );
-            card.append(
-                langRow(
-                    tr.description,
-                    f.Description?.de ?? '',
-                    f.Description?.en ?? '',
-                    (v) => ((f.Description ??= {}).de = v),
-                    (v) => ((f.Description ??= {}).en = v),
-                ),
-            );
+            if (f.Type === 'info') {
+                // Display-only block: just the formatted de/en content. No
+                // label, choices, or required flag — it collects no answer.
+                card.append(infoContentField(f));
+            } else {
+                card.append(
+                    langRow(
+                        tr.name,
+                        f.Name.de,
+                        f.Name.en,
+                        (v) => (f.Name.de = v),
+                        (v) => (f.Name.en = v),
+                    ),
+                );
+                card.append(
+                    langRow(
+                        tr.description,
+                        f.Description?.de ?? '',
+                        f.Description?.en ?? '',
+                        (v) => ((f.Description ??= {}).de = v),
+                        (v) => ((f.Description ??= {}).en = v),
+                    ),
+                );
 
-            if (f.Type === 'select') {
-                const group = el('div', { className: 'form-group' }, el('label', { textContent: tr.selectOpts }));
-                (f.Choices ?? []).forEach((c, ci) => {
-                    const row = el(
-                        'div',
-                        { style: 'display:flex;gap:.4rem;margin-bottom:.35rem;' },
-                        input(c, (v) => (f.Choices[ci] = v)),
+                if (f.Type === 'select') {
+                    const group = el('div', { className: 'form-group' }, el('label', { textContent: tr.selectOpts }));
+                    (f.Choices ?? []).forEach((c, ci) => {
+                        const row = el(
+                            'div',
+                            { style: 'display:flex;gap:.4rem;margin-bottom:.35rem;' },
+                            input(c, (v) => (f.Choices[ci] = v)),
+                            el('button', {
+                                type: 'button',
+                                className: 'button button-small button-danger',
+                                textContent: '×',
+                                onclick: () => {
+                                    f.Choices.splice(ci, 1);
+                                    render();
+                                },
+                            }),
+                        );
+                        group.append(row);
+                    });
+                    group.append(
                         el('button', {
                             type: 'button',
-                            className: 'button button-small button-danger',
-                            textContent: '×',
+                            className: 'button button-small button-ghost',
+                            textContent: tr.addOption,
                             onclick: () => {
-                                f.Choices.splice(ci, 1);
+                                (f.Choices ??= []).push('');
                                 render();
                             },
                         }),
                     );
-                    group.append(row);
-                });
-                group.append(
-                    el('button', {
-                        type: 'button',
-                        className: 'button button-small button-ghost',
-                        textContent: tr.addOption,
-                        onclick: () => {
-                            (f.Choices ??= []).push('');
-                            render();
-                        },
-                    }),
-                );
-                card.append(group);
-            }
+                    card.append(group);
+                }
 
-            const reqLabel = el('label', {});
-            const cb = el('input', { type: 'checkbox', checked: !!f.Required });
-            cb.addEventListener('change', (e) => (f.Required = e.target.checked));
-            reqLabel.append(cb, document.createTextNode(' ' + tr.required));
-            card.append(reqLabel);
+                const reqLabel = el('label', {});
+                const cb = el('input', { type: 'checkbox', checked: !!f.Required });
+                cb.addEventListener('change', (e) => (f.Required = e.target.checked));
+                reqLabel.append(cb, document.createTextNode(' ' + tr.required));
+                card.append(reqLabel);
+            }
 
             card.append(
                 el(

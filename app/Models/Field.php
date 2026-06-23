@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\FieldType;
+use App\Support\Markdown;
 use Database\Factories\FieldFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,13 +37,16 @@ class Field extends Model
         'type', 'required', 'choices', 'position',
     ];
 
-    /** @var array<string, string> */
-    protected $casts = [
-        'type' => FieldType::class,
-        'required' => 'boolean',
-        'choices' => 'array',
-        'position' => 'integer',
-    ];
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'type' => FieldType::class,
+            'required' => 'boolean',
+            'choices' => 'array',
+            'position' => 'integer',
+        ];
+    }
 
     /** @return BelongsTo<Topic, $this> */
     public function topic(): BelongsTo
@@ -58,5 +62,15 @@ class Field extends Model
     public function description(string $lang): string
     {
         return $lang === 'de' ? ($this->description_de ?? '') : ($this->description_en ?? '');
+    }
+
+    /**
+     * The description rendered as safe HTML with brand-colour shortcodes — the
+     * same pipeline as topic summaries. Used to display Info (display-only)
+     * fields, whose description holds operator-authored formatted content.
+     */
+    public function renderedDescription(string $lang): string
+    {
+        return Markdown::sanitizeWithColors($this->description($lang));
     }
 }
