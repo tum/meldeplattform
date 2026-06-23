@@ -147,6 +147,12 @@ return [
         // enabled on the web service; the agent's existing rw on the queue
         // already permits the read. Disabled by default.
         'inbound_enabled' => (bool) env('MELDE_OTRS_INBOUND_ENABLED', false),
+
+        // Optional: URL of an endpoint that returns the list of queue names, so
+        // the topic editor offers a dropdown instead of free text. The stock
+        // Ticket connector has none, so this is a custom GenericInterface
+        // operation your OTRS team provides. Empty = editor stays free-text.
+        'queue_list_url' => (string) env('MELDE_OTRS_QUEUE_LIST_URL', ''),
     ],
 
     'allowed_extensions' => [
