@@ -19,6 +19,7 @@
     });
 
     let topic = null;
+    let otrsQueues = [];
     const body = document.getElementById('topic-form-body');
     const statusEl = document.getElementById('save-status');
 
@@ -140,6 +141,28 @@
                 input(enVal, onEn, placeholder.en ?? ''),
             ),
         );
+    }
+
+    // OTRS queue picker: a dropdown of the live queue list when one is
+    // available (avoids typos that make every TicketCreate fail), otherwise a
+    // free-text field. An empty value always means "use the global default
+    // queue". An existing custom value not in the fetched list is preserved as
+    // its own option so editing an unrelated setting never drops it.
+    function otrsQueueControl() {
+        const cur = topic.Contacts.Otrs.Queue ?? '';
+        if (otrsQueues.length === 0) {
+            return input(cur, (v) => (topic.Contacts.Otrs.Queue = v), 'Raw');
+        }
+        const sel = el('select', {});
+        const values = [''].concat(otrsQueues);
+        if (cur && !otrsQueues.includes(cur)) values.push(cur);
+        values.forEach((q) => {
+            const o = el('option', { value: q, textContent: q === '' ? (tr.otrsQueueDefault || '—') : q });
+            if (q === cur) o.selected = true;
+            sel.append(o);
+        });
+        sel.addEventListener('change', (e) => (topic.Contacts.Otrs.Queue = e.target.value));
+        return sel;
     }
 
     function render() {
@@ -364,7 +387,7 @@
         body.append(otrsLabel);
 
         const otrsQueueGroup = el('div', { className: 'form-group' }, el('label', { textContent: tr.otrsQueue }));
-        otrsQueueGroup.append(input(topic.Contacts.Otrs.Queue ?? '', (v) => (topic.Contacts.Otrs.Queue = v), 'Raw'));
+        otrsQueueGroup.append(otrsQueueControl());
         if (tr.otrsQueueDesc) {
             otrsQueueGroup.append(el('span', { className: 'desc', textContent: tr.otrsQueueDesc }));
         }
@@ -393,6 +416,17 @@
             topic.Admins ??= [];
             render();
         });
+
+    // Pull the live OTRS queue list (if the backend has it configured) so the
+    // OTRS queue field can be a dropdown. Independent of the topic load; when it
+    // arrives we re-render so the picker upgrades from free text in place.
+    fetch('/api/otrs/queues', { credentials: 'same-origin' })
+        .then((r) => (r.ok ? r.json() : { queues: [] }))
+        .then((j) => {
+            otrsQueues = Array.isArray(j.queues) ? j.queues : [];
+            if (topic && otrsQueues.length > 0) render();
+        })
+        .catch(() => {});
 
     document.getElementById('topic-form').addEventListener('submit', (e) => {
         e.preventDefault();

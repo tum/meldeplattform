@@ -54,6 +54,7 @@
                 'otrsEnable' => __('otrs_enable'),
                 'otrsQueue' => __('otrs_queue_label'),
                 'otrsQueueDesc' => __('otrs_queue_desc'),
+                'otrsQueueDefault' => __('otrs_queue_default'),
                 'summary' => __('summary'),
                 'summaryHint' => __('summary_hint'),
                 'preview' => __('preview'),

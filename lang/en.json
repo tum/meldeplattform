@@ -44,6 +44,7 @@
     "otrs_enable": "Create an OTRS ticket for reports",
     "otrs_queue_label": "OTRS queue",
     "otrs_queue_desc": "Leave empty to use the globally configured default queue (MELDE_OTRS_QUEUE).",
+    "otrs_queue_default": "Default queue (global)",
     "topic_saved": "saved successfully",
     "topic_saved_error": "saving failed",
     "select_options_label": "Options",

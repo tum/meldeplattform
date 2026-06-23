@@ -90,6 +90,12 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/api/topic/summary-preview', [TopicAdminController::class, 'previewSummary'])
         ->name('topic.summary.preview');
 
+    // Live OTRS queue list for the editor's per-topic OTRS dropdown. Exposes
+    // only queue names to authenticated admins, so the group's `auth` gate is
+    // sufficient (and lets topic-admins editing their own topic use it too).
+    Route::get('/api/otrs/queues', [TopicAdminController::class, 'otrsQueues'])
+        ->name('otrs.queues');
+
     Route::get('/newTopic/{topic}', [TopicAdminController::class, 'edit'])
         ->whereNumber('topic')->can('update', 'topic')->name('topic.edit');
     Route::get('/reports/{topic}', [TopicAdminController::class, 'reportsOfTopic'])

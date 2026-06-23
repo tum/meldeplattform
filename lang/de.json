@@ -44,6 +44,7 @@
     "otrs_enable": "Meldungen als OTRS-Ticket anlegen",
     "otrs_queue_label": "OTRS-Queue",
     "otrs_queue_desc": "Leer lassen, um die global konfigurierte Standard-Queue (MELDE_OTRS_QUEUE) zu verwenden.",
+    "otrs_queue_default": "Standard-Queue (global)",
     "topic_saved": "erfolgreich gespeichert",
     "topic_saved_error": "Speichern fehlgeschlagen",
     "select_options_label": "Auswahlmöglichkeiten",

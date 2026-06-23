@@ -14,6 +14,7 @@ use App\Models\Report;
 use App\Models\Topic;
 use App\Models\TopicView;
 use App\Services\MessengerDispatcher;
+use App\Services\OtrsQueues;
 use App\Support\Markdown;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -53,6 +54,28 @@ class TopicAdminController
         return response()->json([
             'html' => Markdown::sanitizeWithColors((string) ($validated['text'] ?? '')),
         ]);
+    }
+
+    /**
+     * Live OTRS queue list for the editor's per-topic OTRS dropdown. Returns an
+     * empty list — letting the editor fall back to a free-text field — when
+     * queue listing isn't configured or OTRS is unreachable, so a missing or
+     * flaky endpoint never blocks topic editing.
+     */
+    public function otrsQueues(): JsonResponse
+    {
+        $service = OtrsQueues::fromConfig();
+        $queues = [];
+
+        if ($service !== null) {
+            try {
+                $queues = $service->fetch();
+            } catch (\Throwable $e) {
+                Log::error('TopicAdminController: failed to fetch OTRS queues', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return response()->json(['queues' => $queues]);
     }
 
     public function reportsOfTopic(Topic $topic, Request $request): View
