@@ -186,6 +186,41 @@ class AdminApiTest extends TestCase
         ])->assertStatus(422)->assertJsonValidationErrors(['Fields.0.Name.en']);
     }
 
+    public function test_upsert_accepts_info_field_without_name(): void
+    {
+        // An Info (display-only) field carries no label, so the "name required"
+        // rule must not apply — its formatted content lives in Description.
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
+            'ID' => 0,
+            'Name' => ['de' => 'x', 'en' => 'x'],
+            'Fields' => [[
+                'Name' => ['de' => '', 'en' => ''],
+                'Description' => ['de' => '**Hinweis**', 'en' => '**Notice**'],
+                'Type' => 'info',
+            ]],
+        ])->assertOk()->assertJson(['saved' => true]);
+
+        $this->assertDatabaseHas('fields', [
+            'type' => 'info',
+            'description_en' => '**Notice**',
+        ]);
+    }
+
+    public function test_upsert_rejects_info_field_without_content(): void
+    {
+        // An Info field with no text in either language would render an empty
+        // block, so it is rejected on its Description instead of its name.
+        $this->actingAsGlobalAdmin()->postJson('/api/topic', [
+            'ID' => 0,
+            'Name' => ['de' => 'x', 'en' => 'x'],
+            'Fields' => [[
+                'Name' => ['de' => '', 'en' => ''],
+                'Description' => ['de' => '', 'en' => ''],
+                'Type' => 'info',
+            ]],
+        ])->assertStatus(422)->assertJsonValidationErrors(['Fields.0.Description.en']);
+    }
+
     public function test_set_status_does_not_bump_updated_at(): void
     {
         $t = Topic::create(['name_de' => 't', 'name_en' => 't', 'summary_de' => '', 'summary_en' => '']);

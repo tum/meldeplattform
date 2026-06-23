@@ -44,6 +44,67 @@ class SubmitFlowTest extends TestCase
             ->assertSee('Description');
     }
 
+    public function test_info_field_renders_as_formatted_html_without_input(): void
+    {
+        $topic = Topic::create([
+            'name_de' => 'T', 'name_en' => 'T', 'summary_de' => 's', 'summary_en' => 's',
+        ]);
+        $info = Field::create([
+            'topic_id' => $topic->id,
+            'name_de' => '', 'name_en' => '',
+            'description_de' => '**Hinweis** {green}wichtig{/green}',
+            'description_en' => '**Notice** {green}important{/green}',
+            'type' => 'info',
+            'required' => false,
+            'position' => 0,
+        ]);
+
+        // The form defaults to the English locale (no lang cookie set).
+        $this->get("/form/{$topic->id}")
+            ->assertOk()
+            // Rendered with the same markdown + brand-colour pipeline as summaries.
+            ->assertSee('<strong>Notice</strong>', escape: false)
+            ->assertSee('<span class="t-color-green">important</span>', escape: false)
+            // Display-only: no input control and no label wired to one.
+            ->assertDontSee('name="'.$info->id.'"', escape: false)
+            ->assertDontSee('field-'.$info->id, escape: false);
+    }
+
+    public function test_info_field_is_excluded_from_report_body(): void
+    {
+        Mail::fake();
+
+        $topic = Topic::create([
+            'name_de' => 'T', 'name_en' => 'T', 'summary_de' => 's', 'summary_en' => 's',
+        ]);
+        Field::create([
+            'topic_id' => $topic->id,
+            'name_de' => '', 'name_en' => '',
+            'description_de' => 'INFOTEXT-DE', 'description_en' => 'INFOTEXT-EN',
+            'type' => 'info',
+            'required' => false,
+            'position' => 0,
+        ]);
+        $question = Field::create([
+            'topic_id' => $topic->id,
+            'name_de' => 'Frage', 'name_en' => 'Question',
+            'type' => 'textarea',
+            'required' => true,
+            'position' => 1,
+        ]);
+
+        // No value is posted for the Info field — it is display-only and must
+        // not be required, so the submission still succeeds.
+        $this->post('/submit', [
+            'topic' => $topic->id,
+            (string) $question->id => 'Antwort',
+        ])->assertRedirect();
+
+        $body = (string) Report::first()?->messages->first()?->content;
+        $this->assertStringContainsString('Antwort', $body);
+        $this->assertStringNotContainsString('INFOTEXT', $body);
+    }
+
     public function test_submit_creates_report_and_redirects_with_token(): void
     {
         Mail::fake();

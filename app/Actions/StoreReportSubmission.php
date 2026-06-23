@@ -109,6 +109,12 @@ class StoreReportSubmission
         $messageBody = '';
 
         foreach ($topic->fields as $field) {
+            // Display-only fields (Info) carry operator content, not a reporter
+            // answer: skip them so they never appear in the report body.
+            if ($field->type->isDisplayOnly()) {
+                continue;
+            }
+
             $messageBody .= "\n**".$field->name('en')."**\n";
 
             if (! $field->type->isFileUpload()) {

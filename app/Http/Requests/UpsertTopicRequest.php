@@ -69,6 +69,17 @@ class UpsertTopicRequest extends FormRequest
             /** @var array<int, mixed> $fields */
             $fields = (array) $this->input('Fields', []);
             foreach (array_keys($fields) as $i) {
+                // Info fields are display-only: they carry no label, so a name
+                // is not required — but their formatted content must be present
+                // in at least one language, or the block would render empty.
+                if ($this->input("Fields.{$i}.Type") === FieldType::Info->value) {
+                    if ($this->bothBlank("Fields.{$i}.Description.de", "Fields.{$i}.Description.en")) {
+                        $validator->errors()->add("Fields.{$i}.Description.en", __('validation_field_text_required'));
+                    }
+
+                    continue;
+                }
+
                 if ($this->bothBlank("Fields.{$i}.Name.de", "Fields.{$i}.Name.en")) {
                     $validator->errors()->add("Fields.{$i}.Name.en", __('validation_field_name_required'));
                 }
