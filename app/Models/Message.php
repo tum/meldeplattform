@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int $report_id
  * @property string $content
  * @property bool $is_admin
+ * @property string|null $source
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Report $report
@@ -27,7 +28,7 @@ class Message extends Model
     use HasFactory;
 
     /** @var list<string> */
-    protected $fillable = ['report_id', 'content', 'is_admin'];
+    protected $fillable = ['report_id', 'content', 'is_admin', 'source'];
 
     /** @return array<string, string> */
     protected function casts(): array

@@ -11,3 +11,8 @@ Schedule::command('reports:prune')->daily();
 // acknowledgement/feedback deadline. A no-op for topics with no configured
 // notification mailbox or no reports needing attention.
 Schedule::command('reports:remind')->dailyAt('07:00');
+
+// Mirror OTRS case-handler answers back into reports so reporters see them in
+// the platform. A no-op unless MELDE_OTRS_INBOUND_ENABLED is set; the command
+// self-skips when inbound is disabled or the connection is unconfigured.
+Schedule::command('otrs:poll-replies')->everyFiveMinutes()->withoutOverlapping();

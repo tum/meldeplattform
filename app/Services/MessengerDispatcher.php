@@ -7,6 +7,7 @@ use App\Models\Message;
 use App\Models\Topic;
 use App\Services\Messengers\EmailMessenger;
 use App\Services\Messengers\Messenger;
+use App\Services\Messengers\OtrsMessenger;
 use App\Services\Messengers\WebhookMessenger;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -44,6 +45,16 @@ class MessengerDispatcher
 
         if ($contacts->webhookTarget !== null) {
             $messengers[] = new WebhookMessenger($contacts->webhookTarget);
+        }
+
+        // OTRS routing is enabled per topic but its connection is global config,
+        // so fromConfig() resolves it (and returns null — skipping the channel —
+        // when the backend isn't configured).
+        if ($contacts->otrsEnabled) {
+            $otrs = OtrsMessenger::fromConfig($contacts->otrsQueue);
+            if ($otrs !== null) {
+                $messengers[] = $otrs;
+            }
         }
 
         return $messengers;
