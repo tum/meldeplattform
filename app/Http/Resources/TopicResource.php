@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Topic;
+use App\Services\TopicContacts;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,11 +27,12 @@ class TopicResource extends JsonResource
     }
 
     /**
-     * @return array{ID: int, Name: array{de: string, en: string}, Summary: array{de: string, en: string}, Email: string, RequireLogin: bool, RetentionDays: int|null, Fields: list<array<string, mixed>>, Admins: list<array<string, mixed>>}
+     * @return array{ID: int, Name: array{de: string, en: string}, Summary: array{de: string, en: string}, Email: string, RequireLogin: bool, RetentionDays: int|null, Contacts: array{Webhook: string, Otrs: array{Enabled: bool, Queue: string}}, Fields: list<array<string, mixed>>, Admins: list<array<string, mixed>>}
      */
     public function toArray(Request $request): array
     {
         $topic = $this->resource;
+        $contacts = TopicContacts::fromTopic($topic);
 
         return [
             'ID' => (int) $topic->id,
@@ -45,6 +47,13 @@ class TopicResource extends JsonResource
             'Email' => (string) $topic->email,
             'RequireLogin' => (bool) $topic->require_login,
             'RetentionDays' => $topic->retention_days,
+            'Contacts' => [
+                'Webhook' => $contacts->webhookTarget ?? '',
+                'Otrs' => [
+                    'Enabled' => $contacts->otrsEnabled,
+                    'Queue' => $contacts->otrsQueue ?? '',
+                ],
+            ],
             'Fields' => array_values(FieldResource::collection($topic->fields)->resolve($request)),
             'Admins' => array_values(AdminResource::collection($topic->admins)->resolve($request)),
         ];

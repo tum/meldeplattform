@@ -49,6 +49,16 @@ class UpsertTopicRequest extends FormRequest
 
             'RequireLogin' => ['nullable', 'boolean'],
             'RetentionDays' => ['nullable', 'integer', 'min:1', 'max:36500'],
+
+            // Notification-channel config stored in the topic's `contacts` JSON.
+            // Email keeps its own top-level `Email` field; these are the webhook
+            // and OTRS channels. The webhook URL must be https — it carries the
+            // token-bearing report link (WebhookMessenger refuses plaintext).
+            'Contacts' => ['nullable', 'array'],
+            'Contacts.Webhook' => ['nullable', 'string', 'url:https'],
+            'Contacts.Otrs' => ['nullable', 'array'],
+            'Contacts.Otrs.Enabled' => ['nullable', 'boolean'],
+            'Contacts.Otrs.Queue' => ['nullable', 'string', 'max:255'],
         ];
     }
 

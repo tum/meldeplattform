@@ -16,7 +16,7 @@ class UpsertTopic
      * payload are deleted; admin UIDs are firstOrCreate'd so pre-assigning
      * access for someone who hasn't logged in yet still works.
      *
-     * @param array{ID: int, Name: array{de?: string|null, en?: string|null}, Summary?: array{de?: string|null, en?: string|null}|null, Email?: string|null, RequireLogin?: bool|null, RetentionDays?: int|null, Fields: list<array{ID?: int|null, Name: array{de?: string|null, en?: string|null}, Description?: array{de?: string|null, en?: string|null}|null, Type: string, Required?: bool|null, Choices?: list<string>|null}>, Admins?: list<array{UserID?: string|null}>|null} $payload
+     * @param array{ID: int, Name: array{de?: string|null, en?: string|null}, Summary?: array{de?: string|null, en?: string|null}|null, Email?: string|null, RequireLogin?: bool|null, RetentionDays?: int|null, Contacts?: array<string, mixed>|null, Fields: list<array{ID?: int|null, Name: array{de?: string|null, en?: string|null}, Description?: array{de?: string|null, en?: string|null}|null, Type: string, Required?: bool|null, Choices?: list<string>|null}>, Admins?: list<array{UserID?: string|null}>|null} $payload
      */
     public function execute(?Topic $topic, array $payload): Topic
     {
@@ -31,6 +31,7 @@ class UpsertTopic
             $topic->require_login = (bool) ($payload['RequireLogin'] ?? false);
             $retention = $payload['RetentionDays'] ?? null;
             $topic->retention_days = is_numeric($retention) ? (int) $retention : null;
+            $topic->contacts = $this->buildContacts($topic->contacts, $payload['Contacts'] ?? []);
             $topic->save();
 
             // wasRecentlyCreated is true only on the insert that just happened,
@@ -44,6 +45,44 @@ class UpsertTopic
 
             return $topic;
         });
+    }
+
+    /**
+     * Fold the editor's notification-channel input into the topic's existing
+     * `contacts` JSON. Only the keys the editor manages (webhook, otrs) are
+     * rewritten; anything else already there — e.g. a power-user
+     * `email.target` set directly in the DB — is preserved. A topic opts into
+     * OTRS purely by the presence of an `otrs` object: an empty one routes to
+     * the global default queue, `{queue: …}` overrides it. An all-empty result
+     * collapses to null so a topic with no channels keeps a clean column.
+     *
+     * @param array<string, array<string, string>>|null $existing
+     * @param array<string, mixed> $input
+     * @return array<string, array<string, string>>|null
+     */
+    private function buildContacts(?array $existing, array $input): ?array
+    {
+        $contacts = is_array($existing) ? $existing : [];
+
+        $webhook = $input['Webhook'] ?? '';
+        $webhook = is_string($webhook) ? trim($webhook) : '';
+        if ($webhook !== '') {
+            $contacts['webhook'] = ['target' => $webhook];
+        } else {
+            unset($contacts['webhook']);
+        }
+
+        $otrs = $input['Otrs'] ?? [];
+        $otrs = is_array($otrs) ? $otrs : [];
+        if ((bool) ($otrs['Enabled'] ?? false)) {
+            $queue = $otrs['Queue'] ?? '';
+            $queue = is_string($queue) ? trim($queue) : '';
+            $contacts['otrs'] = $queue !== '' ? ['queue' => $queue] : [];
+        } else {
+            unset($contacts['otrs']);
+        }
+
+        return $contacts === [] ? null : $contacts;
     }
 
     /**
