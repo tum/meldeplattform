@@ -111,18 +111,7 @@ class SamlController
     private function logSloFailure(OneLoginAuth $auth, array $errors): void
     {
         $reason = $auth->getLastErrorReason();
-        $context = ['errors' => $errors, 'reason' => $reason];
-
-        $xml = (string) ($auth->getLastResponseXML() ?? '');
-        if ($xml !== '') {
-            [$statusCode, $statusMessage] = $this->parseLogoutResponseStatus($xml);
-            if ($statusCode !== null) {
-                $context['status_code'] = $statusCode;
-            }
-            if ($statusMessage !== null) {
-                $context['status_message'] = $statusMessage;
-            }
-        }
+        $context = $this->withStatusContext(['errors' => $errors, 'reason' => $reason], $auth);
 
         $benign = $errors === ['logout_not_success']
             && ($reason === null || $reason === '')
@@ -136,39 +125,86 @@ class SamlController
     }
 
     /**
-     * Extract the top-level StatusCode @Value and any StatusMessage from
-     * a SAML LogoutResponse XML payload. Returns [null, null] on parse
-     * failure so the caller falls back to its existing log shape.
+     * Enrich a log context with the IdP's SAML <Status> detail parsed from
+     * the last processed response: the top-level StatusCode (e.g.
+     * "Responder"), the nested second-level StatusCode (e.g.
+     * "InvalidNameIDPolicy", "AuthnFailed", "RequestDenied"), and any
+     * StatusMessage.
      *
-     * @return array{0: string|null, 1: string|null}
+     * The second-level code is the signal a bare top-level "Responder" hides,
+     * and onelogin's getLastErrorReason() carries only the top-level code plus
+     * message — so we lift the rest straight out of the response XML.
+     * Best-effort: on a missing or unparseable payload the context is
+     * returned unchanged.
+     *
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
      */
-    private function parseLogoutResponseStatus(string $xml): array
+    private function withStatusContext(array $context, OneLoginAuth $auth): array
+    {
+        $xml = (string) ($auth->getLastResponseXML() ?? '');
+        if ($xml === '') {
+            return $context;
+        }
+
+        $status = $this->parseSamlStatus($xml);
+        if ($status['code'] !== null) {
+            $context['status_code'] = $status['code'];
+        }
+        if ($status['subcode'] !== null) {
+            $context['status_subcode'] = $status['subcode'];
+        }
+        if ($status['message'] !== null) {
+            $context['status_message'] = $status['message'];
+        }
+
+        return $context;
+    }
+
+    /**
+     * Pull the top-level StatusCode @Value, the nested second-level
+     * StatusCode @Value, and any StatusMessage out of a SAML Response or
+     * LogoutResponse. <samlp:Status> only appears at the envelope level in
+     * SAML (never inside an assertion), so an unanchored match is safe.
+     * Returns all-null on parse failure so callers fall back to their
+     * existing log shape.
+     *
+     * @return array{code: string|null, subcode: string|null, message: string|null}
+     */
+    private function parseSamlStatus(string $xml): array
     {
         $previousInternalErrors = libxml_use_internal_errors(true);
         try {
             $dom = new \DOMDocument;
             if (! $dom->loadXML($xml, LIBXML_NONET)) {
-                return [null, null];
+                return ['code' => null, 'subcode' => null, 'message' => null];
             }
             $xpath = new \DOMXPath($dom);
             $xpath->registerNamespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
 
-            $codeList = $xpath->query('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/@Value');
-            $codeNode = $codeList !== false ? $codeList->item(0) : null;
-            $code = $codeNode !== null ? (string) $codeNode->nodeValue : null;
+            $message = $this->firstXPathValue($xpath, '(//samlp:Status/samlp:StatusMessage)[1]');
+            $message = $message !== null && trim($message) !== '' ? trim($message) : null;
 
-            $msgList = $xpath->query('/samlp:LogoutResponse/samlp:Status/samlp:StatusMessage');
-            $msgNode = $msgList !== false ? $msgList->item(0) : null;
-            if ($msgNode === null) {
-                return [$code, null];
-            }
-            $message = trim((string) $msgNode->nodeValue);
-
-            return [$code, $message === '' ? null : $message];
+            return [
+                'code' => $this->firstXPathValue($xpath, '(//samlp:Status/samlp:StatusCode/@Value)[1]'),
+                'subcode' => $this->firstXPathValue($xpath, '(//samlp:Status/samlp:StatusCode/samlp:StatusCode/@Value)[1]'),
+                'message' => $message,
+            ];
         } finally {
             libxml_clear_errors();
             libxml_use_internal_errors($previousInternalErrors);
         }
+    }
+
+    /**
+     * Return the string value of the first node matching $expr, or null.
+     */
+    private function firstXPathValue(\DOMXPath $xpath, string $expr): ?string
+    {
+        $list = $xpath->query($expr);
+        $node = $list !== false ? $list->item(0) : null;
+
+        return $node !== null ? (string) $node->nodeValue : null;
     }
 
     /**
@@ -192,10 +228,10 @@ class SamlController
         /** @var list<string> $errors */
         $errors = $auth->getErrors();
         if ($errors !== []) {
-            Log::warning('SAML ACS errors', [
+            Log::warning('SAML ACS errors', $this->withStatusContext([
                 'errors' => $errors,
                 'reason' => $auth->getLastErrorReason(),
-            ]);
+            ], $auth));
             abort(403, 'SAML: '.implode(', ', $errors));
         }
         if (! $auth->isAuthenticated()) {
@@ -204,7 +240,22 @@ class SamlController
 
         /** @var array<string, list<string>> $attrs */
         $attrs = $auth->getAttributesWithFriendlyName();
-        $uid = $this->firstAttr($attrs, 'uid') ?? (string) $auth->getNameId();
+
+        // Identity is keyed on the IdP-released `uid` attribute (see the User
+        // lookup below). We deliberately do NOT fall back to the NameID: with a
+        // `transient` NameIDFormat the subject is a fresh per-session value, so
+        // a missing `uid` would spawn a duplicate User on every login. Refuse
+        // the login instead and log which attributes *were* released (keys only,
+        // to avoid logging PII) so the attribute-release gap can be chased.
+        $uid = $this->firstAttr($attrs, 'uid');
+        if ($uid === null || $uid === '') {
+            Log::warning('SAML ACS missing uid attribute', [
+                'nameId' => $auth->getNameId(),
+                'attributes' => array_keys($attrs),
+            ]);
+            abort(403, 'SAML: required uid attribute missing');
+        }
+
         $name = $this->firstAttr($attrs, 'displayName') ?? '';
         $email = $this->firstAttr($attrs, 'mail') ?? '';
 
@@ -256,7 +307,7 @@ class SamlController
                     'url' => Config::string('saml2.sp.singleLogoutService.url', ''),
                     'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
                 ],
-                'NameIDFormat' => Config::string('saml2.sp.NameIDFormat', 'urn:oasis:names:tc:SAML:1.1:nameid-format:persistent'),
+                'NameIDFormat' => Config::string('saml2.sp.NameIDFormat', 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient'),
                 'x509cert' => Config::string('saml2.sp.x509cert', ''),
                 'privateKey' => Config::string('saml2.sp.privateKey', ''),
             ],
