@@ -28,12 +28,7 @@ return [
         ],
         'x509cert' => env('SAML2_SP_X509CERT', ''),
         'privateKey' => env('SAML2_SP_PRIVATEKEY', ''),
-        // We key users on the released `uid` attribute (see SamlController::acs),
-        // not on the NameID, so a stable subject identifier is not required. The
-        // TUM Shibboleth IdP returns `Responder` / "An error occurred" for users
-        // it cannot mint a `persistent` NameID for; `transient` is always
-        // satisfiable without back-end computation, so we request that instead.
-        'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
+        'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
     ],
 
     'idp' => [
