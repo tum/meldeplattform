@@ -331,6 +331,14 @@ class SamlController
                 'authnRequestsSigned' => Config::boolean('saml2.security.authnRequestsSigned', false),
                 'signMetadata' => Config::boolean('saml2.security.signMetadata', false),
                 'rejectUnsolicitedResponsesWithInResponseTo' => Config::boolean('saml2.security.rejectUnsolicitedResponsesWithInResponseTo', true),
+                // onelogin defaults this to true, which makes every AuthnRequest
+                // demand an *exact* PasswordProtectedTransport authn context. The
+                // TUM IdP then returns Responder/NoAuthnContext whenever it
+                // authenticates the user any other way (existing SSO session, MFA,
+                // previous-session context). We don't dictate how the IdP
+                // authenticates — we just consume the assertion — so leave the
+                // <RequestedAuthnContext> off entirely.
+                'requestedAuthnContext' => Config::boolean('saml2.security.requestedAuthnContext', false),
             ],
         ]);
     }

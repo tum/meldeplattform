@@ -65,6 +65,12 @@ return [
         'authnRequestsSigned' => false,
         'signMetadata' => false,
         'rejectUnsolicitedResponsesWithInResponseTo' => true,
+        // Do NOT send a <RequestedAuthnContext>. onelogin's default (true) demands
+        // an exact PasswordProtectedTransport context, which the TUM IdP rejects
+        // with Responder/NoAuthnContext when it authenticates the user any other
+        // way (existing SSO session, MFA, etc.). We accept whatever context the
+        // IdP used, so we impose no requirement.
+        'requestedAuthnContext' => false,
     ],
 
     // Friendly names of SAML attributes we pull into the session.
