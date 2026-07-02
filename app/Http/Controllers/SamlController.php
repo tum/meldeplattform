@@ -242,11 +242,12 @@ class SamlController
         $attrs = $auth->getAttributesWithFriendlyName();
 
         // Identity is keyed on the IdP-released `uid` attribute (see the User
-        // lookup below). We deliberately do NOT fall back to the NameID: with a
-        // `transient` NameIDFormat the subject is a fresh per-session value, so
-        // a missing `uid` would spawn a duplicate User on every login. Refuse
-        // the login instead and log which attributes *were* released (keys only,
-        // to avoid logging PII) so the attribute-release gap can be chased.
+        // lookup below), so require it explicitly instead of falling back to the
+        // NameID: a NameID is a different identifier namespace, and keying a User
+        // on it would create a second account for the same person once `uid` does
+        // appear. Refuse the login instead and log which attributes *were*
+        // released (keys only, to avoid logging PII) so an attribute-release gap
+        // can be chased.
         $uid = $this->firstAttr($attrs, 'uid');
         if ($uid === null || $uid === '') {
             Log::warning('SAML ACS missing uid attribute', [
@@ -307,7 +308,7 @@ class SamlController
                     'url' => Config::string('saml2.sp.singleLogoutService.url', ''),
                     'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
                 ],
-                'NameIDFormat' => Config::string('saml2.sp.NameIDFormat', 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient'),
+                'NameIDFormat' => Config::string('saml2.sp.NameIDFormat', 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent'),
                 'x509cert' => Config::string('saml2.sp.x509cert', ''),
                 'privateKey' => Config::string('saml2.sp.privateKey', ''),
             ],
