@@ -15,6 +15,11 @@ class SubmitController
     {
         $topic = $request->topic();
 
+        // Defense in depth: the public form is already gone for a deactivated
+        // topic (FormController), but reject a hand-crafted submission too so a
+        // topic taken offline can never receive a new report.
+        abort_if($topic->isDeactivated(), 404);
+
         if ($topic->require_login && ! Auth::check()) {
             abort(403);
         }

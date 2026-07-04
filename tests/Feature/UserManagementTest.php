@@ -114,6 +114,20 @@ class UserManagementTest extends TestCase
             ->assertSessionHasErrors(['uid']);
     }
 
+    public function test_index_search_filters_rows(): void
+    {
+        $this->actingAsGlobalAdmin();
+        User::create(['uid' => 'alice', 'name' => 'Alice A', 'email' => 'alice@example.test']);
+        User::create(['uid' => 'bob', 'name' => 'Bob B', 'email' => 'bob@example.test']);
+
+        // The email column only renders for a row that is present, so it is a
+        // reliable signal of which rows survived the filter.
+        $this->get('/users?q=alice')
+            ->assertOk()
+            ->assertSee('alice@example.test')
+            ->assertDontSee('bob@example.test');
+    }
+
     public function test_db_promoted_user_becomes_global_admin(): void
     {
         $u = User::create(['uid' => 'promoted', 'name' => 'P', 'email' => 'p@x', 'is_global_admin' => true]);

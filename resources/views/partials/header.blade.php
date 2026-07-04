@@ -8,6 +8,7 @@
                     </svg>{{ auth()->user()->name ?: auth()->user()->uid }}
                 </span>
                 <a href="{{ route('dashboard') }}">{{ __('dashboard') }}</a>
+                <a href="{{ route('topics.index') }}">{{ __('topics') }}</a>
                 @can('manage', App\Models\User::class)
                     <a href="{{ route('users.index') }}">{{ __('users') }}</a>
                     <a href="{{ route('audit.index') }}">{{ __('audit_title') }}</a>

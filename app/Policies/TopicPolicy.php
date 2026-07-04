@@ -19,6 +19,16 @@ class TopicPolicy
         return false;
     }
 
+    /**
+     * Anyone authenticated may open the topic administration index — it lists
+     * only the topics they can manage (global admins see all; topic-admins see
+     * their own), scoped in SQL via Topic::scopeManageableBy.
+     */
+    public function viewAny(User $user): bool
+    {
+        return true;
+    }
+
     public function update(User $user, Topic $topic): bool
     {
         $topic->loadMissing('admins');
@@ -29,5 +39,16 @@ class TopicPolicy
     public function view(User $user, Topic $topic): bool
     {
         return $this->update($user, $topic);
+    }
+
+    /**
+     * Deleting a topic is destructive (it cascades away its fields and admin
+     * links) and is reserved for global admins — `before()` returns true for
+     * them, so a topic-admin falls through to this `false`. The controller
+     * additionally refuses to delete a topic that still holds reports.
+     */
+    public function delete(User $user, Topic $topic): bool
+    {
+        return false;
     }
 }

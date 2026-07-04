@@ -13,7 +13,7 @@ Wenn Sie bei Absenden einer Meldung eine E-Mail-Adresse hinterlassen,
 wird diese ausschließlich verwendet, um Sie über Rückfragen und den
 Status der Meldung zu informieren.
 
-## Login für Administrator*innen
+## Login für Administrierende
 
-Für den Login verantwortlicher TUM-Mitarbeiter*innen wird das zentrale
+Für den Login verantwortlicher TUM-Mitarbeitender wird das zentrale
 Shibboleth-Identity-Management (SAML) der TUM verwendet.
