@@ -13,21 +13,17 @@
 @endsection
 
 @section('content')
-    <div class="flex-between mb-4" style="gap: 1rem; flex-wrap: wrap;">
-        <form method="GET" action="{{ route('topics.index') }}" class="form-inline" style="margin: 0;">
-            <div class="form-group" style="margin: 0;">
-                <label for="topic-search">{{ __('search') }}</label>
-                <input id="topic-search" type="search" name="q" value="{{ $q }}" autocomplete="off"
-                       placeholder="{{ __('topics') }}…">
-            </div>
-            <div class="form-group" style="margin: 0;">
-                <label for="topic-status">{{ __('topic_status') }}</label>
-                <select id="topic-status" name="status">
-                    <option value="all" @selected($status === 'all')>{{ __('filter_status_all') }}</option>
-                    <option value="active" @selected($status === 'active')>{{ __('status_active') }}</option>
-                    <option value="deactivated" @selected($status === 'deactivated')>{{ __('status_deactivated') }}</option>
-                </select>
-            </div>
+    <div class="flex-between mb-4">
+        <form method="GET" action="{{ route('topics.index') }}" class="filter-bar">
+            <label for="topic-search">{{ __('search') }}</label>
+            <input id="topic-search" type="search" name="q" value="{{ $q }}" autocomplete="off"
+                   placeholder="{{ __('topics') }}…">
+            <label for="topic-status">{{ __('topic_status') }}</label>
+            <select id="topic-status" name="status">
+                <option value="all" @selected($status === 'all')>{{ __('filter_status_all') }}</option>
+                <option value="active" @selected($status === 'active')>{{ __('status_active') }}</option>
+                <option value="deactivated" @selected($status === 'deactivated')>{{ __('status_deactivated') }}</option>
+            </select>
             <button type="submit" class="button button-small">{{ __('apply_filters') }}</button>
         </form>
         @can('create', App\Models\Topic::class)

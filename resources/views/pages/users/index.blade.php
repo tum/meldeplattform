@@ -56,13 +56,11 @@
         </form>
     </section>
 
-    <div class="flex-between mb-4" style="gap: 1rem; flex-wrap: wrap;">
-        <form method="GET" action="{{ route('users.index') }}" class="form-inline" style="margin: 0;">
-            <div class="form-group" style="margin: 0;">
-                <label for="user-search">{{ __('search') }}</label>
-                <input id="user-search" type="search" name="q" value="{{ $q }}" autocomplete="off"
-                       placeholder="{{ __('users_uid_label') }}…">
-            </div>
+    <div class="flex-between mb-4">
+        <form method="GET" action="{{ route('users.index') }}" class="filter-bar">
+            <label for="user-search">{{ __('search') }}</label>
+            <input id="user-search" type="search" name="q" value="{{ $q }}" autocomplete="off"
+                   placeholder="{{ __('users_uid_label') }}…">
             <button type="submit" class="button button-small">{{ __('apply_filters') }}</button>
         </form>
     </div>
