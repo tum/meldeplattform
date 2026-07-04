@@ -61,6 +61,14 @@
             <label for="user-search">{{ __('search') }}</label>
             <input id="user-search" type="search" name="q" value="{{ $q }}" autocomplete="off"
                    placeholder="{{ __('users_uid_label') }}…">
+            <label for="user-role">{{ __('users_role_column') }}</label>
+            <select id="user-role" name="role">
+                <option value="all" @selected($role === 'all')>{{ __('filter_status_all') }}</option>
+                <option value="global" @selected($role === 'global')>{{ __('role_global_admin') }}</option>
+                <option value="topic" @selected($role === 'topic')>{{ __('role_topic_admin') }}</option>
+                <option value="none" @selected($role === 'none')>{{ __('role_none') }}</option>
+                <option value="pending" @selected($role === 'pending')>{{ __('role_pending') }}</option>
+            </select>
             <button type="submit" class="button button-small">{{ __('apply_filters') }}</button>
         </form>
     </div>
@@ -71,6 +79,7 @@
                 <th>{{ __('users_uid_label') }}</th>
                 <th>Name</th>
                 <th>{{ __('contact') }}</th>
+                <th>{{ __('users_last_login') }}</th>
                 <th>{{ __('users_role_column') }}</th>
                 <th>{{ __('users_topics_column') }}</th>
                 <th></th>
@@ -88,6 +97,7 @@
                     <td><code>{{ $row['uid'] }}</code></td>
                     <td>{{ $user?->name ?: '—' }}</td>
                     <td>{{ $user?->email ?: '—' }}</td>
+                    <td>{{ $user?->last_login_at?->format('d.m.Y') ?? '—' }}</td>
                     <td>
                         @if ($isEnvGlobal)
                             <span class="status-pill open" title="{{ __('users_global_env_hint') }}">{{ __('role_global_admin') }} · {{ __('users_global_env') }}</span>
@@ -126,7 +136,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="muted text-center" style="padding: 2rem;">{{ __('users_none') }}</td></tr>
+                <tr><td colspan="7" class="muted text-center" style="padding: 2rem;">{{ __('users_none') }}</td></tr>
             @endforelse
         </tbody>
     </table>

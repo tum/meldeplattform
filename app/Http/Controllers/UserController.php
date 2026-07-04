@@ -25,6 +25,14 @@ class UserController
     public function index(Request $request): View
     {
         $q = trim($request->string('q')->toString());
+        $role = $request->string('role')->toString();
+        $role = in_array($role, ['global', 'topic', 'none', 'pending'], true) ? $role : 'all';
+
+        /** @var list<string> $envAdmins */
+        $envAdmins = array_values(array_filter(
+            (array) config('meldeplattform.admin_users', []),
+            'is_string',
+        ));
 
         $users = User::orderBy('uid')->get();
         $admins = Admin::with('topics:id,name_de,name_en')->orderBy('user_id')->get();
@@ -33,19 +41,20 @@ class UserController
         // Build a unified [uid => row] map merging user identity, admin
         // assignment, and per-topic pivots — used by the index view to
         // render one row per distinct UID regardless of which table the
-        // entry originated in.
+        // entry originated in. The lowercase `search` key and the `role`
+        // category are precomputed here, where $user/$admin are precisely
+        // typed, so the filters below are plain comparisons.
         $rows = [];
         foreach ($users as $user) {
+            $isGlobal = $user->is_global_admin || in_array($user->uid, $envAdmins, true);
             $rows[$user->uid] = [
                 'uid' => $user->uid,
                 'user' => $user,
                 'admin' => null,
                 'topics' => collect(),
-                // Pre-built lowercase search key (uid + name + email) so the
-                // optional filter below is a plain string match. Built here,
-                // where $user is precisely typed, rather than re-derived from
-                // the loosely-typed merged row.
                 'search' => mb_strtolower(trim($user->uid.' '.($user->name ?? '').' '.($user->email ?? ''))),
+                // Upgraded to 'topic' in the admin loop when topics are attached.
+                'role' => $isGlobal ? 'global' : 'none',
             ];
         }
         foreach ($admins as $admin) {
@@ -55,9 +64,15 @@ class UserController
                 'admin' => null,
                 'topics' => collect(),
                 'search' => mb_strtolower($admin->user_id),
+                // No user row means the pre-assigned admin has never logged in.
+                'role' => in_array($admin->user_id, $envAdmins, true) ? 'global' : 'pending',
             ];
             $existing['admin'] = $admin;
             $existing['topics'] = $admin->topics;
+            // A logged-in, non-global user with topic assignments is a topic admin.
+            if ($existing['role'] === 'none') {
+                $existing['role'] = 'topic';
+            }
             $rows[$admin->user_id] = $existing;
         }
         ksort($rows);
@@ -72,10 +87,17 @@ class UserController
             );
         }
 
+        // Optional role filter — helps the list stay navigable once many
+        // one-off logins ('none') have accumulated.
+        if ($role !== 'all') {
+            $rows = array_filter($rows, static fn (array $row): bool => $row['role'] === $role);
+        }
+
         return view('pages.users.index', [
             'rows' => array_values($rows),
             'topics' => $topics,
             'q' => $q,
+            'role' => $role,
         ]);
     }
 

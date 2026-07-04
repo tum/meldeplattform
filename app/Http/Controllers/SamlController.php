@@ -267,7 +267,7 @@ class SamlController
 
         $user = User::updateOrCreate(
             ['uid' => $uid],
-            ['name' => $name, 'email' => $email],
+            ['name' => $name, 'email' => $email, 'last_login_at' => now()],
         );
 
         // Rotate the session ID on privilege elevation to defeat session fixation

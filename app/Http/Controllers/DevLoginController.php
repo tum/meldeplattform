@@ -37,6 +37,7 @@ class DevLoginController
             [
                 'name' => $name !== '' ? $name : $uid,
                 'email' => $email !== '' ? $email : $uid.'@example.com',
+                'last_login_at' => now(),
             ],
         );
 
