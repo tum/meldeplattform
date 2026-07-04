@@ -93,6 +93,42 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Inactive user cleanup
+    |--------------------------------------------------------------------------
+    | Every login creates/refreshes a `users` row, so the table grows with each
+    | person who ever signs in. The scheduled `users:prune` command deletes
+    | accounts that carry no role (not a global admin, not in MELDE_ADMIN_USERS,
+    | and not a topic admin) and have not logged in for this many days. Such a
+    | row is only a stale login record — the person is recreated automatically on
+    | their next login — so removing it is safe and serves GDPR data
+    | minimisation. Reports keep their own reporter reference and are unaffected.
+    |
+    | Defaults to 365 days. Set MELDE_INACTIVE_USER_DAYS=0 to disable the cleanup.
+    */
+    'inactive_user_days' => (static function (): ?int {
+        $raw = env('MELDE_INACTIVE_USER_DAYS');
+        if ($raw !== null && $raw !== '' && ! is_numeric($raw)) {
+            throw new InvalidArgumentException(
+                'MELDE_INACTIVE_USER_DAYS must be a number (or unset). Got: '.(string) $raw,
+            );
+        }
+
+        if (is_numeric($raw)) {
+            $days = (int) $raw;
+            if ($days < 0) {
+                throw new InvalidArgumentException(
+                    'MELDE_INACTIVE_USER_DAYS must be a non-negative number. Got: '.(string) $raw,
+                );
+            }
+
+            return $days > 0 ? $days : null;
+        }
+
+        return 365;
+    })(),
+
+    /*
+    |--------------------------------------------------------------------------
     | Dev login bypass
     |--------------------------------------------------------------------------
     | When true AND APP_ENV != "production", an in-app form at /dev/login

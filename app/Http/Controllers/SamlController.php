@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\SamlAttributes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -238,8 +239,12 @@ class SamlController
             abort(403, 'SAML: not authenticated');
         }
 
+        // Merge the friendly-name map with the raw Name-keyed map (friendly
+        // names win, raw fills gaps) so TUM's LDAP attributes resolve whether or
+        // not the IdP emits a FriendlyName for them — e.g. `imvorname`, `sn`,
+        // `imanzeigename`, which carry the user's name.
         /** @var array<string, list<string>> $attrs */
-        $attrs = $auth->getAttributesWithFriendlyName();
+        $attrs = $auth->getAttributesWithFriendlyName() + $auth->getAttributes();
 
         // Identity is keyed on the IdP-released `uid` attribute (see the User
         // lookup below), so require it explicitly instead of falling back to the
@@ -248,8 +253,8 @@ class SamlController
         // appear. Refuse the login instead and log which attributes *were*
         // released (keys only, to avoid logging PII) so an attribute-release gap
         // can be chased.
-        $uid = $this->firstAttr($attrs, 'uid');
-        if ($uid === null || $uid === '') {
+        $uid = SamlAttributes::first($attrs, 'uid');
+        if ($uid === null) {
             Log::warning('SAML ACS missing uid attribute', [
                 'nameId' => $auth->getNameId(),
                 'attributes' => array_keys($attrs),
@@ -257,12 +262,12 @@ class SamlController
             abort(403, 'SAML: required uid attribute missing');
         }
 
-        $name = $this->firstAttr($attrs, 'displayName') ?? '';
-        $email = $this->firstAttr($attrs, 'mail') ?? '';
+        $name = SamlAttributes::displayName($attrs);
+        $email = SamlAttributes::first($attrs, 'mail');
 
         $user = User::updateOrCreate(
             ['uid' => $uid],
-            ['name' => $name !== '' ? $name : null, 'email' => $email !== '' ? $email : null],
+            ['name' => $name, 'email' => $email, 'last_login_at' => now()],
         );
 
         // Rotate the session ID on privilege elevation to defeat session fixation
@@ -271,18 +276,6 @@ class SamlController
         Auth::login($user);
 
         return redirect()->intended('/');
-    }
-
-    /**
-     * @param array<string, list<string>> $attrs
-     */
-    private function firstAttr(array $attrs, string $key): ?string
-    {
-        if (! isset($attrs[$key]) || count($attrs[$key]) === 0) {
-            return null;
-        }
-
-        return $attrs[$key][0];
     }
 
     private function newAuth(): OneLoginAuth

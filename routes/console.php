@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Schedule;
 // this is a no-op until retention is configured.
 Schedule::command('reports:prune')->daily();
 
+// Delete role-less user accounts dormant past MELDE_INACTIVE_USER_DAYS so the
+// users table doesn't grow unbounded with one-off logins. A no-op when the
+// window is disabled (0) or nothing is stale; admins are never pruned.
+Schedule::command('users:prune')->daily();
+
 // Remind case handlers each morning about reports approaching or past an
 // acknowledgement/feedback deadline. A no-op for topics with no configured
 // notification mailbox or no reports needing attention.

@@ -128,6 +128,27 @@ class UserManagementTest extends TestCase
             ->assertDontSee('bob@example.test');
     }
 
+    public function test_index_role_filter(): void
+    {
+        $this->actingAsGlobalAdmin();
+        User::create(['uid' => 'plainy', 'name' => 'Plain Y', 'email' => 'plainy@example.test']);
+        $topic = Topic::create(['name_de' => 'T', 'name_en' => 'T', 'summary_de' => '', 'summary_en' => '']);
+        User::create(['uid' => 'topicy', 'name' => 'Topic Y', 'email' => 'topicy@example.test']);
+        Admin::create(['user_id' => 'topicy'])->topics()->attach($topic);
+
+        // role=none surfaces the role-less login, hides the topic admin.
+        $this->get('/users?role=none')
+            ->assertOk()
+            ->assertSee('plainy@example.test')
+            ->assertDontSee('topicy@example.test');
+
+        // role=topic surfaces the topic admin, hides the role-less login.
+        $this->get('/users?role=topic')
+            ->assertOk()
+            ->assertSee('topicy@example.test')
+            ->assertDontSee('plainy@example.test');
+    }
+
     public function test_db_promoted_user_becomes_global_admin(): void
     {
         $u = User::create(['uid' => 'promoted', 'name' => 'P', 'email' => 'p@x', 'is_global_admin' => true]);

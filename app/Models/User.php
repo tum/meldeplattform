@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $name
  * @property string|null $email
  * @property bool $is_global_admin
+ * @property Carbon|null $last_login_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -22,7 +23,7 @@ class User extends Authenticatable
     use HasFactory;
 
     /** @var list<string> */
-    protected $fillable = ['uid', 'name', 'email', 'is_global_admin'];
+    protected $fillable = ['uid', 'name', 'email', 'is_global_admin', 'last_login_at'];
 
     /** @var list<string> */
     protected $hidden = ['remember_token'];
@@ -32,6 +33,7 @@ class User extends Authenticatable
     {
         return [
             'is_global_admin' => 'boolean',
+            'last_login_at' => 'datetime',
         ];
     }
 
