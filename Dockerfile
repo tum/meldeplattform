@@ -14,8 +14,12 @@ RUN apk add --no-cache \
         icu-dev mariadb-connector-c-dev tzdata bash \
         curl git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    # pdo, mbstring and opcache already ship (loaded) in the php:8.5 base image,
+    # so installing them explicitly builds no module and fails the layer
+    # ("cp: can't stat 'modules/*'"). Install only the extensions the base
+    # image lacks; opcache is tuned via docker/php/php.ini.
     && docker-php-ext-install -j$(nproc) \
-        pdo pdo_mysql mbstring gd exif bcmath zip intl opcache
+        pdo_mysql gd exif bcmath zip intl
 
 # Install composer (for runtime + one-off commands)
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
