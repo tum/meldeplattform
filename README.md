@@ -13,7 +13,7 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
   <img alt="Laravel 13" src="https://img.shields.io/badge/Laravel-13.16-ff2d20?logo=laravel&logoColor=white">
   <img alt="PHP 8.4" src="https://img.shields.io/badge/PHP-8.4-777bb4?logo=php&logoColor=white">
   <img alt="PHPStan level 9" src="https://img.shields.io/badge/PHPStan-level%209-1d4ed8">
-  <img alt="Tests" src="https://img.shields.io/badge/Tests-193%20passing-16a34a">
+  <img alt="Tests" src="https://img.shields.io/badge/Tests-248%20passing-16a34a">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-blue">
 </p>
 
@@ -50,22 +50,34 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
   EU-Whistleblowing-Richtlinie (Art. 9 Abs. 2) / HinSchG § 16.
 - **Fristen nach EU-Richtlinie / HinSchG § 17**: Eingangsbestätigung (7 Tage)
   und Rückmeldung (3 Monate) werden getrackt, im Dashboard markiert und per
-  täglichem `reports:remind` an die Bearbeiter*innen erinnert.
+  täglichem `reports:remind` an die Bearbeitenden erinnert.
+- **Themen-Lebenszyklus**: Themen lassen sich **deaktivieren** (aus der
+  öffentlichen Liste ausgeblendet, keine neuen Meldungen mehr – bestehende
+  Meldungen bleiben voll verwaltbar) und **löschen** (nur ohne verknüpfte
+  Meldungen; Themen mit Meldungen können aus Aufbewahrungsgründen nur
+  deaktiviert werden). Verwaltung über die Themen-Übersicht `/topics` mit Suche,
+  Statusfilter und Bulk-Aktionen.
+- **User-Verwaltung** (`/users`, nur globale Admins): Rollen (globaler Admin /
+  Themen-Admin / ohne Rolle / vorgemerkt), Suche und Rollenfilter, Spalte
+  „Letzter Login". Rollenlose, inaktive Accounts werden per `users:prune`
+  automatisch aufgeräumt (DSGVO-Datenminimierung).
 - **Datenaufbewahrung / Löschung**: Pro-Topic- bzw. globale Aufbewahrungsfrist
   (Default 3 Jahre, HinSchG § 11 Abs. 5). `reports:prune` löscht abgeschlossene
   Meldungen samt Anhängen ab dem Abschlussdatum (`closed_at`).
 - **CSV-Export** der (gefilterten) Dashboard-Meldungen für Audits/Reporting –
   nur Fall-Metadaten, keine Meldeinhalte; der Export wird auditiert.
 - **Append-only Audit-Log** (`/audit`) für sicherheitsrelevante Admin-Aktionen,
-  ohne Melder*innen-PII oder Meldeinhalte.
-- **Optionale Kontakt-E-Mail** für Update-Benachrichtigungen an Melder*innen.
+  ohne PII meldender Personen oder Meldeinhalte.
+- **Optionale Kontakt-E-Mail** für Update-Benachrichtigungen an meldende Personen.
 - **Dateiupload** mit Erweiterungs-Allowlist, UUID-Speichernamen,
   3-facher Größenbegrenzung, Path-Traversal-Schutz und EXIF-/Metadaten-Stripping
   bei Rasterbildern.
 - **Benachrichtigungen** pro Thema über E-Mail und Webhook (HTTPS-only,
   HMAC-signiert; konfigurierbar via JSON-Spalte `topics.contacts`).
-- **SAML-SSO** zum TUM Shibboleth-IdP mit Attribut-Mapping für
-  `uid` / `displayName` / `mail`.
+- **SAML-SSO** zum TUM Shibboleth-IdP. Identität über `uid`; der Anzeigename
+  wird aus den LDAP-Attributen `imtitelanrede` + `imvorname` + `sn`
+  zusammengesetzt (Fallback `imanzeigename`, dann `displayName`), Kontakt via
+  `mail`.
 - **Mehrsprachig** (DE/EN) auf Basis von Laravel-Translations.
 - **Markdown** mit strikter HTMLPurifier-Sanitizing-Pipeline.
 - **TUM-Design** in reinem CSS – keine Build-Toolchain nötig für Shared
@@ -199,7 +211,11 @@ In `config/saml2.php` konfiguriert, Werte per `.env`.
 - `GET /saml/logout` – lokaler Logout
 - `POST /saml/slo` – Single-Logout-Response vom IdP
 
-Attribute-Mapping: `uid`, `displayName`, `mail`.
+Attribute-Mapping: `uid` (Identität, zwingend), Name aus
+`imtitelanrede` + `imvorname` + `sn` (Fallback `imanzeigename`, dann
+`displayName`), `mail`. Friendly-Name- und Roh-Attribute werden zusammengeführt,
+sodass die LDAP-Namen unabhängig vom gesendeten FriendlyName aufgelöst werden
+(`App\Support\SamlAttributes`).
 
 #### IdP-Zertifikat importieren
 
@@ -225,13 +241,22 @@ Föderations-Registry) vergleichen, bevor der Cert in Produktion
 
 Bei IdP-Key-Rollover denselben Command erneut laufen lassen.
 
-### Admins
+### Admins & User
 
 Globale Admins via `MELDE_ADMIN_USERS` (komma-separierte UIDs). Sie dürfen
-neue Topics anlegen und sehen jede Meldung.
+neue Topics anlegen, jede Meldung sehen, Themen löschen und die
+User-Verwaltung `/users` nutzen. Der Env-Weg ist der Bootstrap-Pfad; zusätzlich
+lässt sich das Global-Admin-Flag pro User in `/users` setzen.
 
-Topic-Admins werden pro Topic im Admin-UI gepflegt (`/newTopic/{id}`).
-Sie dürfen ihr Topic bearbeiten, alle Meldungen dazu sehen und beantworten.
+Topic-Admins werden pro Topic im Admin-UI gepflegt (`/newTopic/{id}`) oder
+zentral in `/users`. Sie dürfen ihr Topic bearbeiten, alle Meldungen dazu
+sehen, beantworten und das Topic deaktivieren/reaktivieren.
+
+Jeder Login legt eine `users`-Zeile an. Rollenlose, seit
+`MELDE_INACTIVE_USER_DAYS` (Default 365; `0` = aus) inaktive Accounts werden per
+`users:prune` automatisch gelöscht – sie sind reine Login-Datensätze und werden
+beim nächsten Login neu angelegt. Admins (global/env/Themen) werden nie
+gelöscht; Meldungen bleiben unberührt.
 
 ### Topics & Messenger
 
@@ -244,6 +269,9 @@ Jedes Topic hat:
 - Eine Kontakt-E-Mail (Spalte `topics.email`)
 - Optionale Aufbewahrungsfrist (`topics.retention_days`); ohne Wert greift der
   globale Default (`MELDE_DEFAULT_RETENTION_DAYS`)
+- Aktiv/Deaktiviert-Status (`topics.deactivated_at`, `NULL` = aktiv); ein
+  deaktiviertes Topic nimmt keine neuen Meldungen an und ist öffentlich
+  ausgeblendet, bestehende Meldungen bleiben verwaltbar
 - Optionale weitere Messenger in der JSON-Spalte `topics.contacts`:
 
 ```json
@@ -267,22 +295,25 @@ Per `.env` steuerbar (Defaults in Klammern):
 | `MELDE_REMINDER_ACK_LEAD_DAYS` | `2` | Vorlauf, ab dem `reports:remind` vor der Bestätigungsfrist erinnert |
 | `MELDE_REMINDER_FEEDBACK_LEAD_DAYS` | `14` | Vorlauf vor der Rückmeldefrist |
 | `MELDE_DEFAULT_RETENTION_DAYS` | `1095` | Globale Aufbewahrung in Tagen (3 Jahre, HinSchG § 11 Abs. 5); `0` = nur Pro-Topic-Frist nutzen |
+| `MELDE_INACTIVE_USER_DAYS` | `365` | Rollenlose Accounts ohne Login seit so vielen Tagen werden per `users:prune` gelöscht; `0` = aus |
 | `MELDE_MAX_UPLOAD_MB` | `10` | Max. Größe pro Datei-/Audio-Upload |
 | `MELDE_WEBHOOK_SECRET` | – | Shared Secret zum HMAC-Signieren ausgehender Webhooks (`X-SafeSignal-Signature`) |
 
 Aufbewahrung wird ab dem **Abschluss** einer Meldung gemessen
 (`reports.closed_at`, gesetzt beim Wechsel auf *Erledigt*/*Spam*) – offene
 Verfahren werden nie automatisch gelöscht. Audio-Uploads werden **nicht**
-metadaten-bereinigt (nur Rasterbilder); Melder*innen werden im UI gewarnt.
+metadaten-bereinigt (nur Rasterbilder); meldende Personen werden im UI gewarnt.
 
 ## Geplante Tasks (Cron)
 
-Zwei Artisan-Commands sind im Scheduler registriert (`routes/console.php`):
+Folgende Artisan-Commands sind im Scheduler registriert (`routes/console.php`):
 
 | Command | Zeitplan | Zweck |
 |---|---|---|
 | `reports:prune` | täglich | Löscht abgeschlossene Meldungen samt Anhängen nach Ablauf der Aufbewahrungsfrist |
-| `reports:remind` | täglich 07:00 (Europe/Berlin) | Erinnert Bearbeiter*innen per E-Mail an Meldungen nahe/über einer Frist |
+| `reports:remind` | täglich 07:00 (Europe/Berlin) | Erinnert Bearbeitende per E-Mail an Meldungen nahe/über einer Frist |
+| `users:prune` | täglich | Löscht rollenlose, seit `MELDE_INACTIVE_USER_DAYS` inaktive User-Accounts (no-op bei `0`) |
+| `otrs:poll-replies` | alle 5 Min. | Spiegelt OTRS/Znuny-Antworten in die Meldungen zurück (no-op ohne OTRS-Inbound) |
 
 Beide laufen über den Laravel-Scheduler. Es genügt **ein** Cron-Eintrag auf
 dem Host, der den Scheduler jede Minute weckt:
@@ -316,7 +347,7 @@ Hinweise:
 docker compose exec app composer install
 docker compose exec app vendor/bin/pint            # Autoformat
 docker compose exec app vendor/bin/phpstan analyse # Statik, Level 9
-docker compose exec app vendor/bin/phpunit         # 193 Tests
+docker compose exec app vendor/bin/phpunit         # 248 Tests
 ```
 
 Das `docker-compose.override.yml` bind-mounted das Repo in den Container,
@@ -326,9 +357,9 @@ sodass Edits auf dem Host sofort wirken.
 
 ```
 GET  /                          Home (Themenliste)
-GET  /form/{topicID}            Meldeformular
+GET  /form/{topicID}            Meldeformular (404 bei deaktiviertem Topic)
 POST /submit                    Meldung absenden (throttle 10/min)
-GET  /report?reporterToken=…    Meldung als Melder*in sehen + antworten
+GET  /report?reporterToken=…    Meldung als meldende Person sehen + antworten
 POST /report?...Token=…         Antworten (throttle 60/min)
 GET  /track                     Wiedereinstieg per Eingangscode (Formular)
 POST /track                     Eingangscode einlösen (throttle)
@@ -337,14 +368,19 @@ GET  /imprint, /privacy         statische Markdown-Seiten
 GET  /setLang?lang=de|en        Sprach-Cookie setzen
 GET  /dashboard                 Themenübergreifendes Admin-Dashboard
 GET  /dashboard/export          CSV-Export der gefilterten Meldungen (admin)
+GET  /topics                    Themen-Verwaltung: Status, Suche, Filter (admin)
 GET  /newTopic/{id}             Topic anlegen/bearbeiten (admin)
 GET  /reports/{id}              Reports zu einem Topic (admin)
 POST /api/topic/{id}            Topic upsert (admin, JSON)
+POST /api/topic/{id}/deactivate Topic deaktivieren (admin)
+POST /api/topic/{id}/activate   Topic reaktivieren (admin)
+DEL  /api/topic/{id}            Topic löschen (nur leere Themen; globale Admins)
+POST /api/topics/bulk-status    Bulk deaktivieren/reaktivieren (admin)
 POST /api/topic/{t}/report/{r}/status       Status wechseln (admin)
 POST /api/topic/{t}/report/{r}/acknowledge  Eingang bestätigen (admin)
 POST /api/topic/{t}/reports/status          Bulk-Status (admin)
 GET  /audit                     Audit-Log (nur globale Admins)
-GET  /users                     Benutzerverwaltung (nur globale Admins)
+GET  /users                     User-Verwaltung: Rollen, Filter (nur globale Admins)
 GET  /saml/metadata             SP-Metadaten
 GET  /saml/out                  Login starten
 POST /shib                      SAML ACS
@@ -362,7 +398,7 @@ docker compose exec app vendor/bin/phpunit
 
 - **Pint**: Laravel-Preset + Extras (siehe `pint.json`)
 - **PHPStan**: Level 9 (siehe `phpstan.neon`, larastan-Extension)
-- **PHPUnit**: 193 Tests (Unit + Feature), 561 Assertions
+- **PHPUnit**: 248 Tests (Unit + Feature), 705 Assertions
 
 GitHub Actions führt die drei Stufen bei jedem Push/PR aus – Test-Matrix
 gegen SQLite + MariaDB 11.
@@ -383,7 +419,7 @@ Eingebaute Härtung (Kurzfassung):
 - Webhooks nur über HTTPS, optional HMAC-SHA256-signiert
   (`MELDE_WEBHOOK_SECRET`); Benachrichtigungen enthalten keine Meldeinhalte.
 - Append-only Audit-Log (Mutation/Löschung per Model-Guard unterbunden), ohne
-  Melder*innen-PII.
+  PII meldender Personen.
 - Dev-Login nur mit `APP_ENV != production` **und**
   `MELDE_DEV_LOGIN_ENABLED=true`.
 - SAML-ACS-Endpoint validiert Signatur und NotBefore/NotOnOrAfter via
