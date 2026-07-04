@@ -22,8 +22,10 @@ use Illuminate\View\View;
  */
 class UserController
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $q = trim($request->string('q')->toString());
+
         $users = User::orderBy('uid')->get();
         $admins = Admin::with('topics:id,name_de,name_en')->orderBy('user_id')->get();
         $topics = Topic::orderBy('name_en')->get(['id', 'name_de', 'name_en']);
@@ -39,6 +41,11 @@ class UserController
                 'user' => $user,
                 'admin' => null,
                 'topics' => collect(),
+                // Pre-built lowercase search key (uid + name + email) so the
+                // optional filter below is a plain string match. Built here,
+                // where $user is precisely typed, rather than re-derived from
+                // the loosely-typed merged row.
+                'search' => mb_strtolower(trim($user->uid.' '.($user->name ?? '').' '.($user->email ?? ''))),
             ];
         }
         foreach ($admins as $admin) {
@@ -47,6 +54,7 @@ class UserController
                 'user' => null,
                 'admin' => null,
                 'topics' => collect(),
+                'search' => mb_strtolower($admin->user_id),
             ];
             $existing['admin'] = $admin;
             $existing['topics'] = $admin->topics;
@@ -54,9 +62,20 @@ class UserController
         }
         ksort($rows);
 
+        // Optional search over UID, name or email. The user/admin set is small,
+        // so filtering after the merge keeps the two-table union simple.
+        if ($q !== '') {
+            $needle = mb_strtolower($q);
+            $rows = array_filter(
+                $rows,
+                static fn (array $row): bool => str_contains((string) $row['search'], $needle),
+            );
+        }
+
         return view('pages.users.index', [
             'rows' => array_values($rows),
             'topics' => $topics,
+            'q' => $q,
         ]);
     }
 

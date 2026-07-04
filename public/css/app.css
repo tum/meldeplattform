@@ -554,6 +554,10 @@ tbody tr:last-child td { border-bottom: 0; }
 .status-pill.in_progress { color: #664d03; background: #fff3cd; }
 .status-pill.done { color: var(--tum-green); background: #d1e7dd; }
 .status-pill.spam { color: var(--tum-muted); background: var(--tum-bg); }
+/* Topic lifecycle: an active topic reads as healthy/green; a deactivated one
+   is muted (offline), matching the neutral treatment used for spam. */
+.status-pill.active { color: var(--tum-green); background: #d1e7dd; }
+.status-pill.deactivated { color: var(--tum-muted); background: var(--tum-bg); }
 
 .unread-badge {
     display: inline-block;

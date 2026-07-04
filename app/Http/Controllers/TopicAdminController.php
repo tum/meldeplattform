@@ -8,6 +8,7 @@ use App\Http\Requests\ReplyRequest;
 use App\Http\Requests\UpsertTopicRequest;
 use App\Http\Resources\TopicResource;
 use App\Mail\ReportNotification;
+use App\Models\Admin;
 use App\Models\AuditLog;
 use App\Models\Message;
 use App\Models\Report;
@@ -39,6 +40,151 @@ class TopicAdminController
     public function edit(Topic $topic): View
     {
         return view('pages.new-topic', ['topic' => $topic]);
+    }
+
+    /**
+     * Topic administration index: a management table of the topics the user may
+     * manage (global admins see all; topic-admins their own), with report and
+     * admin counts and lifecycle actions. Honours a `q` name search and a
+     * `status` filter (all|active|deactivated). Scoping stays in SQL via
+     * Topic::scopeManageableBy so the cost tracks the user's topics.
+     */
+    public function adminIndex(Request $request): View
+    {
+        $user = $request->user();
+        abort_if($user === null, 403);
+
+        $q = trim($request->string('q')->toString());
+        $status = $request->string('status')->toString();
+        $status = in_array($status, ['active', 'deactivated'], true) ? $status : 'all';
+
+        $topics = Topic::query()
+            ->manageableBy($user)
+            ->withCount('reports')
+            ->with('admins:id,user_id')
+            ->when($status === 'active', fn (Builder $query): Builder => $query->active())
+            ->when($status === 'deactivated', fn (Builder $query): Builder => $query->whereNotNull('deactivated_at'))
+            ->when($q !== '', function (Builder $query) use ($q): void {
+                $query->where(function (Builder $sub) use ($q): void {
+                    $sub->where('name_de', 'like', '%'.$q.'%')
+                        ->orWhere('name_en', 'like', '%'.$q.'%');
+                });
+            })
+            ->orderBy('name_en')
+            ->get();
+
+        return view('pages.topics.index', [
+            'topics' => $topics,
+            'q' => $q,
+            'status' => $status,
+        ]);
+    }
+
+    /** Take a topic offline: no new reports, hidden from the public list. Existing reports stay manageable. */
+    public function deactivate(Topic $topic): RedirectResponse
+    {
+        $topic->deactivate();
+        AuditLog::record('topic.deactivated', $topic, ['topic_id' => $topic->id]);
+
+        return back()->with('flash.success', __('topic_deactivated', ['name' => $topic->name(app()->getLocale())]));
+    }
+
+    /** Bring a deactivated topic back online. */
+    public function activate(Topic $topic): RedirectResponse
+    {
+        $topic->activate();
+        AuditLog::record('topic.reactivated', $topic, ['topic_id' => $topic->id]);
+
+        return back()->with('flash.success', __('topic_reactivated', ['name' => $topic->name(app()->getLocale())]));
+    }
+
+    /**
+     * Permanently delete a topic. Refused while it still holds reports —
+     * whistleblowing reports carry a statutory retention duty (HinSchG §11(5)),
+     * and deleting the topic would cascade them away — so such a topic must be
+     * deactivated instead. Deletion cascades the topic's fields, admin links and
+     * view markers; any admin left with no topics afterwards is cleaned up, the
+     * same housekeeping UpsertTopic::syncAdmins performs.
+     */
+    public function destroy(Topic $topic): RedirectResponse
+    {
+        if ($topic->reports()->exists()) {
+            return back()->with('flash.error', __('topic_delete_blocked'));
+        }
+
+        $name = $topic->name(app()->getLocale());
+
+        DB::transaction(function () use ($topic): void {
+            /** @var list<int> $adminIds */
+            $adminIds = $topic->admins()->pluck('admins.id')->all();
+
+            $topic->delete();
+
+            if ($adminIds !== []) {
+                Admin::whereIn('id', $adminIds)->doesntHave('topics')->delete();
+            }
+        });
+
+        // The row is gone, so record the reference in metadata rather than as a
+        // (now dangling) subject id.
+        AuditLog::record('topic.deleted', null, ['topic_id' => $topic->id, 'name' => $name]);
+
+        return redirect()->route('topics.index')
+            ->with('flash.success', __('topic_deleted', ['name' => $name]));
+    }
+
+    /**
+     * Bulk deactivate/reactivate from the topic index. Accepts `ids` (a list of
+     * topic IDs) and `action` (deactivate|activate). Ids are constrained to the
+     * topics the user may manage — mirroring the dashboard's manageable scope —
+     * so a hand-crafted id can never touch another team's topic. Bulk delete is
+     * deliberately not offered: deletion is per-row and guarded individually.
+     */
+    public function bulkLifecycle(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if($user === null, 403);
+
+        $action = $request->string('action')->toString();
+        abort_unless(in_array($action, ['deactivate', 'activate'], true), 400);
+
+        $rawIds = $request->input('ids', []);
+        if (! is_array($rawIds)) {
+            return back();
+        }
+
+        $ids = array_values(array_filter(array_map(
+            static fn (mixed $v): int => is_numeric($v) ? (int) $v : 0,
+            $rawIds,
+        ), static fn (int $i): bool => $i > 0));
+
+        if ($ids === []) {
+            return back();
+        }
+
+        /** @var list<int> $manageableIds */
+        $manageableIds = Topic::query()->manageableBy($user)->whereIn('id', $ids)->pluck('id')->all();
+        if ($manageableIds === []) {
+            return back();
+        }
+
+        $count = DB::transaction(function () use ($manageableIds, $action): int {
+            $query = Topic::query()->whereIn('id', $manageableIds);
+
+            return $action === 'deactivate'
+                ? $query->whereNull('deactivated_at')->update(['deactivated_at' => now()])
+                : $query->whereNotNull('deactivated_at')->update(['deactivated_at' => null]);
+        });
+
+        if ($count > 0) {
+            AuditLog::record(
+                $action === 'deactivate' ? 'topic.bulk_deactivated' : 'topic.bulk_reactivated',
+                null,
+                ['topic_ids' => $manageableIds, 'count' => $count],
+            );
+        }
+
+        return back()->with('flash.success', __('topics_bulk_done', ['count' => $count]));
     }
 
     /**

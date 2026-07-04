@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property array<string, array<string, string>>|null $contacts
  * @property bool $require_login
  * @property int|null $retention_days
+ * @property Carbon|null $deactivated_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Field> $fields
@@ -45,7 +46,65 @@ class Topic extends Model
             'contacts' => 'array',
             'require_login' => 'boolean',
             'retention_days' => 'integer',
+            'deactivated_at' => 'datetime',
         ];
+    }
+
+    /**
+     * A topic is active (public, accepting new reports) while `deactivated_at`
+     * is null. Deactivating hides it from the public list and blocks new
+     * submissions; existing reports remain fully manageable either way.
+     */
+    public function isActive(): bool
+    {
+        return $this->deactivated_at === null;
+    }
+
+    public function isDeactivated(): bool
+    {
+        return $this->deactivated_at !== null;
+    }
+
+    /** Take the topic offline. Idempotent — an already-offline topic is left as-is. */
+    public function deactivate(): void
+    {
+        if ($this->deactivated_at === null) {
+            $this->deactivated_at = Carbon::now();
+            $this->save();
+        }
+    }
+
+    /** Bring the topic back online. Idempotent. */
+    public function activate(): void
+    {
+        if ($this->deactivated_at !== null) {
+            $this->deactivated_at = null;
+            $this->save();
+        }
+    }
+
+    /**
+     * A topic may only be hard-deleted while it holds no reports. Reports carry
+     * a statutory retention duty (HinSchG §11(5)), so a topic with history is
+     * deactivated rather than deleted — deletion here would cascade its reports
+     * away (see the reports foreign key). Callers must still enforce this; the
+     * helper drives the UI hint and the controller guard.
+     */
+    public function isDeletable(): bool
+    {
+        return $this->reports()->doesntExist();
+    }
+
+    /**
+     * Constrain a query to active (non-deactivated) topics — the set shown to
+     * the public and reachable for new submissions.
+     *
+     * @param Builder<Topic> $query
+     * @return Builder<Topic>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->whereNull('deactivated_at');
     }
 
     /**

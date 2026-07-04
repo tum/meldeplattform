@@ -12,6 +12,11 @@ class FormController
 {
     public function show(Topic $topic): View|RedirectResponse
     {
+        // A deactivated topic no longer accepts new reports and is hidden from
+        // the public list, so its form is gone too — 404 rather than reveal it.
+        // Existing reports stay reachable via their own token routes.
+        abort_if($topic->isDeactivated(), 404);
+
         if ($topic->require_login && ! Auth::check()) {
             session(['url.intended' => url()->current()]);
 

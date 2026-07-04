@@ -56,13 +56,24 @@
         </form>
     </section>
 
+    <div class="flex-between mb-4" style="gap: 1rem; flex-wrap: wrap;">
+        <form method="GET" action="{{ route('users.index') }}" class="form-inline" style="margin: 0;">
+            <div class="form-group" style="margin: 0;">
+                <label for="user-search">{{ __('search') }}</label>
+                <input id="user-search" type="search" name="q" value="{{ $q }}" autocomplete="off"
+                       placeholder="{{ __('users_uid_label') }}…">
+            </div>
+            <button type="submit" class="button button-small">{{ __('apply_filters') }}</button>
+        </form>
+    </div>
+
     <table>
         <thead>
             <tr>
                 <th>{{ __('users_uid_label') }}</th>
                 <th>Name</th>
                 <th>{{ __('contact') }}</th>
-                <th>{{ __('users_global_column') }}</th>
+                <th>{{ __('users_role_column') }}</th>
                 <th>{{ __('users_topics_column') }}</th>
                 <th></th>
             </tr>
@@ -71,26 +82,26 @@
             @forelse ($rows as $row)
                 @php
                     $user = $row['user'];
-                    $admin = $row['admin'];
                     $isEnvGlobal = $user?->isGlobalAdminViaEnv() ?? false;
                     $isDbGlobal = $user?->is_global_admin ?? false;
+                    $hasTopics = $row['topics']->isNotEmpty();
                 @endphp
                 <tr>
-                    <td>
-                        <code>{{ $row['uid'] }}</code>
-                        @if ($user === null)
-                            <span class="muted" style="font-size: 0.8rem; margin-left: 0.5rem;">{{ __('users_pending_login') }}</span>
-                        @endif
-                    </td>
+                    <td><code>{{ $row['uid'] }}</code></td>
                     <td>{{ $user?->name ?: '—' }}</td>
                     <td>{{ $user?->email ?: '—' }}</td>
                     <td>
                         @if ($isEnvGlobal)
-                            <span class="status-pill open" title="{{ __('users_global_env_hint') }}">{{ __('users_global_env') }}</span>
+                            <span class="status-pill open" title="{{ __('users_global_env_hint') }}">{{ __('role_global_admin') }} · {{ __('users_global_env') }}</span>
                         @elseif ($isDbGlobal)
-                            <span class="status-pill done">{{ __('users_global_db') }}</span>
+                            <span class="status-pill done">{{ __('role_global_admin') }}</span>
+                        @elseif ($hasTopics)
+                            <span class="status-pill open">{{ __('role_topic_admin') }}</span>
                         @else
                             <span class="muted">—</span>
+                        @endif
+                        @if ($user === null)
+                            <span class="status-pill deactivated">{{ __('role_pending') }}</span>
                         @endif
                     </td>
                     <td>

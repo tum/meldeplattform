@@ -74,6 +74,17 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard/export', [TopicAdminController::class, 'exportCsv'])
         ->name('dashboard.export');
 
+    // Topic administration index — a management table of the topics the user
+    // may manage (global admins see all). Lifecycle actions post to the routes
+    // below. `viewAny` just gates the page open; the list is scoped in SQL.
+    Route::get('/topics', [TopicAdminController::class, 'adminIndex'])
+        ->can('viewAny', Topic::class)
+        ->name('topics.index');
+    Route::post('/api/topics/bulk-status', [TopicAdminController::class, 'bulkLifecycle'])
+        ->can('viewAny', Topic::class)
+        ->middleware('throttle:admin-write')
+        ->name('topics.bulk');
+
     Route::get('/newTopic', [TopicAdminController::class, 'create'])
         ->can('create', Topic::class)
         ->name('topic.create');
@@ -118,6 +129,20 @@ Route::middleware('auth')->group(function (): void {
         ->whereNumber('topic')->can('view', 'topic')->name('topic.show');
     Route::post('/api/topic/{topic}', [TopicAdminController::class, 'update'])
         ->whereNumber('topic')->can('update', 'topic')->name('topic.update');
+
+    // Topic lifecycle. Deactivate/reactivate is an `update`-level act (a
+    // topic-admin may take their own topic offline); delete is reserved for
+    // global admins via `can:delete` and is refused server-side when the topic
+    // still holds reports.
+    Route::post('/api/topic/{topic}/deactivate', [TopicAdminController::class, 'deactivate'])
+        ->whereNumber('topic')->can('update', 'topic')
+        ->middleware('throttle:admin-write')->name('topic.deactivate');
+    Route::post('/api/topic/{topic}/activate', [TopicAdminController::class, 'activate'])
+        ->whereNumber('topic')->can('update', 'topic')
+        ->middleware('throttle:admin-write')->name('topic.activate');
+    Route::delete('/api/topic/{topic}', [TopicAdminController::class, 'destroy'])
+        ->whereNumber('topic')->can('delete', 'topic')
+        ->middleware('throttle:admin-write')->name('topic.destroy');
     Route::post('/api/topic/{topic}/report/{report}/status', [TopicAdminController::class, 'setStatus'])
         ->whereNumber('topic')->whereNumber('report')
         ->scopeBindings()
