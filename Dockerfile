@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # --- Runtime image (PHP-FPM + nginx) ---
-FROM php:8.4-fpm-alpine AS runtime
+FROM php:8.5-fpm-alpine AS runtime
 
 ENV APP_ENV=production \
     APP_DEBUG=false \
