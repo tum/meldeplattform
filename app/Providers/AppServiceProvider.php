@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         // to the canonical host. Harmless on this single-domain deployment.
         $appUrl = Config::string('app.url', '');
         if ($appUrl !== '') {
-            URL::forceRootUrl($appUrl);
+            URL::useOrigin($appUrl);
 
             // Shared hosting often runs behind a TLS proxy that does not forward
             // the scheme to PHP. Force HTTPS URLs when APP_URL is https.
