@@ -79,15 +79,42 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        // Session cookies are only relevant for HTTP — skip when running Artisan
-        // commands or queue workers so they don't fail the deploy pipeline.
-        if (! $this->app->runningInConsole() && ! (bool) config('session.secure', false)) {
+        self::assertProductionInvariants(
+            isConsole: $this->app->runningInConsole(),
+            sessionSecure: (bool) config('session.secure', false),
+            appDebug: (bool) config('app.debug', false),
+            queueDefault: Config::string('queue.default', 'sync'),
+        );
+    }
+
+    /**
+     * Pure production-safety invariants, split out from the container/config
+     * lookups above so they can be unit-tested with plain values. Throws on a
+     * hard misconfiguration; logs a warning for degraded-but-functional ones.
+     *
+     * The HTTP-only invariants are skipped in console (Artisan commands, queue
+     * workers) so a deploy pipeline — which runs config:cache / migrate with
+     * whatever env is set — is never blocked by them.
+     */
+    private static function assertProductionInvariants(bool $isConsole, bool $sessionSecure, bool $appDebug, string $queueDefault): void
+    {
+        // Session cookies are only relevant for HTTP.
+        if (! $isConsole && ! $sessionSecure) {
             throw new \RuntimeException(
                 'SESSION_SECURE_COOKIE must be true in production to prevent session hijacking over HTTP.',
             );
         }
 
-        if (config('queue.default', 'sync') === 'sync') {
+        // A production HTTP surface with APP_DEBUG on renders Ignition/whoops
+        // error pages that leak env: APP_KEY (which HMACs report receipt codes),
+        // plus DB / OTRS / SAML credentials.
+        if (! $isConsole && $appDebug) {
+            throw new \RuntimeException(
+                'APP_DEBUG must be false in production to avoid leaking secrets (APP_KEY, DB/OTRS/SAML credentials) via error pages.',
+            );
+        }
+
+        if ($queueDefault === 'sync') {
             Log::warning('Queue driver is `sync` in production — mail and webhook dispatch will block requests. Set QUEUE_CONNECTION=database or redis.');
         }
     }
