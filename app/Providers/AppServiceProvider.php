@@ -24,10 +24,22 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Shared hosting often runs behind a TLS proxy that does not forward
-        // the scheme to PHP. Force HTTPS URLs when APP_URL is https.
-        if (str_starts_with(Config::string('app.url', ''), 'https://')) {
-            URL::forceScheme('https');
+        // Pin URL generation to APP_URL. route()/url() otherwise derive the
+        // host from the incoming request — which is absent in queued jobs, the
+        // reports:remind scheduler and OTRS polling (so they fall back to
+        // localhost), and untrustworthy behind a reverse proxy that rewrites
+        // the Host header. Forcing the root URL makes every generated link —
+        // in the mail digests and the in-request notifications alike — resolve
+        // to the canonical host. Harmless on this single-domain deployment.
+        $appUrl = Config::string('app.url', '');
+        if ($appUrl !== '') {
+            URL::useOrigin($appUrl);
+
+            // Shared hosting often runs behind a TLS proxy that does not forward
+            // the scheme to PHP. Force HTTPS URLs when APP_URL is https.
+            if (str_starts_with($appUrl, 'https://')) {
+                URL::forceScheme('https');
+            }
         }
 
         $this->assertProductionConfig();
