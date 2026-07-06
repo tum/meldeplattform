@@ -145,6 +145,14 @@ class Report extends Model
      * acknowledged report is left untouched so the original timestamp stands.
      * Uses an atomic WHERE NULL update to prevent a race where two concurrent
      * requests both pass the in-memory guard before either write commits.
+     *
+     * The update runs through `toBase()` so it does NOT bump `updated_at`.
+     * Acknowledgement is admin housekeeping, not new thread activity, and
+     * `updated_at` drives the home-page unread badge
+     * (reports.updated_at > topic_views.last_seen_at) — an Eloquent builder
+     * update would inject `updated_at = now()` and re-surface a report the
+     * admin just triaged as "unread". This mirrors the bulk path in
+     * TopicAdminController::bulkSetStatus.
      */
     public function acknowledge(): void
     {
@@ -155,6 +163,7 @@ class Report extends Model
         $now = Carbon::now();
         $rows = self::where('id', $this->id)
             ->whereNull('acknowledged_at')
+            ->toBase()
             ->update(['acknowledged_at' => $now]);
 
         if ($rows > 0) {
