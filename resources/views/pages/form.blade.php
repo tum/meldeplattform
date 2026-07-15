@@ -60,7 +60,10 @@
                         </select>
                         @break
                     @case('checkbox')
-                        <input type="checkbox" id="field-{{ $field->id }}" name="{{ $name }}"
+                        {{-- `value` is required: with none, browsers post the
+                             literal "on", which the field's `boolean` rule
+                             rejects — making a ticked box unsubmittable. --}}
+                        <input type="checkbox" id="field-{{ $field->id }}" name="{{ $name }}" value="1"
                                @checked(old($name))
                                @if ($field->required) required @endif>
                         @break
