@@ -9,6 +9,7 @@ use App\Models\Report;
 use App\Services\MessengerDispatcher;
 use App\Services\OtrsReplyImporter;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -82,8 +83,14 @@ class PollOtrsReplies extends Command
 
     /**
      * Persist one imported answer and run the same follow-up an in-platform
-     * admin reply does. The high-water mark is advanced as the first write so a
-     * later failure in the (best-effort) notifications cannot cause a re-import.
+     * admin reply does.
+     *
+     * The message and the high-water mark are written in one transaction. The
+     * docblock used to claim the mark was "advanced as the first write" so a
+     * later failure could not cause a re-import — but it was the second write,
+     * with nothing tying the two together: if the save() failed after the insert
+     * committed, the next poll re-imported the same article as a duplicate reply
+     * in the reporter's thread. Committing them together makes the claim true.
      *
      * @param array{id: string, body: string} $answer
      */
@@ -91,14 +98,19 @@ class PollOtrsReplies extends Command
     {
         $topic = $report->topic;
 
-        $message = Message::create([
-            'report_id' => $report->id,
-            'content' => $answer['body'],
-            'is_admin' => true,
-            'source' => 'otrs',
-        ]);
+        $message = DB::transaction(function () use ($report, $answer): Message {
+            $message = Message::create([
+                'report_id' => $report->id,
+                'content' => $answer['body'],
+                'is_admin' => true,
+                'source' => 'otrs',
+            ]);
 
-        $report->forceFill(['otrs_last_article_id' => $answer['id']])->save();
+            $report->forceFill(['otrs_last_article_id' => $answer['id']])->save();
+
+            return $message;
+        });
+
         $report->acknowledge();
         AuditLog::record('report.replied', $report, ['source' => 'otrs']);
 

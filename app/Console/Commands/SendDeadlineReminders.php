@@ -47,7 +47,12 @@ class SendDeadlineReminders extends Command
             Report::query()
                 ->where('topic_id', $topic->id)
                 ->active()
+                // `id` breaks ties: each() pages with OFFSET and an explicit
+                // order suppresses Laravel's own key tiebreaker, so reports
+                // sharing a created_at could be listed twice or omitted from the
+                // digest once a topic exceeds one page of active reports.
                 ->orderBy('created_at')
+                ->orderBy('id')
                 ->each(function (Report $report) use (&$items, $ackLead, $feedbackLead): void {
                     $needsAck = $report->needsAcknowledgementReminder($ackLead);
                     $needsFeedback = $report->needsFeedbackReminder($feedbackLead);

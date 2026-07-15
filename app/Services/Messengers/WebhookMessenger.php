@@ -13,9 +13,11 @@ class WebhookMessenger implements Messenger
 
     public function send(string $title, Message $message, string $reportUrl): void
     {
-        // Refuse non-HTTPS targets: the payload carries the report URL, whose
-        // token grants access to the report. Sending it over cleartext HTTP
-        // would expose that token to anyone on the network path.
+        // Refuse non-HTTPS targets. The payload is content-free, and the URL it
+        // carries is the auth-gated admin route (no token — an earlier comment
+        // here claimed otherwise), so the leak is the topic name and report id
+        // rather than report access. Still not something to hand to anyone on
+        // the network path, and HTTPS keeps the signature header meaningful.
         if (! Str::startsWith(Str::lower($this->target), 'https://')) {
             Log::warning('WebhookMessenger: refusing to send to a non-HTTPS target', [
                 'target' => $this->target,
@@ -33,7 +35,16 @@ class WebhookMessenger implements Messenger
             'url' => $reportUrl,
         ], JSON_THROW_ON_ERROR);
 
-        $request = Http::timeout(10)->withBody($body, 'application/json');
+        // withoutRedirecting(): the https check above only constrains the first
+        // hop. Guzzle follows redirects by default with protocols http+https and
+        // strict=false, so a target could answer `307 Location: http://127.0.0.1:…`
+        // and have us re-POST the body — method and payload intact — to an
+        // internal cleartext service. The target is topic-admin-configurable and
+        // `url:https` validation accepts any host, so this is the SSRF hop.
+        // A webhook receiver has no legitimate reason to redirect.
+        $request = Http::timeout(10)
+            ->withoutRedirecting()
+            ->withBody($body, 'application/json');
 
         $secret = $this->signingSecret();
         if ($secret !== null) {
@@ -44,10 +55,25 @@ class WebhookMessenger implements Messenger
             ]);
         }
 
+        $response = $request->post($this->target);
+
+        // A 3xx is no longer followed, so nothing was delivered. throw() only
+        // fires on 4xx/5xx, which would let a redirect masquerade as success —
+        // surface it as the misconfigured target it is, the same way a
+        // non-HTTPS target is handled above.
+        if ($response->redirect()) {
+            Log::warning('WebhookMessenger: target responded with a redirect, which is not followed; nothing was delivered', [
+                'target' => $this->target,
+                'status' => $response->status(),
+            ]);
+
+            return;
+        }
+
         // Do NOT swallow failures: let transport/HTTP errors propagate so the
         // queued DispatchTopicNotifications job retries them. A silently dropped
         // webhook is an unhandled report notification.
-        $request->post($this->target)->throw();
+        $response->throw();
     }
 
     private function signingSecret(): ?string
