@@ -100,6 +100,7 @@
     "field_type_url": "URL",
     "field_type_info": "Info text (no input)",
     "please_fix_errors": "Please fix the highlighted fields and submit again.",
+    "upload_image_unreadable": "This image could not be processed, so we could not remove its metadata (e.g. GPS/EXIF). Rather than upload it unprotected, please re-save or convert it and try again.",
     "upload_limit": "Max :mb MB per file.",
     "upload_metadata_warning": "Note: image metadata (e.g. GPS/EXIF) is stripped on upload. Documents (PDF, Office) and the file name itself may still reveal your identity — please remove such details beforehand.",
     "receipt_heading": "Your access code – write it down now",

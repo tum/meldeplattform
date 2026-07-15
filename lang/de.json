@@ -100,6 +100,7 @@
     "field_type_url": "URL",
     "field_type_info": "Infotext (ohne Eingabe)",
     "please_fix_errors": "Bitte korrigieren Sie die markierten Felder und senden Sie das Formular erneut.",
+    "upload_image_unreadable": "Dieses Bild konnte nicht verarbeitet werden, daher ließen sich seine Metadaten (z. B. GPS/EXIF) nicht entfernen. Um es nicht ungeschützt hochzuladen, speichern oder konvertieren Sie es bitte neu und versuchen Sie es erneut.",
     "upload_limit": "Maximal :mb MB pro Datei.",
     "upload_metadata_warning": "Hinweis: Bilder werden beim Hochladen von Metadaten (z. B. GPS/EXIF) befreit. Dokumente (PDF, Office) sowie der Dateiname können jedoch weiterhin Hinweise auf Ihre Identität enthalten – bitte entfernen Sie solche Angaben vorab.",
     "receipt_heading": "Ihr Zugangscode – jetzt notieren",
