@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ReportState;
+use App\Http\Requests\SubmitReportRequest;
 use App\Models\Field;
 use App\Models\Report;
 use App\Models\Topic;
@@ -10,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 class SubmitFlowTest extends TestCase
@@ -198,6 +200,16 @@ class SubmitFlowTest extends TestCase
         ])->assertStatus(422);
     }
 
+    /**
+     * The allowlist is checked against the validator rather than over HTTP on
+     * purpose. Laravel's test client merges extracted uploads with array_merge(),
+     * which renumbers integer keys — and file inputs here are named after the
+     * numeric field ID, so a file posted as `14` arrives as `0` and the field
+     * reads as absent. Driven over HTTP this test still went red, but on
+     * "the 14 field is required" rather than on the extension: it would have
+     * passed just as happily with the allowlist deleted. The artifact is confined
+     * to the test harness (real multipart requests populate $_FILES directly).
+     */
     public function test_submit_honours_upload_extension_allowlist(): void
     {
         Storage::fake('uploads');
@@ -210,11 +222,29 @@ class SubmitFlowTest extends TestCase
             'name_de' => 'F', 'name_en' => 'F',
             'type' => 'file', 'required' => true, 'position' => 0,
         ]);
+        $name = (string) $field->id;
+        $rules = SubmitReportRequest::create('/submit', 'POST', ['topic' => $topic->id])->rules();
 
-        $this->postJson('/submit', [
+        $rejected = Validator::make([
             'topic' => $topic->id,
-            (string) $field->id => UploadedFile::fake()->create('evil.exe', 10, 'application/octet-stream'),
-        ])->assertStatus(422)->assertJsonValidationErrors([(string) $field->id]);
+            $name => UploadedFile::fake()->create('evil.exe', 10, 'application/octet-stream'),
+        ], $rules);
+
+        $this->assertTrue($rejected->fails(), 'evil.exe passed the extension allowlist');
+        $this->assertStringNotContainsString(
+            'required',
+            (string) $rejected->errors()->first($name),
+            'the file never reached validation, so the allowlist was not exercised',
+        );
+
+        // Control: an allowlisted file of the same size passes, proving the
+        // rejection above is about the extension and nothing else.
+        $accepted = Validator::make([
+            'topic' => $topic->id,
+            $name => UploadedFile::fake()->create('report.pdf', 10, 'application/pdf'),
+        ], $rules);
+
+        $this->assertFalse($accepted->fails(), 'an allowlisted file was rejected: '.$accepted->errors());
     }
 
     public function test_form_renders_inline_validation_errors_after_redirect_back(): void

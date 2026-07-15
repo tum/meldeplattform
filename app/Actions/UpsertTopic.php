@@ -122,7 +122,13 @@ class UpsertTopic
      */
     private function syncAdmins(Topic $topic, array $adminsPayload): void
     {
-        $syncedUserIds = [];
+        // Snapshot the attachments before the sync: the admins it *detaches*
+        // are the only orphan candidates. Filtering on the payload's UIDs
+        // instead can never match, because sync() has just attached every one
+        // of them.
+        /** @var list<int> $previousAdminIds */
+        $previousAdminIds = $topic->admins()->pluck('admins.id')->all();
+
         /** @var list<int> $adminIds */
         $adminIds = [];
         foreach ($adminsPayload as $a) {
@@ -132,15 +138,15 @@ class UpsertTopic
             }
             $admin = Admin::firstOrCreate(['user_id' => $userId]);
             $adminIds[] = $admin->id;
-            $syncedUserIds[] = $userId;
         }
         $topic->admins()->sync($adminIds);
 
-        // Only remove admins whose UIDs were touched by this sync and who now
-        // have no topic assignments — avoids a race where a global sweep deletes
-        // an admin mid-sync in a concurrent request.
-        if ($syncedUserIds !== []) {
-            Admin::whereIn('user_id', $syncedUserIds)->doesntHave('topics')->delete();
+        // Only remove admins this sync detached that now hold no topic at all —
+        // staying scoped to the ids we touched avoids a race where a global
+        // sweep deletes an admin mid-sync in a concurrent request.
+        $detachedIds = array_values(array_diff($previousAdminIds, $adminIds));
+        if ($detachedIds !== []) {
+            Admin::whereIn('id', $detachedIds)->doesntHave('topics')->delete();
         }
     }
 }

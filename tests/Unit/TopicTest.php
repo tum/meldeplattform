@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Actions\UpsertTopic;
 use App\Models\Admin;
 use App\Models\Topic;
 use App\Models\User;
@@ -33,6 +34,58 @@ class TopicTest extends TestCase
         $t->name_de = '';
         $t->name_en = 'English only';
         $this->assertSame('English only', $t->name('de'));
+    }
+
+    /**
+     * UpsertTopic always writes a string, so a summary left blank in one
+     * language is stored as '' rather than null. The fallback has to test for
+     * emptiness — a `??` chain never fires and leaves the page blank.
+     */
+    public function test_summary_falls_back_across_languages_when_stored_blank(): void
+    {
+        $t = new Topic;
+        $t->summary_de = '';
+        $t->summary_en = 'English only';
+        $this->assertSame('English only', $t->summary('de'));
+
+        $t = new Topic;
+        $t->summary_de = 'Nur Deutsch';
+        $t->summary_en = '';
+        $this->assertSame('Nur Deutsch', $t->summary('en'));
+    }
+
+    public function test_summary_falls_back_when_stored_null(): void
+    {
+        $t = new Topic;
+        $t->summary_de = null;
+        $t->summary_en = 'English only';
+        $this->assertSame('English only', $t->summary('de'));
+    }
+
+    public function test_summary_is_empty_when_neither_language_is_set(): void
+    {
+        $t = new Topic;
+        $t->summary_de = '';
+        $t->summary_en = null;
+        $this->assertSame('', $t->summary('de'));
+        $this->assertSame('', $t->summary('en'));
+    }
+
+    /**
+     * The blank-in-one-language case as it actually reaches the DB: saved
+     * through UpsertTopic, then read back for a German visitor.
+     */
+    public function test_summary_saved_with_one_language_falls_back_on_the_public_page(): void
+    {
+        $topic = app(UpsertTopic::class)->execute(null, [
+            'ID' => 0,
+            'Name' => ['de' => 'Thema', 'en' => 'Topic'],
+            'Summary' => ['de' => '', 'en' => 'English summary'],
+            'Admins' => [],
+            'Fields' => [],
+        ]);
+
+        $this->assertSame('English summary', $topic->fresh()?->summary('de'));
     }
 
     public function test_is_admin_checks_related_admins(): void

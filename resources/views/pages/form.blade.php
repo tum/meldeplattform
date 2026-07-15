@@ -33,9 +33,14 @@
             @endif
             @php
                 $name = (string) $field->id;
-                $errorKey = $field->type->isFileUpload() && $field->type === \App\Enums\FieldType::Files
-                    ? $name.'.0'
-                    : $name;
+                // A Files field registers rules on both the bare key
+                // (required|array) and the per-file key ({id}.{index}), so a
+                // rejected second file reports under `{id}.1`. Look at the bare
+                // key first, then any indexed one, so every rejected file
+                // surfaces a message instead of only the first.
+                $fieldError = $field->type === \App\Enums\FieldType::Files
+                    ? ($errors->first($name) ?: $errors->first($name.'.*'))
+                    : $errors->first($name);
             @endphp
             <div class="form-group">
                 <label for="field-{{ $field->id }}">
@@ -87,7 +92,12 @@
                              single-file input the server stores. --}}
                         <div data-audio-recorder>
                             <div class="audio-recorder-controls" style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
-                                <button type="button" class="button button-small" data-audio-record hidden>
+                                {{-- audio-recorder.js reads its status strings off
+                                     these attributes; without them it falls back
+                                     to hardcoded English. --}}
+                                <button type="button" class="button button-small" data-audio-record hidden
+                                        data-recording-label="{{ __('audio_recording') }}"
+                                        data-denied-label="{{ __('audio_denied') }}">
                                     ● {{ __('audio_record') }}
                                 </button>
                                 <button type="button" class="button button-small button-danger" data-audio-stop hidden>
@@ -112,9 +122,9 @@
                 @if ($field->description($lang))
                     <span class="desc">{{ $field->description($lang) }}</span>
                 @endif
-                @error($errorKey)
-                    <span class="field-error">{{ $message }}</span>
-                @enderror
+                @if ($fieldError !== '')
+                    <span class="field-error">{{ $fieldError }}</span>
+                @endif
             </div>
         @endforeach
 

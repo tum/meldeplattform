@@ -19,6 +19,39 @@ class SlaDeadlineTest extends TestCase
         return Topic::create(['name_de' => 't', 'name_en' => 't', 'summary_de' => '', 'summary_en' => '']);
     }
 
+    /**
+     * The dashboard badge counts via scopeOverdueNow() (SQL) while the per-row
+     * badge and the CSV column ask the model (PHP). The two must never
+     * disagree, or a report shows as overdue in the count and not-overdue on
+     * its own row.
+     *
+     * Europe/Berlin day arithmetic is calendar-aware, so `created + 7d` and
+     * `now - 7d` diverge across a DST transition: a created_at whose addDays()
+     * lands in the skipped 02:00-03:00 hour gets shifted forward an hour. This
+     * pins the two paths together at exactly that boundary.
+     */
+    public function test_php_and_sql_overdue_agree_across_a_dst_transition(): void
+    {
+        config(['meldeplattform.acknowledgement_deadline_days' => 7]);
+
+        // Spring-forward in Europe/Berlin 2026: 02:00 -> 03:00 on Mar 29.
+        Carbon::setTestNow(Carbon::parse('2026-03-29 03:00:00', 'Europe/Berlin'));
+
+        $report = Report::create(['topic_id' => $this->makeTopic()->id]);
+        $report->forceFill([
+            'created_at' => Carbon::parse('2026-03-22 02:30:00', 'Europe/Berlin'),
+        ])->saveQuietly();
+        $report->refresh();
+
+        $this->assertSame(
+            Report::query()->overdueNow()->whereKey($report->id)->exists(),
+            $report->isAcknowledgementOverdue(),
+            'the SQL scope and the PHP helper disagree across the DST boundary',
+        );
+
+        Carbon::setTestNow();
+    }
+
     public function test_fresh_report_is_not_acknowledged_and_due_dates_match_config(): void
     {
         config(['meldeplattform.acknowledgement_deadline_days' => 7]);

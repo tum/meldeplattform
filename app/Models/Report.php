@@ -196,9 +196,7 @@ class Report extends Model
             return false;
         }
 
-        $due = $this->acknowledgementDueAt();
-
-        return $due !== null && Carbon::now()->greaterThan($due);
+        return $this->createdBeforeCutoff(self::ackDeadlineDays());
     }
 
     /**
@@ -212,9 +210,30 @@ class Report extends Model
             return false;
         }
 
-        $due = $this->feedbackDueAt();
+        return $this->createdBeforeCutoff(self::feedbackDeadlineDays());
+    }
 
-        return $due !== null && Carbon::now()->greaterThan($due);
+    /**
+     * Whether `created_at` precedes the deadline cutoff for $days.
+     *
+     * This deliberately compares against `now - $days` rather than the more
+     * obvious `created_at + $days > now`. Carbon's day arithmetic is calendar-
+     * aware, and under Europe/Berlin the two are not equivalent across a DST
+     * transition: a created_at whose `addDays()` lands in the skipped 02:00–03:00
+     * hour is shifted forward, so `created + 7d` and `now - 7d` disagree for
+     * roughly an hour, twice a year. Since scopeOverdueNow() can only express the
+     * cutoff form in portable SQL, the PHP side derives from the same cutoff —
+     * otherwise the dashboard's count() would contradict the per-row badge and the
+     * CSV column. Outside a DST transition the two forms are identical.
+     *
+     * acknowledgementDueAt()/feedbackDueAt() keep the `created + $days` form: they
+     * are display-only and rendered at date granularity, where the hour cannot show.
+     */
+    private function createdBeforeCutoff(int $days): bool
+    {
+        $created = $this->created_at;
+
+        return $created !== null && $created->lessThan(Carbon::now()->subDays($days));
     }
 
     /**
