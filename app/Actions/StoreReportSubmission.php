@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\FieldType;
+use App\Exceptions\CannotStripImageMetadata;
 use App\Http\Requests\SubmitReportRequest;
 use App\Models\File;
 use App\Models\Message;
@@ -15,6 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class StoreReportSubmission
 {
@@ -145,7 +147,17 @@ class StoreReportSubmission
             $uploadList = array_values(is_array($uploads) ? $uploads : [$uploads]);
 
             foreach ($uploadList as $upload) {
-                $file = $this->storeUpload($upload, $storedPaths);
+                try {
+                    $file = $this->storeUpload($upload, $storedPaths);
+                } catch (CannotStripImageMetadata) {
+                    // We promised this reporter their image metadata would be
+                    // stripped and cannot keep that promise for this file, so
+                    // refuse it rather than hand an admin its GPS block. Surface
+                    // it on the field so they can re-save and retry.
+                    throw ValidationException::withMessages([
+                        (string) $field->id => __('upload_image_unreadable'),
+                    ]);
+                }
                 $files[] = $file;
 
                 $messageBody .= '['.$file->name.']('
