@@ -68,7 +68,16 @@
         $canReply = $isAdministrator || $report->state->allowsReply();
     @endphp
     @if ($canReply)
-        <form method="post" class="card mt-4">
+        @php
+            // Admin and reporter replies are handled by different routes, and
+            // the admin view's URL (/reports/{topic}/{report}) has no POST
+            // handler of its own — without an explicit action the form would
+            // submit back to that GET-only URL and get a 405.
+            $replyAction = $isAdministrator
+                ? route('admin.report.reply', ['topic' => $report->topic_id, 'report' => $report->id])
+                : route('report.reply', ['reporterToken' => $report->reporter_token]);
+        @endphp
+        <form method="post" action="{{ $replyAction }}" class="card mt-4">
             @csrf
             <label for="reply">{{ __('reply') }}</label>
             <textarea id="reply" name="reply" required placeholder="{{ __('reply_placeholder') }}">{{ old('reply') }}</textarea>
