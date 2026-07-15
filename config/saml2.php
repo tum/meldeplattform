@@ -2,21 +2,22 @@
 
 /*
 |--------------------------------------------------------------------------
-| 24slides/laravel-saml2 configuration (multi-tenant package).
+| SAML service-provider configuration (onelogin/php-saml).
 |--------------------------------------------------------------------------
 |
-| We operate a single tenant matching the TUM Shibboleth IdP. Tenants are
-| stored in the `saml2_tenants` DB table. For convenience we also expose
-| global defaults below that can be consumed from seeders and the
-| Saml2Controller.
+| A single service provider matching the TUM Shibboleth IdP. SamlController
+| builds the onelogin settings array from the `sp`, `idp` and `security` keys
+| below, and registers its own routes in routes/web.php.
+|
+| This file previously described 24slides/laravel-saml2 and a `saml2_tenants`
+| table. That package is not installed and no such table exists — the header
+| and its `useRoutes` / `routesPrefix` / `routesMiddleware` / `attribute_map`
+| keys were read by nothing, so editing them to change the SAML route prefix or
+| the attribute mapping silently did nothing. Only the keys below are live.
 |
 */
 
 return [
-    'useRoutes' => true,
-    'routesPrefix' => 'saml',
-    'routesMiddleware' => ['web'],
-
     // mirror of the Go service-provider config.
     'sp' => [
         'entityId' => env('SAML2_SP_ENTITYID', env('APP_URL').'/shib'),
@@ -66,12 +67,5 @@ return [
         // way (existing SSO session, MFA, etc.). We accept whatever context the
         // IdP used, so we impose no requirement.
         'requestedAuthnContext' => false,
-    ],
-
-    // Friendly names of SAML attributes we pull into the session.
-    'attribute_map' => [
-        'uid' => 'uid',
-        'displayName' => 'displayName',
-        'mail' => 'mail',
     ],
 ];

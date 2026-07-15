@@ -328,7 +328,12 @@ class TopicAdminController
 
         $reports = $query
             ->with(['topic', 'messages'])
+            // `id` breaks ties, exactly as in exportCsv(): paginate() uses
+            // OFFSET, and `updated_at` is second-precision, so reports sharing a
+            // timestamp have no stable order between pages — one can show up on
+            // two pages, or on none, hiding a report from its admin entirely.
             ->latest('updated_at')
+            ->orderByDesc('id')
             ->paginate(50)
             ->withQueryString();
 

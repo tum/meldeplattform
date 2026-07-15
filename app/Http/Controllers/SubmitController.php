@@ -26,9 +26,11 @@ class SubmitController
 
         $report = $this->action->execute($request);
 
-        // Issue a one-time receipt code so an anonymous reporter can return to
-        // this report later without the URL — flashed to the session and shown
-        // exactly once on the confirmation page.
+        // Issue a receipt code so an anonymous reporter can return to this
+        // report later without the URL. It is *displayed* once — flashed to the
+        // session and shown only on the confirmation page, never persisted in
+        // plaintext — but it stays valid for repeated use, which is the point:
+        // it is the reporter's durable way back in.
         $receiptCode = $report->issueReceiptCode();
 
         return redirect()

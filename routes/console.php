@@ -20,4 +20,10 @@ Schedule::command('reports:remind')->dailyAt('07:00');
 // Mirror OTRS case-handler answers back into reports so reporters see them in
 // the platform. A no-op unless MELDE_OTRS_INBOUND_ENABLED is set; the command
 // self-skips when inbound is disabled or the connection is unconfigured.
-Schedule::command('otrs:poll-replies')->everyFiveMinutes()->withoutOverlapping();
+//
+// The overlap lock expires after 10 minutes rather than the 1440-minute (24h)
+// default. Shared hosting can kill a cron run on max_execution_time, and a PHP
+// fatal does not unwind, so the mutex would survive and silently skip every run
+// for a day. Two poll runs overlapping is harmless (the high-water mark makes
+// imports idempotent); a day of silence is not.
+Schedule::command('otrs:poll-replies')->everyFiveMinutes()->withoutOverlapping(10);

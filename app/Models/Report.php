@@ -357,15 +357,58 @@ class Report extends Model
             return null;
         }
 
-        return self::where('receipt_hash', self::hashReceipt($normalized))->first();
+        // Try the current key first, then any previous ones: rotating APP_KEY
+        // must not lock reporters out of their own reports (see receiptKeys()).
+        foreach (self::receiptKeys() as $key) {
+            $report = self::where('receipt_hash', hash_hmac('sha256', $normalized, $key))->first();
+            if ($report !== null) {
+                return $report;
+            }
+        }
+
+        return null;
     }
 
     protected static function hashReceipt(string $code): string
     {
-        $key = config('app.key');
-        $key = is_string($key) ? $key : '';
+        return hash_hmac('sha256', $code, self::receiptKeys()[0]);
+    }
 
-        return hash_hmac('sha256', $code, $key);
+    /**
+     * Keys a receipt code may have been hashed with: the current APP_KEY first,
+     * then APP_PREVIOUS_KEYS.
+     *
+     * Receipt hashing is keyed on APP_KEY, and Laravel already honours
+     * `app.previous_keys` when decrypting sessions and cookies — so rotating the
+     * key is a supported, documented operation. This lookup ignored them, which
+     * made rotation quietly destroy the anonymous access channel: every
+     * outstanding receipt code stopped resolving, reporters with open cases saw
+     * "no report found for this code" (indistinguishable from a typo), and they
+     * could never return, reply, or receive their statutory feedback. A key
+     * rotation is most likely *after a suspected key leak* — precisely when the
+     * security response must not also destroy reporter access.
+     *
+     * New codes are always hashed with the current key (element 0), so the old
+     * keys age out naturally as reports close.
+     *
+     * @return non-empty-list<string>
+     */
+    private static function receiptKeys(): array
+    {
+        $current = config('app.key');
+
+        /** @var list<string> $previousKeys */
+        $previousKeys = [];
+        $previous = config('app.previous_keys', []);
+        if (is_array($previous)) {
+            foreach ($previous as $key) {
+                if (is_string($key) && $key !== '') {
+                    $previousKeys[] = $key;
+                }
+            }
+        }
+
+        return [is_string($current) ? $current : '', ...$previousKeys];
     }
 
     private static function normalizeReceipt(string $code): string

@@ -114,8 +114,22 @@ class AppServiceProvider extends ServiceProvider
             );
         }
 
-        if ($queueDefault === 'sync') {
-            Log::warning('Queue driver is `sync` in production — mail and webhook dispatch will block requests. Set QUEUE_CONNECTION=database or redis.');
+        // Warn on the dangerous case, not the intended one. This deployment runs
+        // no queue workers (LRZ shared hosting) and ships no jobs migration by
+        // design, so `sync` is the only driver that actually delivers a
+        // notification. A non-sync driver enqueues into a backend nothing ever
+        // drains, silently stranding every notification — which is what a
+        // server-side drift to `database` caused in June 2026.
+        //
+        // This previously warned on `sync` and told operators to switch to
+        // `database`, i.e. it advised the change that caused that incident —
+        // once per request, into an unrotated log.
+        if ($queueDefault !== 'sync') {
+            Log::warning(sprintf(
+                'Queue driver is `%s` in production, but no worker runs here and no jobs table ships with this app — '
+                .'notifications will be enqueued and never delivered. Set QUEUE_CONNECTION=sync.',
+                $queueDefault,
+            ));
         }
     }
 
