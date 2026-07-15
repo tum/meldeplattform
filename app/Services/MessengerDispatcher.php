@@ -64,10 +64,31 @@ class MessengerDispatcher
      * Queue the notification fan-out so slow third-party endpoints never
      * block the reporter/admin request. Under the `sync` queue driver this
      * still runs inline.
+     *
+     * Dispatching must never fail the caller. With a real worker this only
+     * enqueues, so nothing here throws and sendNow()'s failure is retried out
+     * of band. Under `sync` — the driver this deployment mandates, since LRZ
+     * shared hosting runs no workers — the job executes inline and SyncQueue
+     * re-throws into the caller, where there is no retry to trigger and every
+     * caller still has work to do: SubmitController has not yet issued the
+     * reporter's receipt code, and PollOtrsReplies has more replies to import.
+     *
+     * A notification is only a ping — the report is already committed and
+     * already visible in the admin dashboard, which reads the database, not the
+     * notification. Losing the ping is recoverable; losing the reporter's way
+     * back to their own report is not.
      */
     public function dispatch(Topic $topic, string $title, Message $message, string $reportUrl): void
     {
-        DispatchTopicNotifications::dispatch($topic, $title, $message, $reportUrl);
+        try {
+            DispatchTopicNotifications::dispatch($topic, $title, $message, $reportUrl);
+        } catch (\Throwable $e) {
+            Log::critical('MessengerDispatcher: notification dispatch failed — the report is saved, but a responsible team may not have been notified', [
+                'topic_id' => $topic->id,
+                'report_id' => $message->report_id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
