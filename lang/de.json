@@ -157,6 +157,8 @@
     "export_csv": "CSV exportieren",
     "audio_record": "Aufnehmen",
     "audio_stop": "Stopp",
+    "audio_recording": "Aufnahme läuft…",
+    "audio_denied": "Mikrofon nicht verfügbar.",
     "audio_hint": "Sprachnachricht direkt aufnehmen oder eine Audiodatei hochladen.",
     "require_login": "Anmeldung erforderlich (keine anonyme Meldung)",
     "require_login_desc": "Meldende müssen sich per TUM-Login authentifizieren. Ihre Identität wird automatisch erfasst.",

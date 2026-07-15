@@ -385,7 +385,11 @@ class TopicAdminController
             ]);
 
             $query->with(['topic', 'messages'])
+                // `id` breaks ties: chunk() pages with OFFSET, so reports
+                // sharing an updated_at have no stable order between pages and
+                // could be exported twice or skipped entirely.
                 ->latest('updated_at')
+                ->orderByDesc('id')
                 ->chunk(200, function (Collection $reports) use ($out): void {
                     foreach ($reports as $report) {
                         /** @var Report $report */

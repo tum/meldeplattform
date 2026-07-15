@@ -23,16 +23,25 @@
         $isEnvGlobal = $user?->isGlobalAdminViaEnv() ?? false;
         $currentGlobal = $user?->is_global_admin ?? false;
         $isSelf = auth()->user()?->uid === $uid;
+        $globalLocked = $isEnvGlobal || ($isSelf && $currentGlobal);
     @endphp
 
     <form method="post" action="{{ route('users.update', ['uid' => $uid]) }}" class="card" style="max-width: 720px;">
         @csrf
 
         <div class="form-group">
+            @if ($globalLocked)
+                {{-- The checkbox below is disabled, and browsers do not submit
+                     disabled controls. This form carries the user's complete
+                     desired state, so an absent field reads as "not a global
+                     admin" — which would demote the very users the lock is
+                     meant to protect. Carry the current value explicitly. --}}
+                <input type="hidden" name="is_global_admin" value="{{ $currentGlobal ? '1' : '0' }}">
+            @endif
             <label>
                 <input type="checkbox" name="is_global_admin" value="1"
                        @checked(old('is_global_admin', $currentGlobal))
-                       @disabled($isEnvGlobal || ($isSelf && $currentGlobal))>
+                       @disabled($globalLocked)>
                 {{ __('users_is_global_admin') }}
             </label>
             @if ($isEnvGlobal)

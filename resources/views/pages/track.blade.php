@@ -18,8 +18,11 @@
 
         <div class="form-group">
             <label for="code">{{ __('track_code_label') }}</label>
+            {{-- Receipt codes are uppercase hex (issueReceiptCode), so they
+                 contain A–F: a numeric inputmode would leave mobile reporters
+                 unable to type their own code. --}}
             <input type="text" name="code" id="code" required autofocus
-                   inputmode="numeric" autocomplete="off"
+                   autocomplete="off" autocapitalize="characters" spellcheck="false"
                    value="{{ old('code') }}">
             @error('code')
                 <span class="field-error">{{ $message }}</span>

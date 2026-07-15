@@ -157,6 +157,8 @@
     "export_csv": "Export CSV",
     "audio_record": "Record",
     "audio_stop": "Stop",
+    "audio_recording": "Recording…",
+    "audio_denied": "Microphone unavailable.",
     "audio_hint": "Record a voice message directly, or upload an audio file.",
     "require_login": "Login required (no anonymous reports)",
     "require_login_desc": "Reporters must authenticate with their TUM login. Their identity is recorded automatically.",

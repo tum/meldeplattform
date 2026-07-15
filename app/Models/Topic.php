@@ -170,11 +170,15 @@ class Topic extends Model
 
     public function summary(string $lang): string
     {
-        $value = $lang === 'de'
-            ? ($this->summary_de ?? $this->summary_en)
-            : ($this->summary_en ?? $this->summary_de);
+        // Test for emptiness rather than null: the column is nullable, but
+        // UpsertTopic always writes a string, so a summary left blank in one
+        // language is stored as '' and a `??` fallback would never fire.
+        $de = $this->summary_de ?? '';
+        $en = $this->summary_en ?? '';
 
-        return $value ?? '';
+        return $lang === 'de'
+            ? ($de !== '' ? $de : $en)
+            : ($en !== '' ? $en : $de);
     }
 
     /**
