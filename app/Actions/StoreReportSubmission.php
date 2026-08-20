@@ -143,6 +143,11 @@ class StoreReportSubmission
                 continue;
             }
 
+            // Blank line after the field label, then one link per line: the
+            // links become their own markdown paragraph instead of trailing
+            // the label, and the renderer can lay them out as a card grid.
+            $messageBody .= "\n";
+
             /** @var list<UploadedFile> $uploadList */
             $uploadList = array_values(is_array($uploads) ? $uploads : [$uploads]);
 
@@ -162,7 +167,7 @@ class StoreReportSubmission
 
                 $messageBody .= '['.$file->name.']('
                     .route('file.download', ['name' => $file->name, 'id' => $file->uuid, 'token' => $reporterToken])
-                    .')';
+                    .")\n";
             }
         }
 
