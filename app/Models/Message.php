@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\AttachmentLinks;
 use App\Support\Markdown;
 use Database\Factories\MessageFactory;
 use Illuminate\Database\Eloquent\Collection;
@@ -59,8 +60,13 @@ class Message extends Model
         return $this->belongsToMany(File::class, 'message_files');
     }
 
+    /**
+     * Sanitised message HTML, with the plain download links the body carries
+     * for its uploads rendered as attachment cards. Callers wanting the raw
+     * markdown (messenger pushes, exports) keep using $content.
+     */
     public function renderedBody(): string
     {
-        return Markdown::sanitize($this->content);
+        return AttachmentLinks::decorate(Markdown::sanitize($this->content), $this->files);
     }
 }
