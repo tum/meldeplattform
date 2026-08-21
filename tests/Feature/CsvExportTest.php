@@ -71,20 +71,13 @@ class CsvExportTest extends TestCase
             ->assertOk()
             ->streamedContent();
 
-        /** @var list<string> $paged */
-        $paged = collect(DB::getQueryLog())
-            ->pluck('query')
-            ->filter(static fn (mixed $q): bool => is_string($q)
-                && str_contains($q, 'from "reports"')
-                && str_contains($q, 'limit'))
-            ->values()
-            ->all();
+        $paged = $this->pagedReportQueries();
         DB::disableQueryLog();
 
         $this->assertNotEmpty($paged, 'the export did not page over reports');
         foreach ($paged as $query) {
             $this->assertStringContainsString(
-                'order by "updated_at" desc, "id" desc',
+                'order by updated_at desc, id desc',
                 $query,
                 'updated_at alone is not a total order, so OFFSET paging can skip or repeat rows',
             );
