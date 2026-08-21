@@ -31,7 +31,7 @@ COPY . /var/www/html
 
 # Install PHP dependencies and set writable paths.
 RUN composer install \
-        --no-dev --optimize-autoloader --no-interaction --no-progress --no-security-blocking \
+        --no-dev --optimize-autoloader --no-interaction --no-progress \
     && mkdir -p storage/framework/cache/data \
                storage/framework/sessions \
                storage/framework/testing \

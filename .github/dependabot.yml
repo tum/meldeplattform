@@ -10,9 +10,13 @@ updates:
     open-pull-requests-limit: 10
     groups:
       # Bundle the Laravel framework + first-party packages into one PR.
+      # Pint is dev tooling and belongs in the group below, but pattern
+      # groups win over dependency-type groups, so exclude it explicitly.
       laravel:
         patterns:
           - "laravel/*"
+        exclude-patterns:
+          - "laravel/pint"
       # Bundle the Symfony components (pulled in transitively) together.
       symfony:
         patterns:
@@ -21,8 +25,15 @@ updates:
       dev-tooling:
         dependency-type: "development"
 
-  # Dockerfile base image (php:8.4-fpm-alpine)
+  # Dockerfile base image (php:8.5-fpm-alpine)
   - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Service images referenced from docker-compose.yml (mariadb, …), which the
+  # "docker" ecosystem above does not cover.
+  - package-ecosystem: "docker-compose"
     directory: "/"
     schedule:
       interval: "weekly"
