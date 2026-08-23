@@ -8,7 +8,7 @@
         "php": "^8.4",
         "ext-gd": "*",
         "ext-pdo": "*",
-        "guzzlehttp/guzzle": "^7.9",
+        "guzzlehttp/guzzle": "^8.0",
         "laravel/framework": "^13.0",
         "league/commonmark": "^2.5",
         "mews/purifier": "^3.4",
