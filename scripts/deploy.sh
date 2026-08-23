@@ -31,6 +31,18 @@
 # lazily — this way the file is fully parsed before it can change underneath
 # the running process.
 #
+
+# This script needs bash (arrays, local, BASH_SOURCE). Invoked as
+# `sh scripts/deploy.sh` the host's dash dies on `set -o pipefail`, so hand
+# ourselves over to bash before anything else runs.
+if [ -z "${BASH_VERSION:-}" ]; then
+    if command -v bash >/dev/null 2>&1; then
+        exec bash "$0" "$@"
+    fi
+    echo "This script requires bash, which was not found in PATH." >&2
+    exit 1
+fi
+
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
