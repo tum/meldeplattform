@@ -85,6 +85,18 @@ class PublicPagesTest extends TestCase
             ->assertCookie('lang', 'de');
     }
 
+    public function test_set_lang_refuses_a_protocol_relative_referer_path(): void
+    {
+        // `http://localhost//evil.com` parses as this host with the path
+        // `//evil.com`; url()->to() would emit that verbatim as a
+        // protocol-relative URL, turning the same-origin check into an open
+        // redirect off-site.
+        foreach (['http://localhost//evil.com', 'http://localhost//evil.com/x'] as $referer) {
+            $this->post('/setLang', ['lang' => 'de'], ['referer' => $referer])
+                ->assertRedirect('/');
+        }
+    }
+
     public function test_health_endpoint_is_ok(): void
     {
         $this->get('/up')->assertOk();

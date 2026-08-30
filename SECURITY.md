@@ -82,8 +82,9 @@ We will not pursue legal action against researchers who:
 
 For operators, the repository ships with:
 
-- CSRF protection on all state-changing routes (except the signed
-  SAML ACS).
+- CSRF protection on all state-changing routes, including logout; the
+  only exemptions are the two endpoints the IdP posts signed SAML
+  messages to (`/shib`, `/saml/slo`).
 - CSP, HSTS (on HTTPS), `X-Frame-Options`, `Referrer-Policy` and
   `Permissions-Policy` headers via the `SecurityHeaders` middleware.
 - Rate limiting on `/submit`, `/report`, `/file`, `/dev/login`, and the

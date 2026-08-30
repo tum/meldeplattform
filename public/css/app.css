@@ -127,6 +127,13 @@ hr {
 .topbar .left, .topbar .right {
     display: flex; align-items: center; gap: 1.25rem;
 }
+/* Logout posts a form (so it can't be forced cross-origin); style its button
+   like the plain links it sits between. */
+.topbar .linkish {
+    background: none; border: none; padding: 0; margin: 0;
+    font: inherit; color: inherit; cursor: pointer; text-decoration: none;
+}
+.topbar .linkish:hover, .topbar .linkish:focus { color: var(--tum-hover-tint); }
 .lang-switch {
     display: inline-flex;
     align-items: center;

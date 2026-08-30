@@ -86,6 +86,19 @@ class HomeController
         $path = $parsed['path'] ?? '/';
         $query = isset($parsed['query']) ? '?'.$parsed['query'] : '';
 
+        // Only ever hand back a plain, single-slash-rooted path. A referer of
+        // `https://host//evil.com` parses as this origin with the path
+        // `//evil.com`, and Laravel's url()->to() treats a leading `//` as an
+        // already-complete protocol-relative URL and emits it verbatim — so the
+        // same-origin check above would be passed while the redirect landed on
+        // another site. Backslashes get the same treatment because browsers
+        // normalise them to `/`.
+        if (! str_starts_with($path, '/')
+            || str_starts_with($path, '//')
+            || str_starts_with($path, '/\\')) {
+            return '/';
+        }
+
         // Loop guard: bouncing /setLang back to itself would strip the
         // user's actual location and re-enter the controller.
         if (rtrim($path, '/') === '/setLang') {

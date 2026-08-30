@@ -44,8 +44,17 @@ class DevLoginTest extends TestCase
     {
         $user = User::create(['uid' => 'x', 'name' => 'x', 'email' => 'x@x']);
         $this->actingAs($user)
-            ->get('/dev/logout')
+            ->post('/dev/logout')
             ->assertRedirect('/');
         $this->assertFalse(Auth::check());
+    }
+
+    public function test_dev_logout_is_not_reachable_by_a_cross_origin_get(): void
+    {
+        // Forced logout (CWE-352): a GET would fire from a bare <img src=…> on
+        // any site the victim visits.
+        $user = User::create(['uid' => 'x', 'name' => 'x', 'email' => 'x@x']);
+        $this->actingAs($user)->get('/dev/logout')->assertMethodNotAllowed();
+        $this->assertTrue(Auth::check());
     }
 }

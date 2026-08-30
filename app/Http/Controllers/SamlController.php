@@ -224,6 +224,12 @@ class SamlController
         $auth = $this->newAuth();
         $requestId = session('saml_request_id');
 
+        // Single-use: the id is consumed by this exchange, so drop it before we
+        // do anything else with the response. Leaving it in the session let the
+        // *same* assertion be presented again for as long as the session lived
+        // and the assertion's own NotOnOrAfter allowed.
+        $request->session()->forget('saml_request_id');
+
         $auth->processResponse(is_string($requestId) ? $requestId : null);
 
         /** @var list<string> $errors */

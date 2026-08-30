@@ -407,7 +407,10 @@ gegen SQLite + MariaDB 11.
 
 Eingebaute Härtung (Kurzfassung):
 
-- CSRF: aktiv auf allen POST-Routen außer `/shib` + `/saml/*`.
+- CSRF: aktiv auf allen POST-Routen außer `/shib` + `/saml/slo` — den
+  beiden Endpunkten, an die der IdP direkt postet. Abmelden (`/saml/logout`,
+  `/dev/logout`) ist POST-only und CSRF-geschützt, damit eine fremde Seite
+  keine Sitzung beenden kann.
 - CSP, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` im
   `SecurityHeaders`-Middleware; HSTS bei HTTPS-Requests.
 - Rate Limiting (`throttle:*,1`) auf `/submit`, `/report`, `/track`, `/file`,
@@ -416,6 +419,10 @@ Eingebaute Härtung (Kurzfassung):
   Tag-Allowlist.
 - Eingangscode wird nur als HMAC-SHA256 gespeichert; der Klartext verlässt die
   Bestätigungsseite genau einmal und wird nie persistiert.
+- Der Reporter-Token steht **nicht** im gespeicherten Meldungstext: Anhang-Links
+  werden ohne Token abgelegt und erst beim Rendern für die meldende Person mit
+  ihrem Token versehen. Bearbeitende (und OTRS-Tickets, die den Meldungstext
+  vollständig enthalten) sehen den Token damit nie.
 - Webhooks nur über HTTPS, optional HMAC-SHA256-signiert
   (`MELDE_WEBHOOK_SECRET`); Benachrichtigungen enthalten keine Meldeinhalte.
 - Append-only Audit-Log (Mutation/Löschung per Model-Guard unterbunden), ohne

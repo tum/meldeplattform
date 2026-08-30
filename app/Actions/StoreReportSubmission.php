@@ -49,8 +49,6 @@ class StoreReportSubmission
 
         try {
             $report = DB::transaction(function () use ($topic, $request, $creator, &$storedPaths): Report {
-                // Create the report first so its reporter_token is available for
-                // embedding into file download URLs inside the message body.
                 $report = Report::create([
                     'topic_id' => $topic->id,
                     'creator' => $creator,
@@ -58,7 +56,7 @@ class StoreReportSubmission
 
                 /** @var list<File> $files */
                 $files = [];
-                $messageBody = $this->composeBody($topic, $request, $files, $storedPaths, $report->reporter_token);
+                $messageBody = $this->composeBody($topic, $request, $files, $storedPaths);
 
                 $message = Message::create([
                     'report_id' => $report->id,
@@ -98,15 +96,22 @@ class StoreReportSubmission
      * Build the markdown body by looping the topic's fields, storing any
      * uploads as they are encountered. Created File models are appended to
      * $files and their physical paths to $storedPaths (for rollback).
-     * $reporterToken is embedded in each file download URL so the download
-     * endpoint can verify the requester holds access to this report.
+     *
+     * The attachment links written here are deliberately tokenless. The stored
+     * body is not a reporter-only artefact: it is rendered to every case
+     * handler, and — for topics routing to OTRS — pushed verbatim into the
+     * ticket. Embedding the reporter_token in it therefore handed the
+     * reporter's own access credential to everyone who can read the report or
+     * the ticket, and that credential is enough to read the case and post
+     * messages *as the reporter*. AttachmentLinks re-attaches the token at
+     * render time, but only when the page is being rendered for the reporter.
      *
      * @param list<File> $files
      * @param list<string> $storedPaths
      *
      * @param-out list<string> $storedPaths
      */
-    private function composeBody(Topic $topic, SubmitReportRequest $request, array &$files, array &$storedPaths, string $reporterToken): string
+    private function composeBody(Topic $topic, SubmitReportRequest $request, array &$files, array &$storedPaths): string
     {
         $messageBody = '';
 
@@ -166,7 +171,7 @@ class StoreReportSubmission
                 $files[] = $file;
 
                 $messageBody .= '['.$file->name.']('
-                    .route('file.download', ['name' => $file->name, 'id' => $file->uuid, 'token' => $reporterToken])
+                    .route('file.download', ['name' => $file->name, 'id' => $file->uuid])
                     .")\n";
             }
         }

@@ -13,11 +13,11 @@
                     <a href="{{ route('users.index') }}">{{ __('users') }}</a>
                     <a href="{{ route('audit.index') }}">{{ __('audit_title') }}</a>
                 @endcan
-                @if (Route::has('dev.logout'))
-                    <a href="{{ route('dev.logout') }}">{{ __('logout') }}</a>
-                @else
-                    <a href="{{ route('saml.logout') }}">{{ __('logout') }}</a>
-                @endif
+                {{-- Logout is a POST so it cannot be triggered cross-origin. --}}
+                <form method="POST" action="{{ Route::has('dev.logout') ? route('dev.logout') : route('saml.logout') }}" style="display:contents">
+                    @csrf
+                    <button type="submit" class="linkish">{{ __('logout') }}</button>
+                </form>
             @else
                 <a href="{{ route('saml.login') }}">{{ __('login') }}</a>
                 @if (Route::has('dev.login'))

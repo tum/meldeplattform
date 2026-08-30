@@ -21,6 +21,13 @@ use Illuminate\Support\Facades\Storage;
  * Anchors are matched on the file UUID in the query string rather than on the
  * URL host, so bodies written before a domain change still resolve and a link
  * a reporter typed by hand can never pose as an attachment.
+ *
+ * The href of a matched anchor is REBUILT from the File rather than reused from
+ * the body. That is what lets the stored body stay free of the reporter_token:
+ * the token is the reporter's own access credential, so it is re-attached here
+ * only when the thread is being rendered for the reporter ($reporterToken
+ * given) and never when a case handler — or an OTRS ticket carrying a copy of
+ * the body — sees the same message.
  */
 class AttachmentLinks
 {
@@ -68,8 +75,11 @@ class AttachmentLinks
      * Decorate every attachment anchor in $html that belongs to $files.
      *
      * @param Collection<int, File> $files the files of the message $html renders
+     * @param string|null $reporterToken the viewing reporter's access token, to
+     *                                   be embedded in the rebuilt download
+     *                                   links; null for every other viewer
      */
-    public static function decorate(string $html, Collection $files): string
+    public static function decorate(string $html, Collection $files, ?string $reporterToken = null): string
     {
         if ($files->isEmpty() || ! str_contains($html, '<a href=')) {
             return $html;
@@ -85,15 +95,49 @@ class AttachmentLinks
 
         $decorated = preg_replace_callback(
             '#<a href="([^"]+)">[^<]*</a>#',
-            static function (array $m) use ($byUuid): string {
+            static function (array $m) use ($byUuid, $reporterToken): string {
                 $file = self::matchFile($m[1], $byUuid);
 
-                return $file === null ? $m[0] : self::card($m[1], $file);
+                return $file === null ? $m[0] : self::card(self::downloadHref($file, $reporterToken), $file);
             },
             $html,
         );
 
         return self::group($decorated ?? $html);
+    }
+
+    /**
+     * Remove the reporter access token from every attachment link in a stored
+     * message body, leaving the rest of the URL — and any link the reporter
+     * typed themselves — untouched.
+     *
+     * Bodies written before the token was dropped from composeBody() still
+     * carry it, and those are the copies a case handler reads and an OTRS
+     * ticket holds. Matching is deliberately narrow — only the query string of
+     * a URL whose path contains `/file/` — so a reporter who wrote
+     * `https://example.org/x?token=abc` in their allegation keeps their text
+     * verbatim.
+     */
+    public static function stripReporterTokens(string $body): string
+    {
+        return (string) preg_replace_callback(
+            '#/file/[^\s)\]]+#i',
+            static function (array $m): string {
+                $url = $m[0];
+                $pos = strpos($url, '?');
+                if ($pos === false) {
+                    return $url;
+                }
+
+                $kept = array_values(array_filter(
+                    explode('&', substr($url, $pos + 1)),
+                    static fn (string $param): bool => $param !== '' && ! str_starts_with($param, 'token='),
+                ));
+
+                return substr($url, 0, $pos).($kept === [] ? '' : '?'.implode('&', $kept));
+            },
+            $body,
+        );
     }
 
     /**
@@ -117,7 +161,23 @@ class AttachmentLinks
         return null;
     }
 
-    /** Render one attachment card. $href is already-purified, escaped markup. */
+    /**
+     * The download URL for this file, carrying the reporter's token only when
+     * one was passed in. Built from the File row rather than from the anchor in
+     * the body, so a body written under an old domain — or without a token —
+     * still resolves, and so the token never has to be stored to be usable.
+     */
+    private static function downloadHref(File $file, ?string $reporterToken): string
+    {
+        $params = ['name' => $file->name, 'id' => $file->uuid];
+        if ($reporterToken !== null && $reporterToken !== '') {
+            $params['token'] = $reporterToken;
+        }
+
+        return self::esc(route('file.download', $params));
+    }
+
+    /** Render one attachment card. $href is already-escaped markup. */
     private static function card(string $href, File $file): string
     {
         $ext = mb_strtolower(pathinfo($file->name, PATHINFO_EXTENSION));
