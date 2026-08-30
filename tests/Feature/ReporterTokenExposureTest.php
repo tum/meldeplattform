@@ -11,7 +11,6 @@ use App\Models\Report;
 use App\Models\Topic;
 use App\Models\User;
 use App\Support\AttachmentLinks;
-use Illuminate\Database\Migrations\Migration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\UploadedFile;
@@ -194,9 +193,12 @@ class ReporterTokenExposureTest extends TestCase
         ]);
         $touchedAt = $report->fresh()?->updated_at;
 
-        /** @var Migration $migration */
+        // Migrations are anonymous classes, and the Migration base class does
+        // not declare up() — so reach it reflectively rather than through a
+        // type the method does not exist on.
+        /** @var object $migration */
         $migration = require database_path('migrations/2026_08_30_000000_strip_reporter_tokens_from_message_bodies.php');
-        $migration->up();
+        (new \ReflectionObject($migration))->getMethod('up')->invoke($migration);
 
         $content = (string) $message->fresh()?->content;
         $this->assertStringNotContainsString($report->reporter_token, $content);
