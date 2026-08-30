@@ -19,11 +19,16 @@ return Application::configure(basePath: dirname(__DIR__))
             LocaleMiddleware::class,
         ]);
 
-        // CSRF exception for the SAML ACS endpoint. The SAML response is
-        // signed by the IdP and validated by the SAML package.
+        // CSRF exception for the two endpoints the IdP posts to directly: the
+        // ACS (`/shib`) and single logout. Both carry an IdP-signed SAML message
+        // that the SAML package validates, and neither can present a token the
+        // IdP does not have. The exception is listed route by route rather than
+        // as `saml/*`: that wildcard also covered `/saml/logout`, which is our
+        // own UI action and must keep CSRF protection so a cross-origin request
+        // cannot force an administrator's session to be destroyed.
         $middleware->preventRequestForgery(except: [
             'shib',
-            'saml/*',
+            'saml/slo',
         ]);
 
         // Unauthenticated web requests get bounced to the SAML SSO start

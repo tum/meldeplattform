@@ -51,7 +51,10 @@ if (! app()->environment('production') && (bool) config('meldeplattform.dev_logi
     Route::middleware('throttle:dev-login')->group(function (): void {
         Route::get('/dev/login', [DevLoginController::class, 'show'])->name('dev.login');
         Route::post('/dev/login', [DevLoginController::class, 'login'])->name('dev.login.submit');
-        Route::get('/dev/logout', [DevLoginController::class, 'logout'])->name('dev.logout');
+        // POST, not GET: logging a session out is a state change, so it must
+        // not be triggerable by a cross-origin <img>/<link> the victim merely
+        // renders (CWE-352, forced logout).
+        Route::post('/dev/logout', [DevLoginController::class, 'logout'])->name('dev.logout');
     });
 }
 
@@ -59,7 +62,9 @@ if (! app()->environment('production') && (bool) config('meldeplattform.dev_logi
 Route::get('/saml/metadata', [SamlController::class, 'metadata'])->name('saml.metadata');
 Route::get('/saml/out', [SamlController::class, 'login'])
     ->middleware('throttle:saml')->name('saml.login');
-Route::get('/saml/logout', [SamlController::class, 'logout'])
+// POST, not GET: the same forced-logout guard /saml/slo already carries — a
+// cross-origin GET must not be able to destroy an administrator's session.
+Route::post('/saml/logout', [SamlController::class, 'logout'])
     ->middleware('throttle:saml')->name('saml.logout');
 Route::match(['get', 'post'], '/saml/slo', [SamlController::class, 'singleLogout'])->name('saml.slo');
 Route::post('/shib', [SamlController::class, 'acs'])

@@ -64,9 +64,14 @@ class Message extends Model
      * Sanitised message HTML, with the plain download links the body carries
      * for its uploads rendered as attachment cards. Callers wanting the raw
      * markdown (messenger pushes, exports) keep using $content.
+     *
+     * $reporterToken is the access token of the reporter *currently viewing*
+     * the thread; it is stitched into the attachment links so their downloads
+     * authorise, and is passed only on the reporter-facing render. The stored
+     * body never contains it — see AttachmentLinks.
      */
-    public function renderedBody(): string
+    public function renderedBody(?string $reporterToken = null): string
     {
-        return AttachmentLinks::decorate(Markdown::sanitize($this->content), $this->files);
+        return AttachmentLinks::decorate(Markdown::sanitize($this->content), $this->files, $reporterToken);
     }
 }

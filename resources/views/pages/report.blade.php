@@ -55,7 +55,10 @@
                     · {{ $m->created_at?->format('d.m.Y H:i') }}
                 </div>
                 <div class="message-body">
-                    {!! $m->renderedBody() !!}
+                    {{-- The reporter's own token is stitched into their attachment
+                         links here, at render time; it is never stored in the body,
+                         so an administrator's render carries no reporter credential. --}}
+                    {!! $m->renderedBody($isAdministrator ? null : $report->reporter_token) !!}
                 </div>
             </div>
         @endforeach
