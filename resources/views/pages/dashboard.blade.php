@@ -66,6 +66,7 @@
     @if ($reports->isEmpty())
         <div class="alert alert-info">{{ $topics->isEmpty() ? __('no_reports_yet') : __('dashboard_no_matches') }}</div>
     @else
+        <div class="table-wrap-narrow">
         <table>
             <thead>
                 <tr>
@@ -130,6 +131,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
 
         {{ $reports->links() }}
     @endif

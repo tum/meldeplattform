@@ -188,6 +188,7 @@
     "topics_admin_intro": "Manage topics: activate, deactivate, and delete empty topics.",
     "topics_none": "No topics.",
     "reports_none": "No reports for this topic yet.",
+    "reports_showing": "Showing :visible of :total",
     "topic_status": "Status",
     "status_active": "Active",
     "status_deactivated": "Deactivated",

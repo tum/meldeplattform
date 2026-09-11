@@ -7,7 +7,13 @@
         <div class="container">
             <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ __('reports') }}: {{ $topic->name($lang) }}</h1>
-            <p class="muted">{{ $reports->count() }} {{ __('reports') }}</p>
+            @php $total = $reports->count(); @endphp
+            {{-- reports.js hides closed/spam rows client-side and rewrites this
+                 line to "X of Y" whenever the visible count differs from the
+                 total. The template keeps the paginator-style :visible token
+                 for JS; only :total is filled in here. --}}
+            <p class="muted" data-report-count data-total="{{ $total }}"
+               data-showing="{{ __('reports_showing', ['total' => trans_choice('reports_count', $total, ['count' => $total])]) }}">{{ trans_choice('reports_count', $total, ['count' => $total]) }}</p>
         </div>
     </section>
 @endsection
@@ -36,6 +42,7 @@
         </div>
     </div>
 
+    <div class="table-wrap-narrow">
     <table>
         <thead>
             <tr>
@@ -113,6 +120,7 @@
             @endif
         </tbody>
     </table>
+    </div>
 
     <script src="{{ asset('js/reports.js') }}" defer></script>
 @endsection

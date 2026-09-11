@@ -188,6 +188,7 @@
     "topics_admin_intro": "Themen verwalten: aktivieren, deaktivieren und leere Themen löschen.",
     "topics_none": "Keine Themen vorhanden.",
     "reports_none": "Noch keine Meldungen zu diesem Thema.",
+    "reports_showing": ":visible von :total angezeigt",
     "topic_status": "Status",
     "status_active": "Aktiv",
     "status_deactivated": "Deaktiviert",
