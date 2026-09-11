@@ -135,6 +135,16 @@ class StatsPageTest extends TestCase
         $this->assertNotNull(array_column($stats->retention(), null, 'key')['users']['last_run']);
     }
 
+    public function test_page_survives_unset_env_backed_config(): void
+    {
+        // CI has no .env: env-backed keys are present but null. The page must
+        // not 500 on them (Config::boolean() would throw on null).
+        config(['session.secure' => null, 'mail.mailers.smtp.host' => null, 'app.key' => null]);
+        $this->topic();
+
+        $this->actingAsGlobalAdmin()->get('/stats')->assertOk();
+    }
+
     public function test_scheduler_heartbeat_is_read_from_cache(): void
     {
         Cache::forget('scheduler.heartbeat');

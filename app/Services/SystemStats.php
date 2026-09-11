@@ -14,7 +14,6 @@ use App\Support\Retention;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -111,8 +110,8 @@ final class SystemStats
             }
         }
 
-        $ackDeadline = (int) Config::integer('meldeplattform.acknowledgement_deadline_days', 7);
-        $feedbackDeadline = (int) Config::integer('meldeplattform.feedback_deadline_days', 90);
+        $ackDeadline = is_numeric($v = config('meldeplattform.acknowledgement_deadline_days')) ? (int) $v : 7;
+        $feedbackDeadline = is_numeric($v = config('meldeplattform.feedback_deadline_days')) ? (int) $v : 90;
         // Deadline adherence over reports old enough to have had the full window
         // (or already acknowledged/closed), excluding spam.
         $ackEligible = 0;
@@ -325,7 +324,8 @@ final class SystemStats
     /** @return array<string, mixed> */
     public function storage(): array
     {
-        $uploadsRoot = (string) Config::string('filesystems.disks.uploads.root', storage_path('app/uploads'));
+        $root = config('filesystems.disks.uploads.root');
+        $uploadsRoot = is_string($root) && $root !== '' ? $root : storage_path('app/uploads');
 
         // Walking the uploads tree costs one stat() per file; cache the sum.
         $uploadBytes = Cache::remember('stats.upload_bytes', 600, function (): int {
@@ -373,38 +373,47 @@ final class SystemStats
 
         $opcache = function_exists('opcache_get_status') ? (opcache_get_status(false)['opcache_enabled'] ?? false) : false;
 
+        // Plain config() + casts, not the typed accessors: an env-backed key
+        // such as session.secure is *present but null* when the variable is
+        // unset, and Config::boolean() throws on null instead of defaulting.
+        $str = static fn (string $key, string $default = ''): string => is_scalar($v = config($key)) ? (string) $v : $default;
+        $bool = static fn (string $key): bool => filter_var(config($key), FILTER_VALIDATE_BOOLEAN);
+        $int = static fn (string $key): int => is_numeric($v = config($key)) ? (int) $v : 0;
+        /** @var array<int, mixed> $stack */
+        $stack = (array) config('logging.channels.stack.channels', []);
+
         return [
-            'app_env' => (string) Config::string('app.env', ''),
-            'app_debug' => Config::boolean('app.debug', false),
-            'app_url' => (string) Config::string('app.url', ''),
+            'app_env' => $str('app.env'),
+            'app_debug' => $bool('app.debug'),
+            'app_url' => $str('app.url'),
             'laravel' => app()->version(),
             'php' => PHP_VERSION,
-            'timezone' => (string) Config::string('app.timezone', 'UTC'),
-            'locale' => (string) Config::string('app.locale', ''),
+            'timezone' => $str('app.timezone', 'UTC'),
+            'locale' => $str('app.locale'),
             'db_driver' => $connection->getDriverName(),
             'db_version' => $dbVersion,
             'tables' => $tables,
-            'queue' => (string) Config::string('queue.default', ''),
-            'cache' => (string) Config::string('cache.default', ''),
-            'session' => (string) Config::string('session.driver', ''),
-            'session_lifetime' => (int) Config::integer('session.lifetime', 0),
-            'session_secure' => Config::boolean('session.secure', false),
-            'mail' => (string) Config::string('mail.default', ''),
-            'mail_host' => (string) Config::string('mail.mailers.smtp.host', ''),
-            'log_stack' => implode(',', array_map(static fn ($c): string => is_string($c) ? $c : '', Config::array('logging.channels.stack.channels', []))),
-            'log_days' => (int) Config::integer('logging.channels.daily.days', 0),
+            'queue' => $str('queue.default'),
+            'cache' => $str('cache.default'),
+            'session' => $str('session.driver'),
+            'session_lifetime' => $int('session.lifetime'),
+            'session_secure' => $bool('session.secure'),
+            'mail' => $str('mail.default'),
+            'mail_host' => $str('mail.mailers.smtp.host'),
+            'log_stack' => implode(',', array_map(static fn ($c): string => is_string($c) ? $c : '', $stack)),
+            'log_days' => $int('logging.channels.daily.days'),
             'memory_limit' => (string) ini_get('memory_limit'),
             'upload_max' => (string) ini_get('upload_max_filesize'),
             'post_max' => (string) ini_get('post_max_size'),
             'max_execution' => (string) ini_get('max_execution_time'),
             'opcache' => (bool) $opcache,
-            'configured_upload_mb' => (int) Config::integer('meldeplattform.max_upload_mb', 0),
-            'saml_configured' => trim((string) Config::string('saml2.idp.x509cert', '')) !== '',
-            'otrs_configured' => trim((string) Config::string('meldeplattform.otrs.base_url', '')) !== '',
-            'otrs_inbound' => Config::boolean('meldeplattform.otrs.inbound_enabled', false),
-            'webhook_signed' => trim((string) Config::string('meldeplattform.webhook_secret', '')) !== '',
-            'dev_login' => Config::boolean('meldeplattform.dev_login_enabled', false),
-            'app_key_set' => trim((string) Config::string('app.key', '')) !== '',
+            'configured_upload_mb' => $int('meldeplattform.max_upload_mb'),
+            'saml_configured' => trim($str('saml2.idp.x509cert')) !== '',
+            'otrs_configured' => trim($str('meldeplattform.otrs.base_url')) !== '',
+            'otrs_inbound' => $bool('meldeplattform.otrs.inbound_enabled'),
+            'webhook_signed' => trim($str('meldeplattform.webhook_secret')) !== '',
+            'dev_login' => $bool('meldeplattform.dev_login_enabled'),
+            'app_key_set' => trim($str('app.key')) !== '',
             'scheduler_heartbeat' => self::schedulerHeartbeat(),
         ];
     }
