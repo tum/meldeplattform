@@ -189,6 +189,8 @@
     "topics_none": "No topics.",
     "reports_none": "No reports for this topic yet.",
     "reports_showing": "Showing :visible of :total",
+    "main_navigation": "Main navigation",
+    "language": "Language",
     "topic_status": "Status",
     "status_active": "Active",
     "status_deactivated": "Deactivated",

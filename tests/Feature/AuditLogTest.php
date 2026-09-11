@@ -164,6 +164,17 @@ class AuditLogTest extends TestCase
         $this->actingAsGlobalAdmin()->get('/audit')->assertOk();
     }
 
+    public function test_topbar_marks_current_section(): void
+    {
+        $response = $this->actingAsGlobalAdmin()->get('/audit')->assertOk();
+
+        // Only the audit link carries the active state; the others don't.
+        $response->assertSee('class="is-active"', false)
+            ->assertSee('aria-current="page">Audit log</a>', false)
+            ->assertDontSee('aria-current="page">Dashboard</a>', false)
+            ->assertSee('aria-pressed="true"><abbr lang="en"', false);
+    }
+
     public function test_audit_page_renders_metadata_as_key_value_chips(): void
     {
         AuditLog::record('report.bulk_status_changed', null, ['to' => 'done', 'report_ids' => [4, 7]]);

@@ -1,38 +1,49 @@
 <div class="topbar">
     <div class="container">
-        <div class="left">
-            @auth
-                <span>
-                    <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:.25rem;">
-                        <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/>
-                    </svg>{{ auth()->user()->name ?: auth()->user()->uid }}
-                </span>
-                <a href="{{ route('dashboard') }}">{{ __('dashboard') }}</a>
-                <a href="{{ route('topics.index') }}">{{ __('topics') }}</a>
-                @can('manage', App\Models\User::class)
-                    <a href="{{ route('users.index') }}">{{ __('users') }}</a>
-                    <a href="{{ route('audit.index') }}">{{ __('audit_title') }}</a>
-                @endcan
+        @auth
+            <span class="topbar-user" title="{{ auth()->user()->name ?: auth()->user()->uid }}">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/>
+                </svg>
+                <span class="topbar-user-name">{{ auth()->user()->name ?: auth()->user()->uid }}</span>
+            </span>
+            @php
+                // Section highlight for the current page. Topic editing and
+                // per-topic report lists count as "Topics"; a single report can
+                // be reached from either section, so it highlights neither.
+                $nav = [
+                    ['route' => 'dashboard', 'label' => __('dashboard'), 'active' => request()->routeIs('dashboard', 'dashboard.*')],
+                    ['route' => 'topics.index', 'label' => __('topics'), 'active' => request()->routeIs('topics.*', 'topic.*')],
+                ];
+                if (auth()->user()->can('manage', App\Models\User::class)) {
+                    $nav[] = ['route' => 'users.index', 'label' => __('users'), 'active' => request()->routeIs('users.*')];
+                    $nav[] = ['route' => 'audit.index', 'label' => __('audit_title'), 'active' => request()->routeIs('audit.*')];
+                }
+            @endphp
+            <nav class="topbar-nav" aria-label="{{ __('main_navigation') }}">
+                @foreach ($nav as $item)
+                    <a href="{{ route($item['route']) }}" @class(['is-active' => $item['active']]){!! $item['active'] ? ' aria-current="page"' : '' !!}>{{ $item['label'] }}</a>
+                @endforeach
                 {{-- Logout is a POST so it cannot be triggered cross-origin. --}}
                 <form method="POST" action="{{ Route::has('dev.logout') ? route('dev.logout') : route('saml.logout') }}" style="display:contents">
                     @csrf
-                    <button type="submit" class="linkish">{{ __('logout') }}</button>
+                    <button type="submit" class="linkish topbar-logout">{{ __('logout') }}</button>
                 </form>
-            @else
+            </nav>
+        @else
+            <nav class="topbar-nav" aria-label="{{ __('main_navigation') }}">
                 <a href="{{ route('saml.login') }}">{{ __('login') }}</a>
                 @if (Route::has('dev.login'))
-                    <a href="{{ route('dev.login') }}" style="opacity:.8;">Dev-Login</a>
+                    <a href="{{ route('dev.login') }}" class="topbar-nav-muted">Dev-Login</a>
                 @endif
-            @endauth
-        </div>
-        <div class="right lang-switch">
-            <form method="POST" action="{{ route('lang.set') }}" style="display:contents">
-                @csrf
-                <button type="submit" name="lang" value="de" class="lang-btn {{ $lang === 'de' ? 'active' : '' }}" style="background:none;border:none;cursor:pointer;padding:0;font:inherit;color:inherit;text-decoration:none;"><abbr lang="de" title="Deutsch">de</abbr></button>
-                <span class="sep">|</span>
-                <button type="submit" name="lang" value="en" class="lang-btn {{ $lang === 'en' ? 'active' : '' }}" style="background:none;border:none;cursor:pointer;padding:0;font:inherit;color:inherit;text-decoration:none;"><abbr lang="en" title="English">en</abbr></button>
-            </form>
-        </div>
+            </nav>
+        @endauth
+        {{-- Segmented toggle; the active language reads as the pressed segment. --}}
+        <form method="POST" action="{{ route('lang.set') }}" class="lang-switch" aria-label="{{ __('language') }}">
+            @csrf
+            <button type="submit" name="lang" value="de" class="lang-btn {{ $lang === 'de' ? 'active' : '' }}" aria-pressed="{{ $lang === 'de' ? 'true' : 'false' }}"><abbr lang="de" title="Deutsch">de</abbr></button>
+            <button type="submit" name="lang" value="en" class="lang-btn {{ $lang === 'en' ? 'active' : '' }}" aria-pressed="{{ $lang === 'en' ? 'true' : 'false' }}"><abbr lang="en" title="English">en</abbr></button>
+        </form>
     </div>
 </div>
 
