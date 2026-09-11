@@ -139,7 +139,7 @@ class StatsPageTest extends TestCase
     {
         // CI has no .env: env-backed keys are present but null. The page must
         // not 500 on them (Config::boolean() would throw on null).
-        config(['session.secure' => null, 'mail.mailers.smtp.host' => null, 'app.key' => null]);
+        config(['session.secure' => null, 'mail.mailers.smtp.host' => null, 'saml2.idp.x509cert' => null]);
         $this->topic();
 
         $this->actingAsGlobalAdmin()->get('/stats')->assertOk();

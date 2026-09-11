@@ -71,6 +71,7 @@ final class SystemStats
             ->get(['id', 'created_at', 'acknowledged_at', 'state', 'closed_at']);
         $ackOverdue = $active->filter(fn (Report $r): bool => $r->isAcknowledgementOverdue())->count();
         $feedbackOverdue = $active->filter(fn (Report $r): bool => $r->isFeedbackOverdue())->count();
+        $stale = Report::staleDays() === null ? 0 : Report::query()->staleNow()->count();
 
         // Last 12 months: monthly intake, response times and deadline adherence.
         $recent = Report::query()
@@ -171,6 +172,8 @@ final class SystemStats
             'active' => $states['open'] + $states['in_progress'],
             'ack_overdue' => $ackOverdue,
             'feedback_overdue' => $feedbackOverdue,
+            'stale' => $stale,
+            'stale_days' => Report::staleDays(),
             'last_30' => $last30,
             'prev_30' => $prev30,
             'months' => array_values($months),

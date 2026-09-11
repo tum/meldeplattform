@@ -324,7 +324,7 @@ class TopicAdminController
         /** @var list<int> $topicIds */
         $topicIds = $topics->pluck('id')->all();
 
-        [$query, $selectedTopic, $hideClosed, $hideSpam] = $this->filteredReportsQuery($request, $topicIds);
+        [$query, $selectedTopic, $hideClosed, $hideSpam, $onlyStale] = $this->filteredReportsQuery($request, $topicIds);
 
         $reports = $query
             ->with(['topic', 'messages'])
@@ -340,6 +340,9 @@ class TopicAdminController
         // Count overdue reports across ALL manageable topics (independent of the
         // current page and the hide filters) so the alert badge is accurate.
         $overdueCount = Report::query()->whereIn('topic_id', $topicIds)->overdueNow()->count();
+        // Same scope for the stale signal: active reports nobody has touched
+        // for MELDE_STALE_REPORT_DAYS.
+        $staleCount = Report::staleDays() === null ? 0 : Report::query()->whereIn('topic_id', $topicIds)->staleNow()->count();
 
         return view('pages.dashboard', [
             'topics' => $topics,
@@ -347,7 +350,10 @@ class TopicAdminController
             'selectedTopic' => $selectedTopic,
             'hideClosed' => $hideClosed,
             'hideSpam' => $hideSpam,
+            'onlyStale' => $onlyStale,
             'overdueCount' => $overdueCount,
+            'staleCount' => $staleCount,
+            'staleDays' => Report::staleDays(),
         ]);
     }
 
@@ -372,6 +378,7 @@ class TopicAdminController
             'topic' => $request->integer('topic') ?: 'all',
             'hide_closed' => $request->boolean('hide_closed'),
             'hide_spam' => $request->boolean('hide_spam'),
+            'only_stale' => $request->boolean('only_stale'),
             'count' => (clone $query)->count(),
         ]);
 
@@ -423,7 +430,7 @@ class TopicAdminController
      * state so the view can reflect it.
      *
      * @param list<int> $topicIds
-     * @return array{0: Builder<Report>, 1: int, 2: bool, 3: bool}
+     * @return array{0: Builder<Report>, 1: int, 2: bool, 3: bool, 4: bool}
      */
     private function filteredReportsQuery(Request $request, array $topicIds): array
     {
@@ -451,8 +458,14 @@ class TopicAdminController
         if ($hideSpam) {
             $query->where('state', '!=', ReportState::Spam->value);
         }
+        // "Only inactive": narrows to the stale set (a no-op selection when
+        // the signal is disabled — the scope then matches nothing).
+        $onlyStale = $request->boolean('only_stale');
+        if ($onlyStale) {
+            $query->staleNow();
+        }
 
-        return [$query, $selectedTopic, $hideClosed, $hideSpam];
+        return [$query, $selectedTopic, $hideClosed, $hideSpam, $onlyStale];
     }
 
     public function createSkeleton(): TopicResource

@@ -77,6 +77,15 @@ return [
     'reminder_feedback_lead_days' => (int) env('MELDE_REMINDER_FEEDBACK_LEAD_DAYS', 14),
 
     /*
+    | An active report (open / in progress) with no activity — no message,
+    | no status change — for this many days is flagged as stale on the
+    | dashboard so it cannot quietly sit forever. Open cases are never
+    | deleted automatically (HinSchG measures retention from conclusion), so
+    | this nudge is the only backstop. 0 disables the signal.
+    */
+    'stale_report_days' => $dayWindow('MELDE_STALE_REPORT_DAYS', 30),
+
+    /*
     |--------------------------------------------------------------------------
     | Data retention
     |--------------------------------------------------------------------------

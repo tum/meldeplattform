@@ -237,6 +237,62 @@ class Report extends Model
     }
 
     /**
+     * Days of inactivity after which an active report counts as stale, or
+     * null when the signal is disabled.
+     */
+    public static function staleDays(): ?int
+    {
+        $days = config('meldeplattform.stale_report_days');
+
+        return is_int($days) && $days > 0 ? $days : null;
+    }
+
+    /**
+     * Stale = still open or in progress, and `updated_at` — touched by every
+     * message and every status change — older than the stale window. Open
+     * cases are never deleted automatically, so this is the nudge that keeps
+     * one from quietly sitting forever.
+     */
+    public function isStale(): bool
+    {
+        $days = self::staleDays();
+        if ($days === null || $this->isClosed() || $this->isSpam()) {
+            return false;
+        }
+
+        return $this->updated_at !== null && $this->updated_at->lessThan(Carbon::now()->subDays($days));
+    }
+
+    /** Days since the last activity, for the badge; null when not stale. */
+    public function staleForDays(): ?int
+    {
+        if (! $this->isStale() || $this->updated_at === null) {
+            return null;
+        }
+
+        return (int) $this->updated_at->diffInDays(Carbon::now());
+    }
+
+    /**
+     * SQL form of isStale(), for counts and the dashboard filter. Matches
+     * nothing when the signal is disabled.
+     *
+     * @param Builder<Report> $query
+     * @return Builder<Report>
+     */
+    public function scopeStaleNow(Builder $query): Builder
+    {
+        $days = self::staleDays();
+        if ($days === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query
+            ->whereIn('state', [ReportState::Open->value, ReportState::InProgress->value])
+            ->where('updated_at', '<', Carbon::now()->subDays($days));
+    }
+
+    /**
      * Reports that may need attention for SLA purposes: still open or in
      * progress (i.e. not closed/spam). Whether each is actually overdue is
      * decided per-row by the *Overdue() helpers, since that depends on `now`.

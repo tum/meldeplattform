@@ -129,6 +129,60 @@ class DashboardTest extends TestCase
             ->assertDontSee('#'.$otherReport->id);
     }
 
+    public function test_stale_signal_counts_flags_and_filters_inactive_reports(): void
+    {
+        config(['meldeplattform.stale_report_days' => 30]);
+        $user = User::updateOrCreate(['uid' => 'globaladmin'], ['name' => 'GA', 'email' => 'ga@x']);
+        $topic = Topic::create(['name_de' => 'A', 'name_en' => 'A', 'summary_de' => '', 'summary_en' => '']);
+
+        // updated_at is what a message or status change touches; backdate it.
+        $stale = Report::create(['topic_id' => $topic->id, 'state' => ReportState::Open]);
+        $stale->forceFill(['updated_at' => now()->subDays(45)])->save();
+        $staleInProgress = Report::create(['topic_id' => $topic->id, 'state' => ReportState::InProgress]);
+        $staleInProgress->forceFill(['updated_at' => now()->subDays(31)])->save();
+        $fresh = Report::create(['topic_id' => $topic->id, 'state' => ReportState::Open]);
+        $fresh->forceFill(['updated_at' => now()->subDays(5)])->save();
+        // Concluded reports are never stale, however old.
+        $done = Report::create(['topic_id' => $topic->id, 'state' => ReportState::Done]);
+        $done->forceFill(['updated_at' => now()->subDays(400)])->save();
+
+        $this->assertTrue($stale->refresh()->isStale());
+        $this->assertSame(45, $stale->refresh()->staleForDays());
+        $this->assertFalse($fresh->refresh()->isStale());
+        $this->assertFalse($done->refresh()->isStale());
+        $this->assertSame(2, Report::query()->staleNow()->count());
+
+        // Intro badge with the count; row badge on the stale rows only.
+        $html = (string) $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
+        $this->assertStringContainsString('2 reports without activity for 30 days', $html);
+        $this->assertSame(2, substr_count($html, 'No activity for '));
+        $this->assertStringContainsString('name="only_stale"', $html);
+
+        // The filter narrows the list to the stale set (and the export link carries it).
+        $this->actingAs($user)->get('/dashboard?filters=1&only_stale=1')
+            ->assertOk()
+            ->assertSee('#'.$stale->id)
+            ->assertSee('#'.$staleInProgress->id)
+            ->assertDontSee('#'.$fresh->id)
+            ->assertSee('only_stale=1', false);
+    }
+
+    public function test_stale_signal_is_absent_when_disabled(): void
+    {
+        config(['meldeplattform.stale_report_days' => null]);
+        $user = User::updateOrCreate(['uid' => 'globaladmin'], ['name' => 'GA', 'email' => 'ga@x']);
+        $topic = Topic::create(['name_de' => 'A', 'name_en' => 'A', 'summary_de' => '', 'summary_en' => '']);
+        $old = Report::create(['topic_id' => $topic->id, 'state' => ReportState::Open]);
+        $old->forceFill(['updated_at' => now()->subDays(400)])->save();
+
+        $this->assertFalse($old->refresh()->isStale());
+        $this->assertSame(0, Report::query()->staleNow()->count());
+
+        $html = (string) $this->actingAs($user)->get('/dashboard')->assertOk()->getContent();
+        $this->assertStringNotContainsString('without activity', $html);
+        $this->assertStringNotContainsString('name="only_stale"', $html);
+    }
+
     public function test_dashboard_paginates(): void
     {
         $user = User::updateOrCreate(['uid' => 'globaladmin'], ['name' => 'GA', 'email' => 'ga@x']);

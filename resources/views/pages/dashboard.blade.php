@@ -19,9 +19,15 @@
             {{-- $overdueCount is computed in the controller across ALL manageable
                  reports (not just the current page), so it stays accurate under
                  pagination. --}}
-            @if ($overdueCount > 0)
-                <p style="margin-top: 0.5rem;">
-                    <span class="unread-badge overdue">{{ trans_choice('overdue_summary', $overdueCount, ['count' => $overdueCount]) }}</span>
+            @if ($overdueCount > 0 || $staleCount > 0)
+                <p class="intro-signals">
+                    @if ($overdueCount > 0)
+                        <span class="unread-badge overdue">{{ trans_choice('overdue_summary', $overdueCount, ['count' => $overdueCount]) }}</span>
+                    @endif
+                    {{-- $staleCount, like $overdueCount, spans all manageable reports. --}}
+                    @if ($staleCount > 0)
+                        <a class="unread-badge stale" href="{{ route('dashboard', ['filters' => '1', 'only_stale' => '1']) }}">{{ trans_choice('stale_summary', $staleCount, ['count' => $staleCount, 'days' => $staleDays]) }}</a>
+                    @endif
                 </p>
             @endif
         </div>
@@ -50,6 +56,12 @@
             <input type="checkbox" name="hide_spam" value="1" @checked($hideSpam)>
             {{ __('hide_spam') }}
         </label>
+        @if ($staleDays !== null)
+            <label>
+                <input type="checkbox" name="only_stale" value="1" @checked($onlyStale)>
+                {{ __('only_stale', ['days' => $staleDays]) }}
+            </label>
+        @endif
         <button type="submit" class="button button-small">{{ __('apply_filters') }}</button>
         <div class="toolbar-end">
             {{-- Export mirrors the current filter selection. --}}
@@ -59,6 +71,7 @@
                    'topic' => $selectedTopic ?: null,
                    'hide_closed' => $hideClosed ? '1' : null,
                    'hide_spam' => $hideSpam ? '1' : null,
+                   'only_stale' => $onlyStale ? '1' : null,
                ])) }}">{{ __('export_csv') }}</a>
         </div>
     </form>
@@ -119,6 +132,9 @@
                             @endif
                             @if ($r->isFeedbackOverdue())
                                 <span class="unread-badge overdue" title="{{ __('feedback_overdue') }}">{{ __('feedback_overdue') }}</span>
+                            @endif
+                            @if (($staleFor = $r->staleForDays()) !== null)
+                                <span class="unread-badge stale" title="{{ __('stale_hint') }}">{{ __('stale_badge', ['days' => $staleFor]) }}</span>
                             @endif
                         </td>
                         <td data-label="{{ __('messages') }}">{{ $r->messages->count() }}</td>

@@ -106,7 +106,12 @@
         <li class="kpi kpi-hero">
             <span class="kpi-label">{{ __('stats_active_reports') }}</span>
             <span class="kpi-value">{{ $n($reports['active']) }}</span>
-            <span class="kpi-hint">{{ __('stats_of_which_in_progress', ['count' => $n($states['in_progress'])]) }}</span>
+            <span class="kpi-hint">
+                {{ __('stats_of_which_in_progress', ['count' => $n($states['in_progress'])]) }}
+                @if ($reports['stale_days'] !== null)
+                    · <a href="{{ route('dashboard', ['filters' => '1', 'only_stale' => '1']) }}">{{ __('stats_stale', ['count' => $n($reports['stale']), 'days' => $reports['stale_days']]) }}</a>
+                @endif
+            </span>
         </li>
         <li class="kpi">
             <span class="kpi-label">{{ __('stats_overdue') }}</span>

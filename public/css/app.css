@@ -841,6 +841,11 @@ a.pagination-link:focus-visible {
 }
 /* Overdue is the one report signal that warrants red. */
 .unread-badge.overdue { background: var(--tum-red); }
+/* Stale (no activity) is a nudge, not an alarm: amber. */
+.unread-badge.stale { background: #D9820B; }
+a.unread-badge { text-decoration: none; }
+a.unread-badge:hover { color: #fff; filter: brightness(0.92); }
+.intro-signals { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0; }
 
 /* Sticky action bar shown when one or more reports are selected. */
 .bulk-bar {

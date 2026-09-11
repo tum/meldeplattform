@@ -312,6 +312,7 @@ Per `.env` steuerbar (Defaults in Klammern):
 | `MELDE_FEEDBACK_DEADLINE_DAYS` | `90` | Frist für die Rückmeldung (≈ 3 Monate) |
 | `MELDE_REMINDER_ACK_LEAD_DAYS` | `2` | Vorlauf, ab dem `reports:remind` vor der Bestätigungsfrist erinnert |
 | `MELDE_REMINDER_FEEDBACK_LEAD_DAYS` | `14` | Vorlauf vor der Rückmeldefrist |
+| `MELDE_STALE_REPORT_DAYS` | `30` | Aktive Meldungen ohne Nachricht/Statusänderung seit so vielen Tagen werden im Dashboard als „ohne Aktivität" markiert (Badge, Filter, CSV); `0` = aus |
 | `MELDE_DEFAULT_RETENTION_DAYS` | `1095` | Globale Aufbewahrung in Tagen (3 Jahre, HinSchG § 11 Abs. 5); `0` = nur Pro-Topic-Frist nutzen |
 | `MELDE_SPAM_RETENTION_DAYS` | `90` | Als Spam markierte Eingaben werden so viele Tage nach der Markierung gelöscht (nie später als die Topic-Frist); `0` = wie normale Meldungen |
 | `MELDE_INACTIVE_USER_DAYS` | `365` | Rollenlose Accounts ohne Login seit so vielen Tagen werden per `users:prune` gelöscht; `0` = aus |
