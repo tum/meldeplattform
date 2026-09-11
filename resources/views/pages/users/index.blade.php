@@ -8,9 +8,6 @@
             <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ __('users') }}</h1>
             <p class="muted">{{ __('users_intro') }}</p>
-            @if ($dormantDays !== null)
-                <p class="muted"><small>{{ __('users_dormant_policy', ['days' => $dormantDays]) }}</small></p>
-            @endif
             {{-- Platform-wide tallies; unaffected by the search/role filter below. --}}
             <ul class="stat-row" aria-label="{{ __('users_role_column') }}">
                 <li class="stat"><strong>{{ $counts['global'] }}</strong> {{ __('role_global_admin') }}</li>
@@ -103,7 +100,7 @@
                     </thead>
                     <tbody>
                         @forelse ($admins as $row)
-                            @include('pages.users._row', ['row' => $row, 'dormantWarnBefore' => $dormantWarnBefore])
+                            @include('pages.users._row', ['row' => $row])
                         @empty
                             <tr><td colspan="5" class="table-empty">{{ __('users_none_admins') }}</td></tr>
                         @endforelse
@@ -135,7 +132,7 @@
                     </thead>
                     <tbody>
                         @forelse ($regular as $row)
-                            @include('pages.users._row', ['row' => $row, 'dormantWarnBefore' => null])
+                            @include('pages.users._row', ['row' => $row])
                         @empty
                             <tr><td colspan="5" class="table-empty">{{ __('users_none_regular') }}</td></tr>
                         @endforelse

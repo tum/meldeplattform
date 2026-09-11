@@ -1,18 +1,8 @@
 @php
     /** @var array{uid: string, user: \App\Models\User|null, admin: \App\Models\Admin|null, topics: \Illuminate\Support\Collection<int, \App\Models\Topic>, role: string} $row */
-    /** @var \Illuminate\Support\Carbon|null $dormantWarnBefore */
     $user = $row['user'];
     $isEnvGlobal = $user?->isGlobalAdminViaEnv() ?? false;
     $isSelf = auth()->user()?->uid === $row['uid'];
-    // Unused admin access past half the dormancy window: warn before
-    // admins:prune revokes it. Env admins are exempt from revocation.
-    $dormantSince = null;
-    if ($dormantWarnBefore !== null && ! $isEnvGlobal && $row['role'] !== 'none') {
-        $anchor = $row['role'] === 'pending' ? $row['admin']?->created_at : ($user?->last_login_at ?? $user?->created_at);
-        if ($anchor !== null && $anchor->lt($dormantWarnBefore)) {
-            $dormantSince = (int) $anchor->diffInDays(now());
-        }
-    }
 @endphp
 <tr>
     <td class="cell-title">
@@ -23,9 +13,6 @@
             @else
                 <span class="person-name"><code>{{ $row['uid'] }}</code></span>
                 <span class="person-meta">{{ __('users_pending_login') }}</span>
-            @endif
-            @if ($dormantSince !== null)
-                <span class="person-meta"><span class="tag tag-warning" title="{{ __('users_dormant_hint') }}">{{ __('users_dormant_since', ['days' => $dormantSince]) }}</span></span>
             @endif
         </span>
     </td>

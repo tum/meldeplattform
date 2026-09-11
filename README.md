@@ -265,9 +265,9 @@ beim nächsten Login neu angelegt. Meldungen bleiben unberührt.
 Admin-Berechtigungen (DB-Global-Flag, Themen-Zuweisungen) ohne Login seit
 `MELDE_DORMANT_ADMIN_DAYS` (Default 365; `0` = aus) werden per `admins:prune`
 entzogen; vorgemerkte Admins, die sich nie eingeloggt haben, werden nach
-derselben Frist verworfen. Jeder Entzug landet im Audit-Log, die globalen Admins
-bekommen eine Zusammenfassung per Mail, und `/users` warnt ab der Hälfte der
-Frist („N Tage ohne Login"). Env-Admins (`MELDE_ADMIN_USERS`) sind ausgenommen.
+derselben Frist verworfen. Jeder Entzug landet im Audit-Log und die globalen
+Admins bekommen eine Zusammenfassung per Mail. Env-Admins (`MELDE_ADMIN_USERS`)
+sind ausgenommen.
 
 ### Topics & Messenger
 
