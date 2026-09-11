@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Admin;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -38,6 +39,20 @@ class PruneUsersTest extends TestCase
         $this->assertSame(0, Artisan::call('users:prune'));
 
         $this->assertDatabaseMissing('users', ['uid' => 'stale']);
+    }
+
+    public function test_run_is_audit_logged_with_a_count_only(): void
+    {
+        $this->seedUser('stale1', now()->subDays(400));
+        $this->seedUser('stale2', now()->subDays(400));
+
+        Artisan::call('users:prune');
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'users.pruned', 'actor' => 'system']);
+        $entry = AuditLog::where('action', 'users.pruned')->firstOrFail();
+        $this->assertSame(2, $entry->metadata['count'] ?? null);
+        // The point of pruning is to shed the UIDs — the summary must not re-record them.
+        $this->assertStringNotContainsString('stale1', json_encode($entry->metadata) ?: '');
     }
 
     public function test_keeps_recently_active_user(): void

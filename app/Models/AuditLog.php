@@ -10,10 +10,13 @@ use RuntimeException;
 /**
  * Append-only audit trail of security-relevant administrative actions.
  *
- * Rows are written once and never mutated or deleted via the application —
- * the booted() guards enforce that. The model is privacy-aware: it records
- * the acting *admin* and a lightweight subject reference, never reporter PII
- * or report content.
+ * Rows are written once and never mutated or deleted through the model —
+ * the booted() guards enforce that. The one sanctioned deletion is retention:
+ * the scheduled `audit:prune` command removes entries past
+ * `meldeplattform.audit_retention_days` with a mass query (no model events),
+ * keeping entries about reports that still exist. The model is privacy-aware:
+ * it records the acting *admin* and a lightweight subject reference, never
+ * reporter PII or report content.
  *
  * @property int $id
  * @property string|null $actor

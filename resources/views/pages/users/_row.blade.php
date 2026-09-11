@@ -1,5 +1,5 @@
 @php
-    /** @var array{uid: string, user: \App\Models\User|null, topics: \Illuminate\Support\Collection<int, \App\Models\Topic>, role: string} $row */
+    /** @var array{uid: string, user: \App\Models\User|null, admin: \App\Models\Admin|null, topics: \Illuminate\Support\Collection<int, \App\Models\Topic>, role: string} $row */
     $user = $row['user'];
     $isEnvGlobal = $user?->isGlobalAdminViaEnv() ?? false;
     $isSelf = auth()->user()?->uid === $row['uid'];

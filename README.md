@@ -63,11 +63,16 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
   automatisch aufgeräumt (DSGVO-Datenminimierung).
 - **Datenaufbewahrung / Löschung**: Pro-Topic- bzw. globale Aufbewahrungsfrist
   (Default 3 Jahre, HinSchG § 11 Abs. 5). `reports:prune` löscht abgeschlossene
-  Meldungen samt Anhängen ab dem Abschlussdatum (`closed_at`).
+  Meldungen samt Anhängen ab dem Abschlussdatum (`closed_at`); als Spam
+  markierte Eingaben bereits nach 90 Tagen. Ungenutzte Admin-Berechtigungen
+  erlöschen nach 12 Monaten (`admins:prune`, protokolliert + Mail an globale
+  Admins), das Audit-Protokoll wird nach 3 Jahren bereinigt (`audit:prune`).
+  Alle Löschläufe schreiben einen Audit-Eintrag mit Zählern.
 - **CSV-Export** der (gefilterten) Dashboard-Meldungen für Audits/Reporting –
   nur Fall-Metadaten, keine Meldeinhalte; der Export wird auditiert.
 - **Append-only Audit-Log** (`/audit`) für sicherheitsrelevante Admin-Aktionen,
-  ohne PII meldender Personen oder Meldeinhalte.
+  ohne PII meldender Personen oder Meldeinhalte; einzige Löschung ist die
+  Aufbewahrungsfrist (`audit:prune`).
 - **Optionale Kontakt-E-Mail** für Update-Benachrichtigungen an meldende Personen.
 - **Dateiupload** mit Erweiterungs-Allowlist, UUID-Speichernamen,
   3-facher Größenbegrenzung, Path-Traversal-Schutz und EXIF-/Metadaten-Stripping
@@ -255,8 +260,14 @@ sehen, beantworten und das Topic deaktivieren/reaktivieren.
 Jeder Login legt eine `users`-Zeile an. Rollenlose, seit
 `MELDE_INACTIVE_USER_DAYS` (Default 365; `0` = aus) inaktive Accounts werden per
 `users:prune` automatisch gelöscht – sie sind reine Login-Datensätze und werden
-beim nächsten Login neu angelegt. Admins (global/env/Themen) werden nie
-gelöscht; Meldungen bleiben unberührt.
+beim nächsten Login neu angelegt. Meldungen bleiben unberührt.
+
+Admin-Berechtigungen (DB-Global-Flag, Themen-Zuweisungen) ohne Login seit
+`MELDE_DORMANT_ADMIN_DAYS` (Default 365; `0` = aus) werden per `admins:prune`
+entzogen; vorgemerkte Admins, die sich nie eingeloggt haben, werden nach
+derselben Frist verworfen. Jeder Entzug landet im Audit-Log und die globalen
+Admins bekommen eine Zusammenfassung per Mail. Env-Admins (`MELDE_ADMIN_USERS`)
+sind ausgenommen.
 
 ### Topics & Messenger
 
@@ -295,7 +306,11 @@ Per `.env` steuerbar (Defaults in Klammern):
 | `MELDE_REMINDER_ACK_LEAD_DAYS` | `2` | Vorlauf, ab dem `reports:remind` vor der Bestätigungsfrist erinnert |
 | `MELDE_REMINDER_FEEDBACK_LEAD_DAYS` | `14` | Vorlauf vor der Rückmeldefrist |
 | `MELDE_DEFAULT_RETENTION_DAYS` | `1095` | Globale Aufbewahrung in Tagen (3 Jahre, HinSchG § 11 Abs. 5); `0` = nur Pro-Topic-Frist nutzen |
+| `MELDE_SPAM_RETENTION_DAYS` | `90` | Als Spam markierte Eingaben werden so viele Tage nach der Markierung gelöscht (nie später als die Topic-Frist); `0` = wie normale Meldungen |
 | `MELDE_INACTIVE_USER_DAYS` | `365` | Rollenlose Accounts ohne Login seit so vielen Tagen werden per `users:prune` gelöscht; `0` = aus |
+| `MELDE_DORMANT_ADMIN_DAYS` | `365` | Admin-Berechtigungen ohne Login seit so vielen Tagen werden per `admins:prune` entzogen; `0` = aus |
+| `MELDE_AUDIT_RETENTION_DAYS` | `1095` | Audit-Einträge älter als so viele Tage werden per `audit:prune` gelöscht (außer zu noch bestehenden Meldungen); `0` = unbegrenzt |
+| `LOG_DAILY_DAYS` | `30` | Rotierende Server-Logs (`daily`-Channel) werden nach so vielen Tagen gelöscht |
 | `MELDE_MAX_UPLOAD_MB` | `10` | Max. Größe pro Datei-/Audio-Upload |
 | `MELDE_WEBHOOK_SECRET` | – | Shared Secret zum HMAC-Signieren ausgehender Webhooks (`X-SafeSignal-Signature`) |
 
@@ -313,6 +328,8 @@ Folgende Artisan-Commands sind im Scheduler registriert (`routes/console.php`):
 | `reports:prune` | täglich | Löscht abgeschlossene Meldungen samt Anhängen nach Ablauf der Aufbewahrungsfrist |
 | `reports:remind` | täglich 07:00 (Europe/Berlin) | Erinnert Bearbeitende per E-Mail an Meldungen nahe/über einer Frist |
 | `users:prune` | täglich | Löscht rollenlose, seit `MELDE_INACTIVE_USER_DAYS` inaktive User-Accounts (no-op bei `0`) |
+| `admins:prune` | täglich | Entzieht seit `MELDE_DORMANT_ADMIN_DAYS` ungenutzte Admin-Berechtigungen, verwirft nie genutzte Vormerkungen (no-op bei `0`) |
+| `audit:prune` | täglich | Löscht Audit-Einträge älter als `MELDE_AUDIT_RETENTION_DAYS`, außer zu noch bestehenden Meldungen (no-op bei `0`) |
 | `otrs:poll-replies` | alle 5 Min. | Spiegelt OTRS/Znuny-Antworten in die Meldungen zurück (no-op ohne OTRS-Inbound) |
 
 Beide laufen über den Laravel-Scheduler. Es genügt **ein** Cron-Eintrag auf
@@ -337,8 +354,9 @@ Hinweise:
   zusätzlich einen Queue-Worker betreiben.
 - `APP_URL` und `MAIL_*` müssen korrekt gesetzt sein (der Mail-Link zeigt aufs
   Dashboard).
-- Trockenlauf zum Testen: `php artisan reports:remind --dry-run` bzw.
-  `php artisan reports:prune --dry-run`. Übersicht: `php artisan schedule:list`.
+- Trockenlauf zum Testen: `php artisan reports:remind --dry-run`,
+  `reports:prune --dry-run`, `users:prune --dry-run`, `admins:prune --dry-run`,
+  `audit:prune --dry-run`. Übersicht: `php artisan schedule:list`.
 
 ## Entwicklung
 

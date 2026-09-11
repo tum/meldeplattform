@@ -2,11 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\ReportState;
+use App\Models\AuditLog;
 use App\Models\File;
 use App\Models\Message;
 use App\Models\Report;
 use App\Models\Topic;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -20,6 +23,14 @@ use Illuminate\Support\Facades\Storage;
  * to Done/Spam), so only concluded cases are ever pruned — a report whose
  * procedure is still open or in progress is never deleted, no matter how long
  * it has been dormant.
+ *
+ * Spam is the exception: an administrator has judged it not to be a report,
+ * so it is not documentation the statute asks us to keep. It goes after the
+ * shorter `meldeplattform.spam_retention_days` window (independent of the
+ * topic's), long enough to undo a mis-flag.
+ *
+ * Each run that deleted something is recorded in the audit log as
+ * `reports.pruned` (counts per topic — no report content, no reporter data).
  */
 class PruneReports extends Command
 {
@@ -31,55 +42,99 @@ class PruneReports extends Command
     {
         $dryRun = (bool) $this->option('dry-run');
         $total = 0;
+        $spamTotal = 0;
+        /** @var array<int, int> $perTopic */
+        $perTopic = [];
         /** @var list<array{report_id: int, ticket_id: string, ticket_number: string|null}> $orphanedTickets */
         $orphanedTickets = [];
 
+        $spamDays = config('meldeplattform.spam_retention_days');
+        $spamDays = is_int($spamDays) && $spamDays > 0 ? $spamDays : null;
+
         foreach (Topic::query()->lazy() as $topic) {
             $days = $topic->effectiveRetentionDays();
-            if ($days === null) {
-                continue;
+
+            // Spam uses its own window when one is configured — never longer
+            // than the topic's, so spam can't outlive genuine reports. With
+            // none it is treated like any other concluded report.
+            $topicSpamDays = $spamDays === null ? null : ($days === null ? $spamDays : min($spamDays, $days));
+            $queries = [];
+            if ($days !== null) {
+                $queries[] = $this->dueQuery($topic, now()->subDays($days), spamOnly: false, excludeSpam: $topicSpamDays !== null);
+            }
+            if ($topicSpamDays !== null) {
+                $queries[] = $this->dueQuery($topic, now()->subDays($topicSpamDays), spamOnly: true, excludeSpam: false);
             }
 
-            $cutoff = now()->subDays($days);
+            foreach ($queries as $due) {
+                // lazyById() pages by keyset (`where id > last`), not OFFSET. each()
+                // /chunk() page with OFFSET, and deleting the rows being paged
+                // shifts every later row left by one page — so each page after the
+                // first skipped exactly the rows that moved into it, silently
+                // leaving reports past their statutory deletion date in place and
+                // over-reporting the count. Keyset paging is unaffected by deletes.
+                foreach ($due->lazyById() as $report) {
+                    $total++;
+                    $perTopic[$topic->id] = ($perTopic[$topic->id] ?? 0) + 1;
+                    if ($report->state === ReportState::Spam) {
+                        $spamTotal++;
+                    }
+                    if ($dryRun) {
+                        $this->line(sprintf(
+                            'would prune report #%d (%s %s)',
+                            $report->id,
+                            $report->state === ReportState::Spam ? 'flagged spam' : 'concluded',
+                            $report->closed_at?->toDateTimeString() ?? 'unknown',
+                        ));
 
-            // lazyById() pages by keyset (`where id > last`), not OFFSET. each()
-            // /chunk() page with OFFSET, and deleting the rows being paged
-            // shifts every later row left by one page — so each page after the
-            // first skipped exactly the rows that moved into it, silently
-            // leaving reports past their statutory deletion date in place and
-            // over-reporting the count. Keyset paging is unaffected by deletes.
-            $due = Report::query()
-                ->where('topic_id', $topic->id)
-                ->whereNotNull('closed_at')
-                ->where('closed_at', '<', $cutoff)
-                ->with('messages.files')
-                ->lazyById();
+                        continue;
+                    }
 
-            foreach ($due as $report) {
-                $total++;
-                if ($dryRun) {
-                    $this->line(sprintf(
-                        'would prune report #%d (concluded %s)',
-                        $report->id,
-                        $report->closed_at?->toDateTimeString() ?? 'unknown',
-                    ));
-
-                    continue;
-                }
-
-                $ticket = $this->pruneReport($report);
-                if ($ticket !== null) {
-                    $orphanedTickets[] = $ticket;
+                    $ticket = $this->pruneReport($report);
+                    if ($ticket !== null) {
+                        $orphanedTickets[] = $ticket;
+                    }
                 }
             }
         }
 
         $verb = $dryRun ? 'Would prune' : 'Pruned';
-        $this->info(sprintf('%s %d report(s).', $verb, $total));
+        $this->info(sprintf('%s %d report(s), %d of them spam.', $verb, $total, $spamTotal));
+
+        if (! $dryRun && $total > 0) {
+            AuditLog::record('reports.pruned', null, [
+                'count' => $total,
+                'spam_count' => $spamTotal,
+                'per_topic' => $perTopic,
+            ]);
+        }
 
         $this->reportOrphanedOtrsTickets($orphanedTickets, $dryRun);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Concluded reports of $topic whose `closed_at` predates $cutoff, narrowed
+     * to spam only / everything but spam so the two windows never overlap.
+     *
+     * @return Builder<Report>
+     */
+    private function dueQuery(Topic $topic, \DateTimeInterface $cutoff, bool $spamOnly, bool $excludeSpam): Builder
+    {
+        $query = Report::query()
+            ->where('topic_id', $topic->id)
+            ->whereNotNull('closed_at')
+            ->where('closed_at', '<', $cutoff)
+            ->with('messages.files');
+
+        if ($spamOnly) {
+            $query->where('state', ReportState::Spam->value);
+        } elseif ($excludeSpam) {
+            $query->where('state', '!=', ReportState::Spam->value);
+        }
+
+        return $query;
     }
 
     /**

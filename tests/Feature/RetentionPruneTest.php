@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ReportState;
+use App\Models\AuditLog;
 use App\Models\File;
 use App\Models\Message;
 use App\Models\Report;
@@ -30,7 +31,7 @@ class RetentionPruneTest extends TestCase
      * report is closed at that point unless $conclude is false (in which case
      * it stays Open and must never be pruned).
      */
-    private function makeReportAgedDays(Topic $topic, int $daysAgo, bool $conclude = true): Report
+    private function makeReportAgedDays(Topic $topic, int $daysAgo, bool $conclude = true, ReportState $state = ReportState::Done): Report
     {
         $this->travelTo(now()->subDays($daysAgo));
 
@@ -47,7 +48,7 @@ class RetentionPruneTest extends TestCase
         if ($conclude) {
             // Closing stamps `closed_at` at the (travelled) current time, which
             // is the retention anchor the prune command measures against.
-            $report->state = ReportState::Done;
+            $report->state = $state;
             $report->save();
         }
 
@@ -70,6 +71,65 @@ class RetentionPruneTest extends TestCase
         $this->assertDatabaseCount('messages', 0);
         $this->assertDatabaseCount('files', 0);
         $this->assertFalse(Storage::disk('uploads')->exists('blob.txt'));
+    }
+
+    public function test_spam_goes_after_its_own_shorter_window(): void
+    {
+        Storage::fake('uploads');
+        config(['meldeplattform.spam_retention_days' => 90]);
+        $topic = $this->makeTopic(1095);
+        $spam = $this->makeReportAgedDays($topic, 100, state: ReportState::Spam);
+        $genuine = $this->makeReportAgedDays($topic, 100);
+        $freshSpam = $this->makeReportAgedDays($topic, 30, state: ReportState::Spam);
+
+        Artisan::call('reports:prune');
+
+        $this->assertDatabaseMissing('reports', ['id' => $spam->id]);
+        $this->assertDatabaseHas('reports', ['id' => $genuine->id]);
+        $this->assertDatabaseHas('reports', ['id' => $freshSpam->id]);
+        $this->assertStringContainsString('Pruned 1 report(s), 1 of them spam.', Artisan::output());
+    }
+
+    public function test_spam_window_never_exceeds_the_topic_window(): void
+    {
+        Storage::fake('uploads');
+        config(['meldeplattform.spam_retention_days' => 90]);
+        $topic = $this->makeTopic(30);
+        $spam = $this->makeReportAgedDays($topic, 40, state: ReportState::Spam);
+
+        Artisan::call('reports:prune');
+
+        $this->assertDatabaseMissing('reports', ['id' => $spam->id]);
+    }
+
+    public function test_spam_follows_the_topic_window_when_its_own_is_disabled(): void
+    {
+        Storage::fake('uploads');
+        config(['meldeplattform.spam_retention_days' => null]);
+        $topic = $this->makeTopic(1095);
+        $spam = $this->makeReportAgedDays($topic, 100, state: ReportState::Spam);
+
+        Artisan::call('reports:prune');
+
+        $this->assertDatabaseHas('reports', ['id' => $spam->id]);
+    }
+
+    public function test_run_that_deleted_something_is_audit_logged(): void
+    {
+        Storage::fake('uploads');
+        $topic = $this->makeTopic(30);
+        $this->makeReportAgedDays($topic, 40);
+
+        Artisan::call('reports:prune');
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'reports.pruned', 'actor' => 'system']);
+        $entry = AuditLog::where('action', 'reports.pruned')->firstOrFail();
+        $this->assertSame(1, $entry->metadata['count'] ?? null);
+        $this->assertSame([(string) $topic->id => 1], $entry->metadata['per_topic'] ?? null);
+
+        // A run with nothing to do leaves no trace.
+        Artisan::call('reports:prune');
+        $this->assertSame(1, AuditLog::where('action', 'reports.pruned')->count());
     }
 
     public function test_keeps_reports_within_retention_window(): void

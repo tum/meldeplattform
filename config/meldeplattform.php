@@ -1,5 +1,25 @@
 <?php
 
+/*
+ * Parse a "number of days" env window. Unset → $default; 0 → null (feature
+ * off); anything non-numeric or negative is a hard misconfiguration.
+ */
+$dayWindow = static function (string $var, int $default): ?int {
+    $raw = env($var);
+    if ($raw !== null && $raw !== '' && ! is_numeric($raw)) {
+        throw new InvalidArgumentException("{$var} must be a number (or unset). Got: ".(string) $raw);
+    }
+    if (! is_numeric($raw)) {
+        return $default > 0 ? $default : null;
+    }
+    $days = (int) $raw;
+    if ($days < 0) {
+        throw new InvalidArgumentException("{$var} must be a non-negative number. Got: ".(string) $raw);
+    }
+
+    return $days > 0 ? $days : null;
+};
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -69,27 +89,16 @@ return [
     | concluded. Set MELDE_DEFAULT_RETENTION_DAYS=0 to disable the global
     | default and keep reports until a per-topic window is configured.
     */
-    'default_retention_days' => (static function (): ?int {
-        $raw = env('MELDE_DEFAULT_RETENTION_DAYS');
-        if ($raw !== null && $raw !== '' && ! is_numeric($raw)) {
-            throw new InvalidArgumentException(
-                'MELDE_DEFAULT_RETENTION_DAYS must be a number (or unset). Got: '.(string) $raw,
-            );
-        }
+    'default_retention_days' => $dayWindow('MELDE_DEFAULT_RETENTION_DAYS', 1095),
 
-        if (is_numeric($raw)) {
-            $days = (int) $raw;
-            if ($days < 0) {
-                throw new InvalidArgumentException(
-                    'MELDE_DEFAULT_RETENTION_DAYS must be a non-negative number. Got: '.(string) $raw,
-                );
-            }
-
-            return $days > 0 ? $days : null;
-        }
-
-        return 1095;
-    })(),
+    /*
+    | Reports an administrator has flagged as spam are not whistleblower
+    | documentation, so they need not sit out the three-year window. They are
+    | deleted this many days after being flagged (independent of the topic's
+    | window; long enough to undo a mis-flag). 0 = treat spam like any other
+    | concluded report.
+    */
+    'spam_retention_days' => $dayWindow('MELDE_SPAM_RETENTION_DAYS', 90),
 
     /*
     |--------------------------------------------------------------------------
@@ -105,27 +114,37 @@ return [
     |
     | Defaults to 365 days. Set MELDE_INACTIVE_USER_DAYS=0 to disable the cleanup.
     */
-    'inactive_user_days' => (static function (): ?int {
-        $raw = env('MELDE_INACTIVE_USER_DAYS');
-        if ($raw !== null && $raw !== '' && ! is_numeric($raw)) {
-            throw new InvalidArgumentException(
-                'MELDE_INACTIVE_USER_DAYS must be a number (or unset). Got: '.(string) $raw,
-            );
-        }
+    'inactive_user_days' => $dayWindow('MELDE_INACTIVE_USER_DAYS', 365),
 
-        if (is_numeric($raw)) {
-            $days = (int) $raw;
-            if ($days < 0) {
-                throw new InvalidArgumentException(
-                    'MELDE_INACTIVE_USER_DAYS must be a non-negative number. Got: '.(string) $raw,
-                );
-            }
+    /*
+    |--------------------------------------------------------------------------
+    | Dormant administrator access
+    |--------------------------------------------------------------------------
+    | Privileged access that nobody uses is the classic leaver risk: someone
+    | changes role or leaves the university and keeps a way into whistleblower
+    | reports. The scheduled `admins:prune` command revokes topic assignments
+    | and the DB global-admin flag of administrators who have not logged in for
+    | this many days, and drops pre-assigned admins (never logged in) older than
+    | it. Every revocation is audit-logged and the global admins are e-mailed;
+    | access is simply re-granted in /users if the person returns. Admins named
+    | in MELDE_ADMIN_USERS are never touched — that list is the bootstrap path.
+    |
+    | Defaults to 365 days. Set MELDE_DORMANT_ADMIN_DAYS=0 to disable.
+    */
+    'dormant_admin_days' => $dayWindow('MELDE_DORMANT_ADMIN_DAYS', 365),
 
-            return $days > 0 ? $days : null;
-        }
-
-        return 365;
-    })(),
+    /*
+    |--------------------------------------------------------------------------
+    | Audit log retention
+    |--------------------------------------------------------------------------
+    | Audit rows name the acting administrator, so they are personal data and
+    | need a storage limit too. The scheduled `audit:prune` command deletes
+    | entries older than this many days — except entries about a report that
+    | still exists, whose access trail is kept as long as the case file itself.
+    | Defaults to 1095 days (3 years), in step with report retention.
+    | Set MELDE_AUDIT_RETENTION_DAYS=0 to keep the log forever.
+    */
+    'audit_retention_days' => $dayWindow('MELDE_AUDIT_RETENTION_DAYS', 1095),
 
     /*
     |--------------------------------------------------------------------------
