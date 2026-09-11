@@ -49,7 +49,7 @@
         </form>
 
         <div class="table-wrap">
-        <table>
+        <table class="table-cards">
             <thead>
                 <tr>
                     <th style="width: 1%;"><input type="checkbox" data-bulk-select-all aria-label="{{ __('select_all') }}"></th>
@@ -64,33 +64,37 @@
             <tbody>
                 @foreach ($topics as $t)
                     <tr class="topic-row">
-                        <td>
+                        <td class="cell-select">
                             <input type="checkbox" name="ids[]" value="{{ $t->id }}" form="topics-bulk-form"
                                    data-bulk-row aria-label="{{ $t->name($lang) }}">
                         </td>
-                        <td>
+                        <td class="cell-title">
                             <strong>{{ $t->name($lang) }}</strong>
                             @if ($t->require_login)
                                 <span class="muted" style="font-size: 0.8rem;">· {{ __('login_required_badge') }}</span>
                             @endif
                         </td>
-                        <td>
+                        <td class="cell-head-end">
                             @if ($t->isActive())
                                 <span class="status-pill active">{{ __('status_active') }}</span>
                             @else
                                 <span class="status-pill deactivated">{{ __('status_deactivated') }}</span>
                             @endif
                         </td>
-                        <td>{{ $t->reports_count }}</td>
-                        <td>
-                            @forelse ($t->admins as $a)
-                                <span class="topic-chip">{{ $a->user_id }}</span>
-                            @empty
+                        <td data-label="{{ __('reports') }}">{{ $t->reports_count }}</td>
+                        <td data-label="{{ __('admins') }}">
+                            @if ($t->admins->isEmpty())
                                 <span class="muted">—</span>
-                            @endforelse
+                            @else
+                                <span class="chip-list">
+                                    @foreach ($t->admins as $a)
+                                        <span class="topic-chip">{{ $a->user_id }}</span>
+                                    @endforeach
+                                </span>
+                            @endif
                         </td>
-                        <td>{{ $t->retention_days ?? '—' }}</td>
-                        <td class="text-right" style="white-space: nowrap;">
+                        <td data-label="{{ __('retention_days_label') }}">{{ $t->retention_days ?? '—' }}</td>
+                        <td class="text-right cell-actions" style="white-space: nowrap;">
                             <a class="button button-small button-ghost" href="{{ route('topic.edit', $t) }}">{{ __('edit') }}</a>
                             @if ($t->isActive())
                                 <form method="post" action="{{ route('topic.deactivate', $t) }}" style="display: inline;"

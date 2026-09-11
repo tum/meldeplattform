@@ -154,6 +154,17 @@ hr {
     white-space: nowrap;
 }
 
+/* Everything except the user chip lives in the menu: inline on wide
+   screens, a collapsible panel behind .topbar-toggle on small ones. */
+.topbar-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.topbar-toggle { display: none; }
+
 /* Section links as pills; the current section is the filled one. */
 .topbar-nav {
     display: flex;
@@ -200,11 +211,13 @@ hr {
 }
 .topbar-nav .topbar-logout { margin-left: auto; }
 
-/* Language as a two-segment toggle; the current language is the lit segment. */
-.lang-switch {
+/* Language as a two-segment toggle; the current language is the lit segment.
+   The text label only shows inside the small-screen panel. */
+.lang-switch { display: inline-flex; align-items: center; flex: 0 0 auto; gap: 0.6rem; }
+.lang-switch-label { display: none; }
+.lang-switch-options {
     display: inline-flex;
     align-items: center;
-    flex: 0 0 auto;
     gap: 2px;
     padding: 2px;
     border-radius: 999px;
@@ -633,15 +646,12 @@ tbody tr { transition: background 0.1s ease; }
 tbody tr:hover { background: var(--tum-soft); }
 tbody tr:last-child td { border-bottom: 0; }
 
-/* Scroll container for wide admin tables. `overflow-x: auto` also clips
-   vertical overflow, so this unconditional variant is only for tables
-   without popouts (audit, users, topics). The report tables, whose status
-   menu pops out of its row, use .table-wrap-narrow: it only becomes a
-   scroll container below 720px, where the status menu is rendered inline
-   (see the media query) and therefore never has to escape the clip. */
+/* Scroll container for wide admin tables at tablet widths. `overflow-x:
+   auto` also clips vertical overflow, so only tables without popouts
+   (audit, users, topics) use it; below 720px every .table-cards table
+   turns into a stack of cards anyway and no longer needs to scroll. */
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.table-wrap > table,
-.table-wrap-narrow > table { min-width: 100%; }
+.table-wrap > table { min-width: 100%; }
 
 .table-empty {
     padding: 2.5rem 1rem;
@@ -1242,47 +1252,170 @@ a.pagination-link:focus-visible {
 /* ---------- Responsive ---------- */
 
 @media (max-width: 720px) {
-    /* Row 1: user chip + language toggle. Row 2: the section links as one
-       horizontally scrollable strip that bleeds to the viewport edges, so
-       nothing wraps and every item stays a full-size tap target. */
+    /* ---- Header: user chip + toggle; nav and language in a panel ---- */
     .topbar .container {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        grid-template-areas: "user lang" "nav nav";
-        gap: 0.3rem 0.75rem;
-        padding-top: 0.5rem;
+        flex-wrap: wrap;
+        gap: 0.5rem 0.75rem;
+        min-height: 48px;
+        padding-top: 0.35rem;
         padding-bottom: 0.35rem;
     }
-    .topbar-user { grid-area: user; justify-self: start; }
-    .lang-switch { grid-area: lang; }
-    .topbar-nav {
-        grid-area: nav;
-        gap: 0.1rem;
-        margin: 0 -1.5rem;
-        padding: 0.1rem 1.5rem 0.2rem;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -webkit-overflow-scrolling: touch;
-        /* Fade the trailing edge as a hint that the strip scrolls. */
-        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent);
-        mask-image: linear-gradient(to right, #000 calc(100% - 1.25rem), transparent);
+    .topbar-user { flex: 0 1 auto; max-width: calc(100% - 3.5rem); }
+    .topbar-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        margin-left: auto;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        cursor: pointer;
     }
-    .topbar-nav::-webkit-scrollbar { display: none; }
-    /* Signed out there is no chip: the (short) nav takes its slot on row 1. */
-    .topbar-nav:first-child { grid-area: user; margin: 0; padding: 0; mask-image: none; -webkit-mask-image: none; overflow: visible; }
-    .topbar-nav .topbar-logout { margin-left: 0.35rem; }
+    .topbar-toggle:hover { background: rgba(255, 255, 255, 0.18); }
+    .topbar-toggle:focus-visible { outline: 0; box-shadow: 0 0 0 2px var(--tum-hover-tint); }
+    .topbar-toggle .icon-close { display: none; }
+    .topbar[data-menu="open"] .topbar-toggle .icon-menu { display: none; }
+    .topbar[data-menu="open"] .topbar-toggle .icon-close { display: block; }
+
+    .topbar-menu {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 0.25rem;
+        padding: 0.25rem 0 0.6rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .topbar[data-menu="closed"] .topbar-menu { display: none; }
+    .topbar-nav { flex-direction: column; align-items: stretch; gap: 0.15rem; }
+    .topbar-nav a,
+    .topbar-nav .linkish {
+        justify-content: flex-start;
+        width: 100%;
+        padding: 0.65rem 0.85rem;
+        border-radius: var(--radius);
+        font-size: 0.95rem;
+        text-align: left;
+    }
+    .topbar-nav .topbar-logout { margin: 0.35rem 0 0; border-top: 1px solid rgba(255, 255, 255, 0.12); border-radius: 0 0 var(--radius) var(--radius); }
+    .lang-switch {
+        justify-content: space-between;
+        padding: 0.35rem 0.85rem;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.75);
+    }
+    .lang-switch-label { display: inline; }
 
     .masthead .container { gap: 1rem; }
     .masthead .tum-logo { width: 44px; }
+
+    /* Search/status filter row (topics, users): stack label, control, button. */
+    .filter-bar { gap: 0.35rem 0.5rem; width: 100%; }
+    .filter-bar label { width: 100%; }
+    .filter-bar input[type="search"],
+    .filter-bar select { flex: 1 1 100%; }
+    .filter-bar .button { width: 100%; margin-top: 0.25rem; }
+    /* Bulk-action bar: count on its own line, buttons share the next one. */
+    .bulk-bar { flex-wrap: wrap; gap: 0.5rem; }
+    .bulk-bar-actions { width: 100%; }
+    .bulk-bar-actions .button { flex: 1 1 auto; }
+
+    /* Filter strip: one control per line, the buttons share the last row. */
+    .toolbar { gap: 0.6rem 0.75rem; padding: 0.9rem 1rem; }
+    .toolbar label { width: 100%; }
+    .toolbar label select { flex: 1 1 auto; }
+    .toolbar > .button { flex: 1 1 auto; }
+    .toolbar .toolbar-end { flex: 1 1 auto; margin-left: 0; }
+    .toolbar .toolbar-end .button { flex: 1 1 auto; }
+
     .topic-card { flex-direction: column; align-items: stretch; }
     .topic-card .actions { justify-content: flex-start; }
     .bubble { max-width: 100%; }
     th, td { padding: 0.55rem 0.65rem; font-size: 0.88rem; }
     .pagination { justify-content: center; }
     .pagination-summary { width: 100%; text-align: center; }
-    .table-wrap-narrow { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .site-footer .container { flex-direction: column; align-items: flex-start; }
+
+    /* ---- Tables become a stack of cards ----
+       Each <tr> is a card: a header line (checkbox, .cell-title cells,
+       .cell-head-end pill), an optional full-width .cell-status line, then
+       one labelled line per td[data-label] (label from the attribute) and
+       the .cell-actions buttons stretched across the bottom. Ordering is
+       done with flex `order`, so the source keeps the desktop column order. */
+    .table-cards { display: block; border: 0; background: transparent; }
+    .table-cards thead { display: none; }
+    .table-cards tbody { display: block; }
+    .table-cards tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem 0.6rem;
+        margin-bottom: 0.75rem;
+        padding: 0.9rem 1rem;
+        background: #fff;
+        border: 1px solid var(--tum-border-soft);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xs);
+    }
+    .table-cards tbody tr:hover { background: #fff; }
+    .table-cards td {
+        display: block;
+        padding: 0;
+        border: 0;
+        font-size: 0.92rem;
+        text-align: left;
+        white-space: normal;
+    }
+    .table-cards .cell-select { order: 0; }
+    .table-cards .cell-title {
+        order: 1;
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--tum-text-heading);
+        min-width: 0;
+    }
+    .table-cards .cell-title:last-of-type { flex: 1 1 auto; }
+    .table-cards .cell-head-end { order: 2; margin-left: auto; }
+    .table-cards .cell-status { order: 3; width: 100%; }
+    /* Label in column 1, value in column 2. Multi-element values (chip
+       lists) are wrapped in a single .chip-list span in the markup so they
+       stay one grid item; justify-items keeps inline-blocks from being
+       stretched to the column width. */
+    .table-cards td[data-label] {
+        order: 4;
+        display: grid;
+        grid-template-columns: 6.5rem minmax(0, 1fr);
+        gap: 0.75rem;
+        align-items: baseline;
+        justify-items: start;
+        width: 100%;
+    }
+    .table-cards td[data-label]::before {
+        content: attr(data-label);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--tum-muted);
+    }
+    .table-cards .cell-actions {
+        order: 5;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        width: 100%;
+        margin-top: 0.35rem;
+    }
+    .table-cards .cell-actions form { display: contents; }
+    .table-cards .cell-actions .button { flex: 1 1 auto; }
+    .table-cards .table-empty { width: 100%; padding: 1.5rem 0; }
+    /* Two-line timestamp reads as one line inside a card header. */
+    .table-cards .cell-time small { display: inline; margin-left: 0.35rem; }
     /* Status menu opens in-flow below the pill instead of floating over
-       the row, so the scroll container above can't clip it. */
+       the card, so it can't collide with the lines beneath. */
     .status-menu { display: block; }
     .status-menu-options {
         position: static;
@@ -1290,11 +1423,8 @@ a.pagination-link:focus-visible {
         min-width: 0;
         box-shadow: none;
     }
-    .site-footer .container { flex-direction: column; align-items: flex-start; }
-    /* The nav labels no longer break mid-word, so let the bar itself wrap
-       before it can push the page wider than the viewport. */
-    .topbar .container { flex-wrap: wrap; padding-top: 0.35rem; padding-bottom: 0.35rem; }
-    .topbar .left { flex-wrap: wrap; gap: 0.5rem 0.9rem; }
+    .status-menu + .unread-badge { margin: 0.35rem 0.35rem 0 0; }
+    .kv-list { min-width: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

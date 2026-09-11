@@ -1,4 +1,8 @@
-<div class="topbar">
+{{-- data-menu="closed" collapses the nav behind the toggle on small screens;
+     app.js flips it. The <noscript> block below keeps the menu reachable
+     when scripts are off. On wide screens the CSS ignores the attribute. --}}
+<div class="topbar" data-topbar data-menu="closed">
+    <noscript><style>.topbar-menu { display: flex !important; }</style></noscript>
     <div class="container">
         @auth
             <span class="topbar-user" title="{{ auth()->user()->name ?: auth()->user()->uid }}">
@@ -7,43 +11,61 @@
                 </svg>
                 <span class="topbar-user-name">{{ auth()->user()->name ?: auth()->user()->uid }}</span>
             </span>
-            @php
-                // Section highlight for the current page. Topic editing and
-                // per-topic report lists count as "Topics"; a single report can
-                // be reached from either section, so it highlights neither.
-                $nav = [
-                    ['route' => 'dashboard', 'label' => __('dashboard'), 'active' => request()->routeIs('dashboard', 'dashboard.*')],
-                    ['route' => 'topics.index', 'label' => __('topics'), 'active' => request()->routeIs('topics.*', 'topic.*')],
-                ];
-                if (auth()->user()->can('manage', App\Models\User::class)) {
-                    $nav[] = ['route' => 'users.index', 'label' => __('users'), 'active' => request()->routeIs('users.*')];
-                    $nav[] = ['route' => 'audit.index', 'label' => __('audit_title'), 'active' => request()->routeIs('audit.*')];
-                }
-            @endphp
-            <nav class="topbar-nav" aria-label="{{ __('main_navigation') }}">
-                @foreach ($nav as $item)
-                    <a href="{{ route($item['route']) }}" @class(['is-active' => $item['active']]){!! $item['active'] ? ' aria-current="page"' : '' !!}>{{ $item['label'] }}</a>
-                @endforeach
-                {{-- Logout is a POST so it cannot be triggered cross-origin. --}}
-                <form method="POST" action="{{ Route::has('dev.logout') ? route('dev.logout') : route('saml.logout') }}" style="display:contents">
-                    @csrf
-                    <button type="submit" class="linkish topbar-logout">{{ __('logout') }}</button>
-                </form>
-            </nav>
-        @else
-            <nav class="topbar-nav" aria-label="{{ __('main_navigation') }}">
-                <a href="{{ route('saml.login') }}">{{ __('login') }}</a>
-                @if (Route::has('dev.login'))
-                    <a href="{{ route('dev.login') }}" class="topbar-nav-muted">Dev-Login</a>
-                @endif
-            </nav>
         @endauth
-        {{-- Segmented toggle; the active language reads as the pressed segment. --}}
-        <form method="POST" action="{{ route('lang.set') }}" class="lang-switch" aria-label="{{ __('language') }}">
-            @csrf
-            <button type="submit" name="lang" value="de" class="lang-btn {{ $lang === 'de' ? 'active' : '' }}" aria-pressed="{{ $lang === 'de' ? 'true' : 'false' }}"><abbr lang="de" title="Deutsch">de</abbr></button>
-            <button type="submit" name="lang" value="en" class="lang-btn {{ $lang === 'en' ? 'active' : '' }}" aria-pressed="{{ $lang === 'en' ? 'true' : 'false' }}"><abbr lang="en" title="English">en</abbr></button>
-        </form>
+
+        <button type="button" class="topbar-toggle" data-topbar-toggle
+                aria-expanded="false" aria-controls="topbar-menu" aria-label="{{ __('menu') }}">
+            <svg class="icon-menu" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M4 7h16M4 12h16M4 17h16"/>
+            </svg>
+            <svg class="icon-close" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M6 6l12 12M18 6L6 18"/>
+            </svg>
+        </button>
+
+        <div class="topbar-menu" id="topbar-menu">
+            @auth
+                @php
+                    // Section highlight for the current page. Topic editing and
+                    // per-topic report lists count as "Topics"; a single report can
+                    // be reached from either section, so it highlights neither.
+                    $nav = [
+                        ['route' => 'dashboard', 'label' => __('dashboard'), 'active' => request()->routeIs('dashboard', 'dashboard.*')],
+                        ['route' => 'topics.index', 'label' => __('topics'), 'active' => request()->routeIs('topics.*', 'topic.*')],
+                    ];
+                    if (auth()->user()->can('manage', App\Models\User::class)) {
+                        $nav[] = ['route' => 'users.index', 'label' => __('users'), 'active' => request()->routeIs('users.*')];
+                        $nav[] = ['route' => 'audit.index', 'label' => __('audit_title'), 'active' => request()->routeIs('audit.*')];
+                    }
+                @endphp
+                <nav class="topbar-nav" aria-label="{{ __('main_navigation') }}">
+                    @foreach ($nav as $item)
+                        <a href="{{ route($item['route']) }}" @class(['is-active' => $item['active']]){!! $item['active'] ? ' aria-current="page"' : '' !!}>{{ $item['label'] }}</a>
+                    @endforeach
+                    {{-- Logout is a POST so it cannot be triggered cross-origin. --}}
+                    <form method="POST" action="{{ Route::has('dev.logout') ? route('dev.logout') : route('saml.logout') }}" style="display:contents">
+                        @csrf
+                        <button type="submit" class="linkish topbar-logout">{{ __('logout') }}</button>
+                    </form>
+                </nav>
+            @else
+                <nav class="topbar-nav" aria-label="{{ __('main_navigation') }}">
+                    <a href="{{ route('saml.login') }}">{{ __('login') }}</a>
+                    @if (Route::has('dev.login'))
+                        <a href="{{ route('dev.login') }}" class="topbar-nav-muted">Dev-Login</a>
+                    @endif
+                </nav>
+            @endauth
+            {{-- Segmented toggle; the active language reads as the pressed segment. --}}
+            <form method="POST" action="{{ route('lang.set') }}" class="lang-switch" aria-label="{{ __('language') }}">
+                @csrf
+                <span class="lang-switch-label" aria-hidden="true">{{ __('language') }}</span>
+                <span class="lang-switch-options">
+                    <button type="submit" name="lang" value="de" class="lang-btn {{ $lang === 'de' ? 'active' : '' }}" aria-pressed="{{ $lang === 'de' ? 'true' : 'false' }}"><abbr lang="de" title="Deutsch">de</abbr></button>
+                    <button type="submit" name="lang" value="en" class="lang-btn {{ $lang === 'en' ? 'active' : '' }}" aria-pressed="{{ $lang === 'en' ? 'true' : 'false' }}"><abbr lang="en" title="English">en</abbr></button>
+                </span>
+            </form>
+        </div>
     </div>
 </div>
 

@@ -66,8 +66,7 @@
     @if ($reports->isEmpty())
         <div class="alert alert-info">{{ $topics->isEmpty() ? __('no_reports_yet') : __('dashboard_no_matches') }}</div>
     @else
-        <div class="table-wrap-narrow">
-        <table>
+        <table class="table-cards">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -85,11 +84,11 @@
                         $statusUrl = route('report.status', ['topic' => $r->topic_id, 'report' => $r->id]);
                     @endphp
                     <tr class="dashboard-row">
-                        <td>#{{ $r->id }}</td>
-                        <td>{{ $r->topic->name($lang) }}</td>
-                        <td>{{ $r->dateFmt() }}</td>
-                        <td>{{ $r->creator ?: __('anonymous') }}</td>
-                        <td>
+                        <td class="cell-title">#{{ $r->id }}</td>
+                        <td class="cell-title">{{ $r->topic->name($lang) }}</td>
+                        <td data-label="{{ __('date') }}">{{ $r->dateFmt() }}</td>
+                        <td data-label="{{ __('contact') }}">{{ $r->creator ?: __('anonymous') }}</td>
+                        <td class="cell-status">
                             <details class="status-menu">
                                 <summary class="status-pill {{ $r->state->value }}" title="{{ __('change_status') }}">
                                     {{ $r->statusLabel() }}
@@ -122,8 +121,8 @@
                                 <span class="unread-badge overdue" title="{{ __('feedback_overdue') }}">{{ __('feedback_overdue') }}</span>
                             @endif
                         </td>
-                        <td>{{ $r->messages->count() }}</td>
-                        <td class="text-right">
+                        <td data-label="{{ __('messages') }}">{{ $r->messages->count() }}</td>
+                        <td class="text-right cell-actions">
                             <a class="button button-small button-ghost"
                                href="{{ route('admin.report.show', ['topic' => $r->topic_id, 'report' => $r->id]) }}">{{ __('open') }} →</a>
                         </td>
@@ -131,7 +130,6 @@
                 @endforeach
             </tbody>
         </table>
-        </div>
 
         {{ $reports->links() }}
     @endif
