@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 // Enforce data retention daily. Topics with no effective retention window
@@ -36,3 +37,10 @@ Schedule::command('reports:remind')->dailyAt('07:00');
 // for a day. Two poll runs overlapping is harmless (the high-water mark makes
 // imports idempotent); a day of silence is not.
 Schedule::command('otrs:poll-replies')->everyFiveMinutes()->withoutOverlapping(10);
+
+// Heartbeat for the /stats page: proves the host crontab is actually waking
+// the scheduler. Shared hosting cron entries silently stop; without a signal
+// every prune and reminder above would just never run again.
+Schedule::call(static function (): void {
+    Cache::forever('scheduler.heartbeat', now()->toIso8601String());
+})->everyFiveMinutes()->name('scheduler-heartbeat');

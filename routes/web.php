@@ -8,6 +8,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ReportAccessController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SamlController;
+use App\Http\Controllers\StatsController;
 use App\Http\Controllers\SubmitController;
 use App\Http\Controllers\TopicAdminController;
 use App\Http\Controllers\UserController;
@@ -172,6 +173,7 @@ Route::middleware('auth')->group(function (): void {
         ->name('report.status.bulk');
 
     Route::middleware('can:manage,'.User::class)->group(function (): void {
+        Route::get('/stats', [StatsController::class, 'index'])->name('stats.index');
         Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');

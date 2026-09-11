@@ -38,6 +38,7 @@
                     }
                     if (auth()->user()->can('manage', App\Models\User::class)) {
                         $nav[] = ['route' => 'users.index', 'label' => __('users'), 'active' => request()->routeIs('users.*')];
+                        $nav[] = ['route' => 'stats.index', 'label' => __('stats_title'), 'active' => request()->routeIs('stats.*')];
                         $nav[] = ['route' => 'audit.index', 'label' => __('audit_title'), 'active' => request()->routeIs('audit.*')];
                     }
                 @endphp

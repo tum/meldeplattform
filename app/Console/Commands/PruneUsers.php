@@ -2,11 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Admin;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\Retention;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 /**
@@ -38,7 +37,7 @@ class PruneUsers extends Command
         $cutoff = Carbon::now()->subDays($days);
         $dryRun = (bool) $this->option('dry-run');
 
-        $query = $this->pruneableQuery($cutoff);
+        $query = Retention::inactiveUsers($cutoff);
 
         $total = 0;
         if ($dryRun) {
@@ -67,36 +66,5 @@ class PruneUsers extends Command
         $this->info(sprintf('%s %d inactive user(s).', $verb, $total));
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Role-less users whose last login (or account creation, for rows predating
-     * the last_login_at column) is older than the cutoff.
-     *
-     * @return Builder<User>
-     */
-    private function pruneableQuery(Carbon $cutoff): Builder
-    {
-        // UIDs that carry a role are loaded up front — the `admins` table holds
-        // only actual admins, so this set stays small regardless of how many
-        // plain users have accumulated.
-        /** @var list<string> $envAdmins */
-        $envAdmins = array_values(array_filter(
-            (array) config('meldeplattform.admin_users', []),
-            'is_string',
-        ));
-        /** @var list<string> $adminUids */
-        $adminUids = Admin::query()->pluck('user_id')->all();
-        $keepUids = array_values(array_unique(array_merge($envAdmins, $adminUids)));
-
-        return User::query()
-            ->where('is_global_admin', false)
-            ->whereNotIn('uid', $keepUids)
-            ->where(function (Builder $q) use ($cutoff): void {
-                $q->where('last_login_at', '<', $cutoff)
-                    ->orWhere(function (Builder $inner) use ($cutoff): void {
-                        $inner->whereNull('last_login_at')->where('created_at', '<', $cutoff);
-                    });
-            });
     }
 }

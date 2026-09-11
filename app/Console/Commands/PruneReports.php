@@ -8,8 +8,8 @@ use App\Models\File;
 use App\Models\Message;
 use App\Models\Report;
 use App\Models\Topic;
+use App\Support\Retention;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -48,22 +48,19 @@ class PruneReports extends Command
         /** @var list<array{report_id: int, ticket_id: string, ticket_number: string|null}> $orphanedTickets */
         $orphanedTickets = [];
 
-        $spamDays = config('meldeplattform.spam_retention_days');
-        $spamDays = is_int($spamDays) && $spamDays > 0 ? $spamDays : null;
-
         foreach (Topic::query()->lazy() as $topic) {
             $days = $topic->effectiveRetentionDays();
 
             // Spam uses its own window when one is configured — never longer
             // than the topic's, so spam can't outlive genuine reports. With
             // none it is treated like any other concluded report.
-            $topicSpamDays = $spamDays === null ? null : ($days === null ? $spamDays : min($spamDays, $days));
+            $topicSpamDays = Retention::spamWindowFor($days);
             $queries = [];
             if ($days !== null) {
-                $queries[] = $this->dueQuery($topic, now()->subDays($days), spamOnly: false, excludeSpam: $topicSpamDays !== null);
+                $queries[] = Retention::reportsDue($topic, now()->subDays($days), spamOnly: false, excludeSpam: $topicSpamDays !== null);
             }
             if ($topicSpamDays !== null) {
-                $queries[] = $this->dueQuery($topic, now()->subDays($topicSpamDays), spamOnly: true, excludeSpam: false);
+                $queries[] = Retention::reportsDue($topic, now()->subDays($topicSpamDays), spamOnly: true, excludeSpam: false);
             }
 
             foreach ($queries as $due) {
@@ -73,7 +70,7 @@ class PruneReports extends Command
                 // first skipped exactly the rows that moved into it, silently
                 // leaving reports past their statutory deletion date in place and
                 // over-reporting the count. Keyset paging is unaffected by deletes.
-                foreach ($due->lazyById() as $report) {
+                foreach ($due->with('messages.files')->lazyById() as $report) {
                     $total++;
                     $perTopic[$topic->id] = ($perTopic[$topic->id] ?? 0) + 1;
                     if ($report->state === ReportState::Spam) {
@@ -112,29 +109,6 @@ class PruneReports extends Command
         $this->reportOrphanedOtrsTickets($orphanedTickets, $dryRun);
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Concluded reports of $topic whose `closed_at` predates $cutoff, narrowed
-     * to spam only / everything but spam so the two windows never overlap.
-     *
-     * @return Builder<Report>
-     */
-    private function dueQuery(Topic $topic, \DateTimeInterface $cutoff, bool $spamOnly, bool $excludeSpam): Builder
-    {
-        $query = Report::query()
-            ->where('topic_id', $topic->id)
-            ->whereNotNull('closed_at')
-            ->where('closed_at', '<', $cutoff)
-            ->with('messages.files');
-
-        if ($spamOnly) {
-            $query->where('state', ReportState::Spam->value);
-        } elseif ($excludeSpam) {
-            $query->where('state', '!=', ReportState::Spam->value);
-        }
-
-        return $query;
     }
 
     /**

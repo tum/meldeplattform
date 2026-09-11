@@ -70,6 +70,13 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
   Alle Löschläufe schreiben einen Audit-Eintrag mit Zählern.
 - **CSV-Export** der (gefilterten) Dashboard-Meldungen für Audits/Reporting –
   nur Fall-Metadaten, keine Meldeinhalte; der Export wird auditiert.
+- **Statistik** (`/stats`, nur globale Admins): Fallbearbeitung (Aktiv,
+  Überfällig, Eingang pro Monat, Status, nach Thema, Median bis
+  Eingangsbestätigung, Fristtreue), Kommunikation, Personen & Zugriff,
+  Aufbewahrung (was der nächste Löschlauf löscht, letzte Löschung) und
+  Systemzustand (Versionen, Datenbank, Speicher, Dienste, Integrationen) mit
+  einer Prüfliste inkl. Scheduler-Heartbeat. Nur Zahlen und Konfiguration –
+  keine Meldeinhalte.
 - **Append-only Audit-Log** (`/audit`) für sicherheitsrelevante Admin-Aktionen,
   ohne PII meldender Personen oder Meldeinhalte; einzige Löschung ist die
   Aufbewahrungsfrist (`audit:prune`).
@@ -305,6 +312,7 @@ Per `.env` steuerbar (Defaults in Klammern):
 | `MELDE_FEEDBACK_DEADLINE_DAYS` | `90` | Frist für die Rückmeldung (≈ 3 Monate) |
 | `MELDE_REMINDER_ACK_LEAD_DAYS` | `2` | Vorlauf, ab dem `reports:remind` vor der Bestätigungsfrist erinnert |
 | `MELDE_REMINDER_FEEDBACK_LEAD_DAYS` | `14` | Vorlauf vor der Rückmeldefrist |
+| `MELDE_STALE_REPORT_DAYS` | `30` | Aktive Meldungen ohne Nachricht/Statusänderung seit so vielen Tagen werden im Dashboard als „ohne Aktivität" markiert (Badge, Filter, CSV); `0` = aus |
 | `MELDE_DEFAULT_RETENTION_DAYS` | `1095` | Globale Aufbewahrung in Tagen (3 Jahre, HinSchG § 11 Abs. 5); `0` = nur Pro-Topic-Frist nutzen |
 | `MELDE_SPAM_RETENTION_DAYS` | `90` | Als Spam markierte Eingaben werden so viele Tage nach der Markierung gelöscht (nie später als die Topic-Frist); `0` = wie normale Meldungen |
 | `MELDE_INACTIVE_USER_DAYS` | `365` | Rollenlose Accounts ohne Login seit so vielen Tagen werden per `users:prune` gelöscht; `0` = aus |
@@ -331,6 +339,7 @@ Folgende Artisan-Commands sind im Scheduler registriert (`routes/console.php`):
 | `admins:prune` | täglich | Entzieht seit `MELDE_DORMANT_ADMIN_DAYS` ungenutzte Admin-Berechtigungen, verwirft nie genutzte Vormerkungen (no-op bei `0`) |
 | `audit:prune` | täglich | Löscht Audit-Einträge älter als `MELDE_AUDIT_RETENTION_DAYS`, außer zu noch bestehenden Meldungen (no-op bei `0`) |
 | `otrs:poll-replies` | alle 5 Min. | Spiegelt OTRS/Znuny-Antworten in die Meldungen zurück (no-op ohne OTRS-Inbound) |
+| Heartbeat | alle 5 Min. | Schreibt `scheduler.heartbeat` in den Cache; `/stats` warnt, wenn der Cron den Scheduler nicht mehr weckt |
 
 Beide laufen über den Laravel-Scheduler. Es genügt **ein** Cron-Eintrag auf
 dem Host, der den Scheduler jede Minute weckt:

@@ -841,6 +841,11 @@ a.pagination-link:focus-visible {
 }
 /* Overdue is the one report signal that warrants red. */
 .unread-badge.overdue { background: var(--tum-red); }
+/* Stale (no activity) is a nudge, not an alarm: amber. */
+.unread-badge.stale { background: #D9820B; }
+a.unread-badge { text-decoration: none; }
+a.unread-badge:hover { color: #fff; filter: brightness(0.92); }
+.intro-signals { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0; }
 
 /* Sticky action bar shown when one or more reports are selected. */
 .bulk-bar {
@@ -1215,6 +1220,157 @@ a.pagination-link:focus-visible {
 .attachment-audio .attachment-icon   { color: #0F7B8A; background: #E3F3F5; }
 .attachment-video .attachment-icon   { color: #2B5FBF; background: #E9EFFB; }
 
+/* ---------- Statistics page ---------- */
+
+/* Data-viz roles. Marks wear these; text never does (labels stay in the
+   text tokens). The three state hues were validated as a set against the
+   white surface (CVD ΔE ≥ 8, normal ≥ 15); spam is the de-emphasis grey. */
+:root {
+    --viz-1:        #3070B3;   /* single-series magnitude, "open" */
+    --viz-1-soft:   #DCE7F4;   /* lighter step of the same hue (tracks, gaps) */
+    --viz-progress: #D9820B;
+    --viz-done:     #198754;
+    --viz-muted:    #ADB5BD;
+    --viz-grid:     #E9EDF2;
+}
+
+.stats-section { margin-bottom: 2.5rem; }
+.stats-section .section-header .muted { font-size: 0.9rem; }
+
+/* KPI row: label / value / hint. Proportional figures on the big number. */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 0.75rem;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    list-style: none;
+}
+.kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem 1.15rem;
+    background: #fff;
+    border: 1px solid var(--tum-border-soft);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+    min-width: 0;
+}
+.kpi-label { font-size: 0.82rem; font-weight: 500; color: var(--tum-muted); }
+.kpi-value { font-size: 1.9rem; font-weight: 600; line-height: 1.1; color: var(--tum-text-heading); letter-spacing: -0.01em; }
+.kpi-hero .kpi-value { font-size: 3rem; }
+.kpi-hero { grid-row: span 1; }
+.kpi-hint { font-size: 0.8rem; color: var(--tum-muted); display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.kpi-grid-compact .kpi-value { font-size: 1.6rem; }
+
+/* Status dots — shipped with a label, never alone. */
+.dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--tum-muted); flex: 0 0 auto; }
+.dot-ok { background: var(--tum-green); }
+.dot-warn { background: #D9820B; }
+.dot-bad { background: var(--tum-red); }
+
+/* Chart cards */
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    gap: 1rem;
+}
+.chart {
+    margin: 0;
+    padding: 1.1rem 1.25rem 1rem;
+    background: #fff;
+    border: 1px solid var(--tum-border-soft);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+    min-width: 0;
+}
+.chart-wide { grid-column: 1 / -1; }
+.chart figcaption { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.chart figcaption h3 { margin: 0; font-size: 1.02rem; }
+.chart figcaption .muted { font-size: 0.85rem; }
+.chart-foot { margin: 0.75rem 0 0; font-size: 0.85rem; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Inline SVG columns: recessive hairline grid, one-hue fills, big hit areas. */
+.viz { display: block; width: 100%; height: auto; font-family: inherit; }
+.viz-grid { stroke: var(--viz-grid); stroke-width: 1; }
+.viz-tick { font-size: 11px; fill: var(--tum-muted); }
+.viz-value { font-size: 11px; font-weight: 600; fill: var(--tum-text-heading); }
+.viz-fill { fill: var(--viz-1); transition: opacity 0.12s ease; }
+.viz-hit { fill: transparent; }
+.viz-bar { outline: none; cursor: default; }
+.viz-bar:hover .viz-fill, .viz-bar:focus-visible .viz-fill { opacity: 0.75; }
+.viz-bar:focus-visible .viz-hit { fill: rgba(48, 112, 179, 0.08); }
+
+/* Single horizontal stacked bar: 2px surface gaps between segments. */
+.stack { display: flex; gap: 2px; height: 26px; border-radius: 5px; overflow: hidden; background: var(--viz-grid); }
+.stack-seg { display: flex; align-items: center; justify-content: center; min-width: 4px; flex: 0 0 auto; transition: opacity 0.12s ease; outline: none; }
+.stack-seg:hover, .stack-seg:focus-visible { opacity: 0.8; }
+.stack-label { font-size: 0.75rem; font-weight: 600; color: #fff; }
+.seg-open { background: var(--viz-1); }
+.seg-progress { background: var(--viz-progress); }
+.seg-done { background: var(--viz-done); }
+.seg-spam { background: var(--viz-muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; margin: 0.85rem 0 0; padding: 0; list-style: none; font-size: 0.88rem; }
+.legend li { display: inline-flex; align-items: center; gap: 0.45rem; }
+.swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 3px; }
+
+/* Horizontal bars: label · track · value at the tip. */
+.hbars { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.45rem; }
+.hbar { display: grid; grid-template-columns: minmax(7rem, 12rem) 1fr auto; align-items: center; gap: 0.75rem; outline: none; }
+.hbar-label { font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar-track { display: block; height: 12px; border-radius: 4px; background: var(--viz-1-soft); overflow: hidden; }
+.hbar-fill { display: block; height: 100%; background: var(--viz-1); border-radius: 0 4px 4px 0; transition: opacity 0.12s ease; }
+.hbar-fill-muted { background: var(--viz-muted); }
+.hbar-other .hbar-track { background: var(--viz-grid); }
+.hbar:hover .hbar-fill, .hbar:focus-visible .hbar-fill { opacity: 0.75; }
+.hbar-value { font-size: 0.88rem; font-weight: 600; color: var(--tum-text-heading); white-space: nowrap; }
+.hbar-value .muted { font-weight: 400; }
+
+/* Table view behind each chart (accessibility + exact values). */
+.chart-table { margin-top: 0.85rem; font-size: 0.85rem; }
+.chart-table > summary { cursor: pointer; color: var(--tum-primary); list-style: none; }
+.chart-table > summary::-webkit-details-marker { display: none; }
+.chart-table > summary::before { content: "▸ "; color: var(--tum-muted); }
+.chart-table[open] > summary::before { content: "▾ "; }
+.chart-table table { margin-top: 0.5rem; }
+.chart-table th, .chart-table td { padding: 0.35rem 0.6rem; }
+
+/* Technical section: spec cards with dl lists, a health list, a meter. */
+.spec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    gap: 1rem;
+}
+.spec {
+    padding: 1.1rem 1.25rem;
+    background: #fff;
+    border: 1px solid var(--tum-border-soft);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+    min-width: 0;
+}
+.spec h3 { margin: 0 0 0.75rem; font-size: 1.02rem; }
+.spec-list { display: grid; grid-template-columns: minmax(6rem, auto) 1fr; gap: 0.4rem 1rem; margin: 0; font-size: 0.88rem; }
+.spec-list dt { color: var(--tum-muted); }
+.spec-list dd { margin: 0; overflow-wrap: anywhere; }
+.spec-list code { font-size: 0.8rem; }
+
+.spec-checks { grid-column: 1 / -1; }
+.health { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 0.6rem 1.5rem; font-size: 0.88rem; }
+.health li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.3rem 0.6rem; }
+.health-state { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--tum-muted); }
+.health-detail { grid-column: 2 / -1; font-size: 0.78rem; color: var(--tum-muted); overflow-wrap: anywhere; }
+
+/* Disk meter: the unfilled track is a lighter step of the same hue. */
+.meter { display: block; height: 8px; margin-top: 0.45rem; border-radius: 4px; background: var(--viz-1-soft); overflow: hidden; }
+.meter-fill { display: block; height: 100%; background: var(--viz-1); border-radius: 4px; }
+.meter-warning .meter-fill { background: #D9820B; }
+.meter-warning { background: #F8E3C8; }
+.meter-danger .meter-fill { background: var(--tum-red); }
+.meter-danger { background: #F5D0D3; }
+
 /* ---------- Section header ---------- */
 
 .section-header {
@@ -1381,6 +1537,10 @@ a.pagination-link:focus-visible {
     .bulk-bar { flex-wrap: wrap; gap: 0.5rem; }
     .bulk-bar-actions { width: 100%; }
     .bulk-bar-actions .button { flex: 1 1 auto; }
+
+    .hbar { grid-template-columns: 1fr auto; }
+    .hbar-track { grid-column: 1 / -1; order: 3; }
+    .kpi-hero .kpi-value { font-size: 2.4rem; }
 
     /* Filter strip: one control per line, the buttons share the last row. */
     .toolbar { gap: 0.6rem 0.75rem; padding: 0.9rem 1rem; }

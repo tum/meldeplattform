@@ -3,9 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\AuditLog;
-use App\Models\Report;
+use App\Support\Retention;
 use Illuminate\Console\Command;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 
 /**
@@ -41,17 +40,7 @@ class PruneAuditLog extends Command
         $cutoff = Carbon::now()->subDays($days);
         $dryRun = (bool) $this->option('dry-run');
 
-        $query = AuditLog::query()
-            ->where('created_at', '<', $cutoff)
-            ->where(function ($q): void {
-                $q->where('subject_type', '!=', 'report')
-                    ->orWhereNull('subject_type')
-                    ->orWhereNotExists(function (QueryBuilder $sub): void {
-                        $sub->selectRaw('1')
-                            ->from((new Report)->getTable())
-                            ->whereColumn('reports.id', 'audit_logs.subject_id');
-                    });
-            });
+        $query = Retention::auditEntriesDue($cutoff);
 
         if ($dryRun) {
             $count = $query->count();

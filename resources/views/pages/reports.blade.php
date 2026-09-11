@@ -106,6 +106,9 @@
                         @if ($r->isFeedbackOverdue())
                             <span class="unread-badge overdue" title="{{ __('feedback_overdue') }}">{{ __('feedback_overdue') }}</span>
                         @endif
+                        @if (($staleFor = $r->staleForDays()) !== null)
+                            <span class="unread-badge stale" title="{{ __('stale_hint') }}">{{ __('stale_badge', ['days' => $staleFor]) }}</span>
+                        @endif
                     </td>
                     <td data-label="{{ __('messages') }}">{{ $r->messages->count() }}</td>
                     <td class="text-right cell-actions">
