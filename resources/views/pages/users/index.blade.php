@@ -73,6 +73,7 @@
         </form>
     </div>
 
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
@@ -136,8 +137,9 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="muted text-center" style="padding: 2rem;">{{ __('users_none') }}</td></tr>
+                <tr><td colspan="7" class="table-empty">{{ __('users_none') }}</td></tr>
             @endforelse
         </tbody>
     </table>
+    </div>
 @endsection

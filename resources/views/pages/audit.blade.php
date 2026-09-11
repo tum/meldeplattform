@@ -13,7 +13,7 @@
 @endsection
 
 @section('content')
-    <section class="card">
+    <div class="table-wrap">
         <table>
             <thead>
                 <tr>
@@ -27,32 +27,56 @@
             <tbody>
                 @forelse ($entries as $entry)
                     <tr>
-                        <td>{{ $entry->created_at?->format('d.m.Y H:i:s') ?? '—' }}</td>
-                        <td>{{ $entry->actor ?? 'system' }}</td>
-                        <td><code>{{ $entry->action }}</code></td>
-                        <td>
-                            @if ($entry->subject_type !== null)
-                                {{ $entry->subject_type }}#{{ $entry->subject_id }}
+                        <td class="cell-time">
+                            @if ($entry->created_at !== null)
+                                {{ $entry->created_at->format('d.m.Y') }}
+                                <small>{{ $entry->created_at->format('H:i:s') }}</small>
                             @else
                                 —
+                            @endif
+                        </td>
+                        <td>
+                            @if ($entry->actor !== null)
+                                <strong>{{ $entry->actor }}</strong>
+                            @else
+                                <span class="tag">system</span>
+                            @endif
+                        </td>
+                        <td>
+                            {{-- The domain prefix (report./topic./admin.) drives the colour dot. --}}
+                            <code class="audit-action" data-domain="{{ strstr($entry->action, '.', true) ?: $entry->action }}">{{ $entry->action }}</code>
+                        </td>
+                        <td>
+                            @if ($entry->subject_type !== null)
+                                <span class="audit-subject"><span class="muted">{{ $entry->subject_type }}</span>#{{ $entry->subject_id }}</span>
+                            @else
+                                <span class="muted">—</span>
                             @endif
                         </td>
                         <td>
                             @if ($entry->metadata !== null && $entry->metadata !== [])
-                                <code>{{ json_encode($entry->metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</code>
+                                {{-- Metadata is a flat map (scalars or id lists); render it as
+                                     key/value chips rather than a JSON blob. Non-scalars fall
+                                     back to compact JSON so nothing is silently dropped. --}}
+                                <div class="kv-list">
+                                    @foreach ($entry->metadata as $key => $value)
+                                        <span class="kv">
+                                            <span class="kv-key">{{ $key }}</span>
+                                            <span class="kv-value">{{ is_string($value) ? $value : json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</span>
+                                        </span>
+                                    @endforeach
+                                </div>
                             @else
-                                —
+                                <span class="muted">—</span>
                             @endif
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="muted text-center" style="padding: 2rem;">{{ __('audit_none') }}</td></tr>
+                    <tr><td colspan="5" class="table-empty">{{ __('audit_none') }}</td></tr>
                 @endforelse
             </tbody>
         </table>
+    </div>
 
-        <div style="margin-top: 1rem;">
-            {{ $entries->links() }}
-        </div>
-    </section>
+    {{ $entries->links() }}
 @endsection

@@ -92,6 +92,19 @@ h4 { font-size: 1.05rem; font-weight: 600; }
 p  { margin: 0 0 1em; }
 small { color: var(--tum-muted); }
 
+code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.85em;
+    padding: 0.1em 0.4em;
+    color: var(--tum-text-heading);
+    background: var(--tum-soft);
+    border: 1px solid var(--tum-border-soft);
+    border-radius: var(--radius-sm);
+    /* JSON and identifiers carry no spaces; let them break rather than
+       stretch a table past its container. */
+    overflow-wrap: anywhere;
+}
+
 hr {
     border: 0;
     border-top: 1px solid var(--tum-border);
@@ -113,6 +126,8 @@ hr {
     font-weight: 500;
 }
 .topbar a { color: #fff; text-decoration: none; }
+/* Wrap between nav items on narrow screens, never inside a label. */
+.topbar .left > * { white-space: nowrap; }
 .topbar a:hover, .topbar a:focus {
     color: var(--tum-hover-tint);
     text-decoration: none;
@@ -201,6 +216,13 @@ hr {
     padding: clamp(1.25rem, 2.5vw, 2rem) 0;
 }
 .page-intro h1 { margin: 0 0 0.25em; }
+.page-intro h1 .title-context {
+    display: inline-block;
+    font-weight: 400;
+    font-size: 0.55em;
+    color: var(--tum-muted);
+    margin-left: 0.5rem;
+}
 .page-intro p  {
     margin: 0;
     max-width: 70ch;
@@ -234,10 +256,6 @@ hr {
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
     margin-bottom: 1rem;
 }
-.card:hover {
-    border-color: var(--tum-primary);
-    box-shadow: var(--shadow-sm);
-}
 .card-soft {
     background: var(--tum-soft);
     border-color: var(--tum-border-soft);
@@ -262,6 +280,7 @@ hr {
     transition: border-left-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 .topic-card:hover {
+    border-color: var(--tum-primary);
     border-left-color: var(--tum-secondary);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
     transform: translateY(-1px);
@@ -542,6 +561,96 @@ tbody tr { transition: background 0.1s ease; }
 tbody tr:hover { background: var(--tum-soft); }
 tbody tr:last-child td { border-bottom: 0; }
 
+/* Scroll container for wide admin tables on narrow screens. Only for tables
+   without popouts (audit, users, topics): overflow-x also clips vertical
+   overflow, which would cut off the status menu on the report tables. */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap > table { min-width: 100%; }
+
+.table-empty {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--tum-muted);
+}
+
+/* Two-line timestamp (date over time) that never wraps mid-value. */
+.cell-time { white-space: nowrap; line-height: 1.35; }
+.cell-time small { display: block; color: var(--tum-muted); font-size: 0.8rem; }
+
+/* ---------- Pagination ---------- */
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+}
+.pagination-summary {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--tum-muted);
+}
+.pagination-summary strong { color: var(--tum-text-heading); font-weight: 600; }
+.pagination-list {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    margin: 0;
+    padding: 0.25rem;
+    list-style: none;
+    background: #fff;
+    border: 1px solid var(--tum-border-soft);
+    border-radius: 999px;
+    box-shadow: var(--shadow-xs);
+}
+.pagination-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.1rem;
+    height: 2.1rem;
+    padding: 0 0.65rem;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--tum-text);
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.pagination-link svg { width: 1rem; height: 1rem; }
+a.pagination-link:hover {
+    background: var(--tum-soft);
+    color: var(--tum-primary);
+    text-decoration: none;
+}
+a.pagination-link:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(48, 112, 179, 0.35);
+}
+.pagination-link.is-current {
+    background: var(--tum-primary);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(48, 112, 179, 0.35);
+    cursor: default;
+}
+.pagination-link.is-disabled {
+    color: var(--tum-muted);
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.pagination-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.6rem;
+    height: 2.1rem;
+    color: var(--tum-muted);
+    letter-spacing: 0.1em;
+}
+
 /* ---------- Status pill ---------- */
 
 .status-pill {
@@ -648,6 +757,107 @@ tbody tr:last-child td { border-bottom: 0; }
     font-size: 0.88rem;
 }
 
+/* Soft filter strip above the report tables. Replaces the inline-styled
+   .card.card-soft so the checkbox/select/button row lines up on one
+   baseline and keeps its spacing when it wraps on small screens. */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    flex-wrap: wrap;
+    margin: 0 0 1.5rem;
+    padding: 0.8rem 1.25rem;
+    background: var(--tum-soft);
+    border: 1px solid var(--tum-border-soft);
+    border-radius: var(--radius);
+}
+.toolbar label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+.toolbar input[type="checkbox"] { margin: 0; }
+.toolbar select {
+    width: auto;
+    padding: 0.35rem 2rem 0.35rem 0.75rem;
+    font-size: 0.88rem;
+}
+/* Pushes trailing actions (export etc.) to the right edge. */
+.toolbar .toolbar-end { margin-left: auto; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Key/value chips, used for audit-entry metadata instead of a raw JSON
+   dump. Values keep a monospace face so ids and state names scan easily. */
+.kv-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    /* Bounded on both sides: wide enough that a squeezed column scrolls
+       sideways (via .table-wrap) instead of stacking every chip vertically,
+       narrow enough that a long id list wraps rather than dominating the row. */
+    min-width: 22rem;
+    max-width: 36rem;
+}
+.kv {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    max-width: 100%;
+    padding: 0.12rem 0.6rem;
+    background: var(--tum-soft);
+    border: 1px solid var(--tum-border-soft);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+.kv-key { color: var(--tum-muted); white-space: nowrap; }
+.kv-value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-weight: 600;
+    color: var(--tum-text-heading);
+    overflow-wrap: anywhere;
+}
+
+/* Audit log: action names carry a dot tinted by their domain so a column
+   of `report.*` / `topic.*` / `admin.*` rows can be scanned at a glance. */
+.audit-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+}
+.audit-action::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--tum-muted);
+}
+.audit-action[data-domain="report"]::before,
+.audit-action[data-domain="reports"]::before { background: var(--tum-primary); }
+.audit-action[data-domain="topic"]::before  { background: var(--tum-green); }
+.audit-action[data-domain="admin"]::before  { background: var(--tum-red); }
+.audit-subject { white-space: nowrap; }
+.audit-subject .muted { margin-right: 0.15rem; }
+
+/* Small neutral label, e.g. the "system" actor on audit rows. */
+.tag {
+    display: inline-block;
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--tum-border);
+    background: var(--tum-bg);
+    color: var(--tum-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
 /* Grid of topic-access checkboxes used on the /users add + edit forms.
    Inline-flex wrapping (the original layout) re-flowed each row based on
    the longest label in that row, so columns drifted; a CSS grid with a
@@ -745,6 +955,24 @@ tbody tr:last-child td { border-bottom: 0; }
     align-self: flex-end;
     border-right: 4px solid var(--tum-primary);
     background: var(--tum-soft);
+}
+
+/* One-time receipt code shown to a reporter after submitting. Rendered as
+   a ticket-like block; user-select: all lets a single click grab the whole
+   code for copying. */
+.receipt-code {
+    display: inline-block;
+    margin: 0.75rem 0;
+    padding: 0.65rem 1.1rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 1.45rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--tum-text-heading);
+    background: #fff;
+    border: 1px dashed rgba(102, 77, 3, 0.45);
+    border-radius: var(--radius-lg);
+    user-select: all;
 }
 
 /* ---------- Attachments ---------- */
@@ -942,12 +1170,13 @@ tbody tr:last-child td { border-bottom: 0; }
     .topic-card .actions { justify-content: flex-start; }
     .bubble { max-width: 100%; }
     th, td { padding: 0.55rem 0.65rem; font-size: 0.88rem; }
+    .pagination { justify-content: center; }
+    .pagination-summary { width: 100%; text-align: center; }
     .site-footer .container { flex-direction: column; align-items: flex-start; }
-}
-
-@media (max-width: 480px) {
-    .topbar .container { flex-wrap: wrap; }
-    .topbar .left { flex-wrap: wrap; gap: 0.75rem; }
+    /* The nav labels no longer break mid-word, so let the bar itself wrap
+       before it can push the page wider than the viewport. */
+    .topbar .container { flex-wrap: wrap; padding-top: 0.35rem; padding-bottom: 0.35rem; }
+    .topbar .left { flex-wrap: wrap; gap: 0.5rem 0.9rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -29,37 +29,38 @@
 @endsection
 
 @section('content')
-    <form method="GET" action="{{ route('dashboard') }}" class="card card-soft mb-4"
-          style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;">
+    <form method="GET" action="{{ route('dashboard') }}" class="toolbar">
         {{-- Marks a deliberate filter submit so the controller can tell an
              unchecked box apart from a fresh visit (which uses the defaults). --}}
         <input type="hidden" name="filters" value="1">
-        <label style="font-weight: 500; margin: 0; display: flex; gap: 0.4rem; align-items: center;">
+        <label>
             {{ __('topic') }}:
-            <select name="topic" style="width: auto;">
+            <select name="topic">
                 <option value="">{{ __('dashboard_filter_all_topics') }}</option>
                 @foreach ($topics as $t)
                     <option value="{{ $t->id }}" @selected($selectedTopic === $t->id)>{{ $t->name($lang) }}</option>
                 @endforeach
             </select>
         </label>
-        <label style="font-weight: 500; margin: 0;">
+        <label>
             <input type="checkbox" name="hide_closed" value="1" @checked($hideClosed)>
             {{ __('hide_closed') }}
         </label>
-        <label style="font-weight: 500; margin: 0;">
+        <label>
             <input type="checkbox" name="hide_spam" value="1" @checked($hideSpam)>
             {{ __('hide_spam') }}
         </label>
         <button type="submit" class="button button-small">{{ __('apply_filters') }}</button>
-        {{-- Export mirrors the current filter selection. --}}
-        <a class="button button-small button-ghost"
-           href="{{ route('dashboard.export', array_filter([
-               'filters' => '1',
-               'topic' => $selectedTopic ?: null,
-               'hide_closed' => $hideClosed ? '1' : null,
-               'hide_spam' => $hideSpam ? '1' : null,
-           ])) }}">{{ __('export_csv') }}</a>
+        <div class="toolbar-end">
+            {{-- Export mirrors the current filter selection. --}}
+            <a class="button button-small button-ghost"
+               href="{{ route('dashboard.export', array_filter([
+                   'filters' => '1',
+                   'topic' => $selectedTopic ?: null,
+                   'hide_closed' => $hideClosed ? '1' : null,
+                   'hide_spam' => $hideSpam ? '1' : null,
+               ])) }}">{{ __('export_csv') }}</a>
+        </div>
     </form>
 
     @if ($reports->isEmpty())
