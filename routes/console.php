@@ -12,6 +12,15 @@ Schedule::command('reports:prune')->daily();
 // window is disabled (0) or nothing is stale; admins are never pruned.
 Schedule::command('users:prune')->daily();
 
+// Revoke administrator access unused past MELDE_DORMANT_ADMIN_DAYS (and drop
+// pre-assigned admins who never logged in). Audit-logged; global admins are
+// e-mailed a summary. A no-op when disabled (0) or nothing is dormant.
+Schedule::command('admins:prune')->daily();
+
+// Audit entries older than MELDE_AUDIT_RETENTION_DAYS go, except those about a
+// report that still exists. A no-op when disabled (0).
+Schedule::command('audit:prune')->daily();
+
 // Remind case handlers each morning about reports approaching or past an
 // acknowledgement/feedback deadline. A no-op for topics with no configured
 // notification mailbox or no reports needing attention.

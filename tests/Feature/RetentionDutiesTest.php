@@ -73,7 +73,7 @@ class RetentionDutiesTest extends TestCase
         $this->makeConcludedReports($topic, 1200);
 
         $this->prune()
-            ->expectsOutputToContain('Pruned 1200 report(s).')
+            ->expectsOutputToContain('Pruned 1200 report(s), 0 of them spam.')
             ->assertSuccessful();
     }
 
@@ -85,7 +85,7 @@ class RetentionDutiesTest extends TestCase
         $this->makeConcludedReports($topic, 1200);
 
         $this->prune('--dry-run')
-            ->expectsOutputToContain('Would prune 1200 report(s).')
+            ->expectsOutputToContain('Would prune 1200 report(s), 0 of them spam.')
             ->assertSuccessful();
 
         $this->assertSame(1200, Report::count(), 'dry-run deleted something');

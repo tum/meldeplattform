@@ -991,6 +991,7 @@ a.pagination-link:focus-visible {
 .audit-subject .muted { margin-right: 0.15rem; }
 
 /* Small neutral label, e.g. the "system" actor on audit rows. */
+.tag.tag-warning { color: #664d03; background: #fff3cd; border-color: #ffe69c; }
 .tag {
     display: inline-block;
     padding: 0.05rem 0.5rem;

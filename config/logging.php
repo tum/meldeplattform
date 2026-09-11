@@ -12,7 +12,9 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            // `daily` (not `single`): the log carries UIDs, SAML NameIDs and
+            // e-mail addresses in warnings, so it must not grow unbounded.
+            'channels' => explode(',', (string) env('LOG_STACK', 'daily')),
             'ignore_exceptions' => false,
         ],
         'single' => [
@@ -25,7 +27,7 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'days' => 14,
+            'days' => (int) env('LOG_DAILY_DAYS', 30),
             'replace_placeholders' => true,
         ],
         'stderr' => [

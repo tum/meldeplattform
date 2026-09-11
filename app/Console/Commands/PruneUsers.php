@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Admin;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
@@ -55,6 +56,11 @@ class PruneUsers extends Command
             // returns mixed on the Eloquent builder — normalise for the counter.
             $deleted = $query->delete();
             $total = is_numeric($deleted) ? (int) $deleted : 0;
+
+            // Count only: naming the UIDs would re-record what was just erased.
+            if ($total > 0) {
+                AuditLog::record('users.pruned', null, ['count' => $total, 'window_days' => $days]);
+            }
         }
 
         $verb = $dryRun ? 'Would prune' : 'Pruned';

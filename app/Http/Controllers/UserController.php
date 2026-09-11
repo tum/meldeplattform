@@ -112,6 +112,12 @@ class UserController
         $admins = array_values(array_filter($rows, static fn (array $row): bool => $row['role'] !== 'none'));
         $regular = array_values(array_filter($rows, static fn (array $row): bool => $row['role'] === 'none'));
 
+        // Admin access expires automatically after `dormant_admin_days` without
+        // a login (admins:prune). Flag rows past half the window so the change
+        // is never a surprise, and say so in the intro.
+        $dormantDays = config('meldeplattform.dormant_admin_days');
+        $dormantDays = is_int($dormantDays) && $dormantDays > 0 ? $dormantDays : null;
+
         return view('pages.users.index', [
             'admins' => $admins,
             'regular' => $regular,
@@ -119,6 +125,8 @@ class UserController
             'topics' => $topics,
             'q' => $q,
             'role' => $role,
+            'dormantDays' => $dormantDays,
+            'dormantWarnBefore' => $dormantDays === null ? null : now()->subDays(intdiv($dormantDays, 2)),
         ]);
     }
 
