@@ -7,8 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="{{ $appTitle }} – {{ $appSubtitle }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" sizes="any">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    <script src="{{ asset('js/app.js') }}" defer></script>
+    <link rel="stylesheet" href="@asset('css/app.css')">
+    <script src="@asset('js/app.js')" defer></script>
 </head>
 <body>
 

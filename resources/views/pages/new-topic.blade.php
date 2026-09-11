@@ -81,5 +81,5 @@
     {{-- Non-executable JSON data island: browsers never parse this as script,
          so it is allowed under a CSP that forbids 'unsafe-inline' for scripts. --}}
     <script type="application/json" id="new-topic-bootstrap">@json($newTopicBootstrap)</script>
-    <script src="{{ asset('js/new-topic.js') }}" defer></script>
+    <script src="@asset('js/new-topic.js')" defer></script>
 @endsection

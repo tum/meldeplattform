@@ -120,5 +120,5 @@
         </tbody>
     </table>
 
-    <script src="{{ asset('js/reports.js') }}" defer></script>
+    <script src="@asset('js/reports.js')" defer></script>
 @endsection

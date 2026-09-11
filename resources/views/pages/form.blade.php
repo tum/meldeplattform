@@ -153,7 +153,7 @@
         </div>
     </form>
 
-    <script src="{{ asset('js/file-input.js') }}" defer></script>
-    <script src="{{ asset('js/form-draft.js') }}" defer></script>
-    <script src="{{ asset('js/audio-recorder.js') }}" defer></script>
+    <script src="@asset('js/file-input.js')" defer></script>
+    <script src="@asset('js/form-draft.js')" defer></script>
+    <script src="@asset('js/audio-recorder.js')" defer></script>
 @endsection

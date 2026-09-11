@@ -132,5 +132,5 @@
         </div>
     @endif
 
-    <script src="{{ asset('js/topics-admin.js') }}" defer></script>
+    <script src="@asset('js/topics-admin.js')" defer></script>
 @endsection

@@ -9,6 +9,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -55,6 +56,9 @@ class AppServiceProvider extends ServiceProvider
         // this app does not ship, so its icon SVGs render unsized. Use the
         // app.css-styled partial for every ->links() call instead.
         Paginator::defaultView('partials.pagination');
+
+        // @asset('js/app.js') → versioned URL, see App\Support\Asset.
+        Blade::directive('asset', static fn (string $expression): string => "<?php echo e(\App\Support\Asset::url({$expression})); ?>");
 
         // Locale-derived branding strings are cheap config lookups and need
         // to be available inside child views' @section('title', ...)
