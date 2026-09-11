@@ -69,6 +69,29 @@
         });
     });
 
+    // Small-screen menu toggle. The bar ships data-menu="closed"; the CSS
+    // hides .topbar-menu behind that attribute below 720px only, so wide
+    // screens never depend on this handler. Esc closes; a resize past the
+    // breakpoint resets so the panel is never left open in the wide layout.
+    document.querySelectorAll('[data-topbar-toggle]').forEach((btn) => {
+        const bar = btn.closest('[data-topbar]');
+        if (!bar) return;
+        const setOpen = (open) => {
+            bar.dataset.menu = open ? 'open' : 'closed';
+            btn.setAttribute('aria-expanded', String(open));
+        };
+        btn.addEventListener('click', () => setOpen(bar.dataset.menu !== 'open'));
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && bar.dataset.menu === 'open') {
+                setOpen(false);
+                btn.focus();
+            }
+        });
+        window.matchMedia('(min-width: 721px)').addEventListener('change', (e) => {
+            if (e.matches) setOpen(false);
+        });
+    });
+
     // Generic form-submit confirmation via `data-confirm-submit="…"`. Used
     // instead of inline `onsubmit="return confirm(…)"` because the strict
     // CSP (`script-src 'self'`) blocks inline event handlers — the inline

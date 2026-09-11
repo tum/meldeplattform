@@ -172,7 +172,25 @@ class AuditLogTest extends TestCase
         $response->assertSee('class="is-active"', false)
             ->assertSee('aria-current="page">Audit log</a>', false)
             ->assertDontSee('aria-current="page">Dashboard</a>', false)
-            ->assertSee('aria-pressed="true"><abbr lang="en"', false);
+            ->assertSee('aria-pressed="true"><abbr lang="en"', false)
+            // Small-screen toggle ships closed and points at the menu panel.
+            ->assertSee('data-menu="closed"', false)
+            ->assertSee('aria-expanded="false" aria-controls="topbar-menu"', false)
+            ->assertSee('id="topbar-menu"', false);
+    }
+
+    public function test_audit_table_carries_card_labels_for_small_screens(): void
+    {
+        AuditLog::record('report.accessed', null, ['source' => 'otrs']);
+
+        // Below 720px the stylesheet renders each row as a card and takes
+        // the per-cell label from data-label; the markup must provide it.
+        $this->actingAsGlobalAdmin()->get('/audit')
+            ->assertOk()
+            ->assertSee('<table class="table-cards">', false)
+            ->assertSee('<td data-label="Actor">', false)
+            ->assertSee('<td data-label="Details">', false)
+            ->assertSee('class="cell-title"', false);
     }
 
     public function test_audit_page_renders_metadata_as_key_value_chips(): void

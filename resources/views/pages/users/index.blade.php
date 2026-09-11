@@ -74,7 +74,7 @@
     </div>
 
     <div class="table-wrap">
-    <table>
+    <table class="table-cards">
         <thead>
             <tr>
                 <th>{{ __('users_uid_label') }}</th>
@@ -95,11 +95,11 @@
                     $hasTopics = $row['topics']->isNotEmpty();
                 @endphp
                 <tr>
-                    <td><code>{{ $row['uid'] }}</code></td>
-                    <td>{{ $user?->name ?: '—' }}</td>
-                    <td>{{ $user?->email ?: '—' }}</td>
-                    <td>{{ $user?->last_login_at?->format('d.m.Y') ?? '—' }}</td>
-                    <td>
+                    <td class="cell-title"><code>{{ $row['uid'] }}</code></td>
+                    <td data-label="Name">{{ $user?->name ?: '—' }}</td>
+                    <td data-label="{{ __('contact') }}">{{ $user?->email ?: '—' }}</td>
+                    <td data-label="{{ __('users_last_login') }}">{{ $user?->last_login_at?->format('d.m.Y') ?? '—' }}</td>
+                    <td class="cell-status">
                         @if ($isEnvGlobal)
                             <span class="status-pill open" title="{{ __('users_global_env_hint') }}">{{ __('role_global_admin') }} · {{ __('users_global_env') }}</span>
                         @elseif ($isDbGlobal)
@@ -113,16 +113,18 @@
                             <span class="status-pill deactivated">{{ __('role_pending') }}</span>
                         @endif
                     </td>
-                    <td>
+                    <td data-label="{{ __('users_topics_column') }}">
                         @if ($row['topics']->isEmpty())
                             <span class="muted">—</span>
                         @else
-                            @foreach ($row['topics'] as $t)
-                                <span class="topic-chip">{{ $t->name($lang) }}</span>
-                            @endforeach
+                            <span class="chip-list">
+                                @foreach ($row['topics'] as $t)
+                                    <span class="topic-chip">{{ $t->name($lang) }}</span>
+                                @endforeach
+                            </span>
                         @endif
                     </td>
-                    <td class="text-right">
+                    <td class="text-right cell-actions">
                         <a class="button button-small button-ghost"
                            href="{{ route('users.edit', ['uid' => $row['uid']]) }}">{{ __('edit') }}</a>
                         @if (auth()->user()?->uid !== $row['uid'])

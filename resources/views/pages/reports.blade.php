@@ -42,8 +42,7 @@
         </div>
     </div>
 
-    <div class="table-wrap-narrow">
-    <table>
+    <table class="table-cards">
         <thead>
             <tr>
                 <th><input type="checkbox" data-bulk-select-all aria-label="{{ __('select_all') }}"></th>
@@ -60,11 +59,11 @@
                 <tr class="report-row"
                     data-closed="{{ $r->isClosed() ? '1' : '0' }}"
                     data-spam="{{ $r->isSpam() ? '1' : '0' }}">
-                    <td><input type="checkbox" data-bulk-row value="{{ $r->id }}" aria-label="{{ __('select_row') }}"></td>
-                    <td>#{{ $r->id }}</td>
-                    <td>{{ $r->dateFmt() }}</td>
-                    <td>{{ $r->creator ?: __('anonymous') }}</td>
-                    <td>
+                    <td class="cell-select"><input type="checkbox" data-bulk-row value="{{ $r->id }}" aria-label="{{ __('select_row') }}"></td>
+                    <td class="cell-title">#{{ $r->id }}</td>
+                    <td data-label="{{ __('date') }}">{{ $r->dateFmt() }}</td>
+                    <td data-label="{{ __('contact') }}">{{ $r->creator ?: __('anonymous') }}</td>
+                    <td class="cell-status">
                         @php
                             $statusUrl = route('report.status', ['topic' => $topic->id, 'report' => $r->id]);
                         @endphp
@@ -108,8 +107,8 @@
                             <span class="unread-badge overdue" title="{{ __('feedback_overdue') }}">{{ __('feedback_overdue') }}</span>
                         @endif
                     </td>
-                    <td>{{ $r->messages->count() }}</td>
-                    <td class="text-right">
+                    <td data-label="{{ __('messages') }}">{{ $r->messages->count() }}</td>
+                    <td class="text-right cell-actions">
                         <a class="button button-small button-ghost"
                            href="{{ route('admin.report.show', ['topic' => $topic->id, 'report' => $r->id]) }}">{{ __('open') }} →</a>
                     </td>
@@ -120,7 +119,6 @@
             @endif
         </tbody>
     </table>
-    </div>
 
     <script src="{{ asset('js/reports.js') }}" defer></script>
 @endsection

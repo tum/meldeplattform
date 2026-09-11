@@ -14,7 +14,7 @@
 
 @section('content')
     <div class="table-wrap">
-        <table>
+        <table class="table-cards">
             <thead>
                 <tr>
                     <th>{{ __('audit_date') }}</th>
@@ -27,7 +27,7 @@
             <tbody>
                 @forelse ($entries as $entry)
                     <tr>
-                        <td class="cell-time">
+                        <td class="cell-time cell-head-end">
                             @if ($entry->created_at !== null)
                                 {{ $entry->created_at->format('d.m.Y') }}
                                 <small>{{ $entry->created_at->format('H:i:s') }}</small>
@@ -35,25 +35,25 @@
                                 —
                             @endif
                         </td>
-                        <td>
+                        <td data-label="{{ __('audit_actor') }}">
                             @if ($entry->actor !== null)
                                 <strong>{{ $entry->actor }}</strong>
                             @else
                                 <span class="tag">system</span>
                             @endif
                         </td>
-                        <td>
+                        <td class="cell-title">
                             {{-- The domain prefix (report./topic./admin.) drives the colour dot. --}}
                             <code class="audit-action" data-domain="{{ strstr($entry->action, '.', true) ?: $entry->action }}">{{ $entry->action }}</code>
                         </td>
-                        <td>
+                        <td data-label="{{ __('audit_subject') }}">
                             @if ($entry->subject_type !== null)
                                 <span class="audit-subject"><span class="muted">{{ $entry->subject_type }}</span>#{{ $entry->subject_id }}</span>
                             @else
                                 <span class="muted">—</span>
                             @endif
                         </td>
-                        <td>
+                        <td data-label="{{ __('audit_metadata') }}">
                             @if ($entry->metadata !== null && $entry->metadata !== [])
                                 {{-- Metadata is a flat map (scalars or id lists); render it as
                                      key/value chips rather than a JSON blob. Non-scalars fall
