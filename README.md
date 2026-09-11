@@ -70,6 +70,13 @@ TUM-Design und SAML-Login über den TUM Shibboleth-IdP.
   Alle Löschläufe schreiben einen Audit-Eintrag mit Zählern.
 - **CSV-Export** der (gefilterten) Dashboard-Meldungen für Audits/Reporting –
   nur Fall-Metadaten, keine Meldeinhalte; der Export wird auditiert.
+- **Statistik** (`/stats`, nur globale Admins): Fallbearbeitung (Aktiv,
+  Überfällig, Eingang pro Monat, Status, nach Thema, Median bis
+  Eingangsbestätigung, Fristtreue), Kommunikation, Personen & Zugriff,
+  Aufbewahrung (was der nächste Löschlauf löscht, letzte Löschung) und
+  Systemzustand (Versionen, Datenbank, Speicher, Dienste, Integrationen) mit
+  einer Prüfliste inkl. Scheduler-Heartbeat. Nur Zahlen und Konfiguration –
+  keine Meldeinhalte.
 - **Append-only Audit-Log** (`/audit`) für sicherheitsrelevante Admin-Aktionen,
   ohne PII meldender Personen oder Meldeinhalte; einzige Löschung ist die
   Aufbewahrungsfrist (`audit:prune`).
@@ -331,6 +338,7 @@ Folgende Artisan-Commands sind im Scheduler registriert (`routes/console.php`):
 | `admins:prune` | täglich | Entzieht seit `MELDE_DORMANT_ADMIN_DAYS` ungenutzte Admin-Berechtigungen, verwirft nie genutzte Vormerkungen (no-op bei `0`) |
 | `audit:prune` | täglich | Löscht Audit-Einträge älter als `MELDE_AUDIT_RETENTION_DAYS`, außer zu noch bestehenden Meldungen (no-op bei `0`) |
 | `otrs:poll-replies` | alle 5 Min. | Spiegelt OTRS/Znuny-Antworten in die Meldungen zurück (no-op ohne OTRS-Inbound) |
+| Heartbeat | alle 5 Min. | Schreibt `scheduler.heartbeat` in den Cache; `/stats` warnt, wenn der Cron den Scheduler nicht mehr weckt |
 
 Beide laufen über den Laravel-Scheduler. Es genügt **ein** Cron-Eintrag auf
 dem Host, der den Scheduler jede Minute weckt:

@@ -28,6 +28,10 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => (int) env('LOG_DAILY_DAYS', 30),
+            // A new file every day is created by whichever process logs first
+            // (cron or the web server); group-writable keeps the other one
+            // from failing on a file it does not own.
+            'permission' => 0664,
             'replace_placeholders' => true,
         ],
         'stderr' => [

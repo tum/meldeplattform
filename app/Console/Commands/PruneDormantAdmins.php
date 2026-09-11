@@ -6,6 +6,7 @@ use App\Mail\DormantAdminsRevoked;
 use App\Models\Admin;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\Retention;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -50,13 +51,10 @@ class PruneDormantAdmins extends Command
         $cutoff = Carbon::now()->subDays($days);
         $dryRun = (bool) $this->option('dry-run');
 
-        /** @var list<string> $envAdmins */
-        $envAdmins = array_values(array_filter((array) config('meldeplattform.admin_users', []), 'is_string'));
-
         /** @var list<array{uid: string, last_login: string|null, kind: string}> $revoked */
         $revoked = [];
 
-        foreach ($this->dormantAdministrators($cutoff, $envAdmins) as $user) {
+        foreach (Retention::dormantAdministrators($cutoff)->orderBy('uid')->lazyById() as $user) {
             $lastLogin = $user->last_login_at?->toDateTimeString();
             $revoked[] = ['uid' => $user->uid, 'last_login' => $lastLogin, 'kind' => 'dormant'];
             $this->line(sprintf('%s admin access of %s (last login %s)', $dryRun ? 'would revoke' : 'revoked', $user->uid, $lastLogin ?? 'never'));
@@ -65,7 +63,7 @@ class PruneDormantAdmins extends Command
             }
         }
 
-        foreach ($this->expiredPreAssignments($cutoff, $envAdmins) as $admin) {
+        foreach (Retention::expiredPreAssignments($cutoff)->orderBy('user_id')->lazyById() as $admin) {
             $revoked[] = ['uid' => $admin->user_id, 'last_login' => null, 'kind' => 'never_logged_in'];
             $this->line(sprintf('%s pre-assigned admin %s (assigned %s, never logged in)', $dryRun ? 'would drop' : 'dropped', $admin->user_id, $admin->created_at?->toDateString() ?? 'unknown'));
             if (! $dryRun) {
@@ -80,51 +78,6 @@ class PruneDormantAdmins extends Command
         }
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Users holding topic assignments or the DB global-admin flag whose last
-     * login (or account creation, when they never logged in since the column
-     * exists) predates the cutoff.
-     *
-     * @param list<string> $envAdmins
-     * @return iterable<int, User>
-     */
-    private function dormantAdministrators(Carbon $cutoff, array $envAdmins): iterable
-    {
-        /** @var list<string> $topicAdminUids */
-        $topicAdminUids = Admin::query()->pluck('user_id')->all();
-
-        return User::query()
-            ->whereNotIn('uid', $envAdmins)
-            ->where(function ($q) use ($topicAdminUids): void {
-                $q->where('is_global_admin', true)->orWhereIn('uid', $topicAdminUids);
-            })
-            ->where(function ($q) use ($cutoff): void {
-                $q->where('last_login_at', '<', $cutoff)
-                    ->orWhere(function ($inner) use ($cutoff): void {
-                        $inner->whereNull('last_login_at')->where('created_at', '<', $cutoff);
-                    });
-            })
-            ->orderBy('uid')
-            ->lazyById();
-    }
-
-    /**
-     * Pre-assigned admins (an `admins` row without a matching `users` row)
-     * older than the cutoff: the person never showed up to use the access.
-     *
-     * @param list<string> $envAdmins
-     * @return iterable<int, Admin>
-     */
-    private function expiredPreAssignments(Carbon $cutoff, array $envAdmins): iterable
-    {
-        return Admin::query()
-            ->whereNotIn('user_id', $envAdmins)
-            ->whereDoesntHave('user')
-            ->where('created_at', '<', $cutoff)
-            ->orderBy('user_id')
-            ->lazyById();
     }
 
     /**
@@ -153,8 +106,7 @@ class PruneDormantAdmins extends Command
      */
     private function notifyGlobalAdmins(array $revoked, int $days): void
     {
-        /** @var list<string> $envAdmins */
-        $envAdmins = array_values(array_filter((array) config('meldeplattform.admin_users', []), 'is_string'));
+        $envAdmins = Retention::envAdmins();
 
         /** @var list<string> $recipients */
         $recipients = User::query()
