@@ -37,7 +37,14 @@
                         </td>
                         <td data-label="{{ __('audit_actor') }}">
                             @if ($entry->actor !== null)
-                                <strong>{{ $entry->actor }}</strong>
+                                @if (isset($actorNames[$entry->actor]))
+                                    <span class="person">
+                                        <span class="person-name">{{ $actorNames[$entry->actor] }}</span>
+                                        <span class="person-meta"><code>{{ $entry->actor }}</code></span>
+                                    </span>
+                                @else
+                                    <strong>{{ $entry->actor }}</strong>
+                                @endif
                             @else
                                 <span class="tag">system</span>
                             @endif

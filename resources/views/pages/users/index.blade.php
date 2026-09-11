@@ -8,6 +8,15 @@
             <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ __('users') }}</h1>
             <p class="muted">{{ __('users_intro') }}</p>
+            {{-- Platform-wide tallies; unaffected by the search/role filter below. --}}
+            <ul class="stat-row" aria-label="{{ __('users_role_column') }}">
+                <li class="stat"><strong>{{ $counts['global'] }}</strong> {{ __('role_global_admin') }}</li>
+                <li class="stat"><strong>{{ $counts['topic'] }}</strong> {{ __('role_topic_admin') }}</li>
+                @if ($counts['pending'] > 0)
+                    <li class="stat"><strong>{{ $counts['pending'] }}</strong> {{ __('role_pending') }}</li>
+                @endif
+                <li class="stat stat-muted"><strong>{{ $counts['none'] }}</strong> {{ __('role_none') }}</li>
+            </ul>
         </div>
     </section>
 @endsection
@@ -60,88 +69,76 @@
         <form method="GET" action="{{ route('users.index') }}" class="filter-bar">
             <label for="user-search">{{ __('search') }}</label>
             <input id="user-search" type="search" name="q" value="{{ $q }}" autocomplete="off"
-                   placeholder="{{ __('users_uid_label') }}…">
+                   placeholder="{{ __('users_search_placeholder') }}">
             <label for="user-role">{{ __('users_role_column') }}</label>
             <select id="user-role" name="role">
                 <option value="all" @selected($role === 'all')>{{ __('filter_status_all') }}</option>
                 <option value="global" @selected($role === 'global')>{{ __('role_global_admin') }}</option>
                 <option value="topic" @selected($role === 'topic')>{{ __('role_topic_admin') }}</option>
-                <option value="none" @selected($role === 'none')>{{ __('role_none') }}</option>
                 <option value="pending" @selected($role === 'pending')>{{ __('role_pending') }}</option>
+                <option value="none" @selected($role === 'none')>{{ __('role_none') }}</option>
             </select>
             <button type="submit" class="button button-small">{{ __('apply_filters') }}</button>
         </form>
     </div>
 
-    <div class="table-wrap">
-    <table class="table-cards">
-        <thead>
-            <tr>
-                <th>{{ __('users_uid_label') }}</th>
-                <th>Name</th>
-                <th>{{ __('contact') }}</th>
-                <th>{{ __('users_last_login') }}</th>
-                <th>{{ __('users_role_column') }}</th>
-                <th>{{ __('users_topics_column') }}</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($rows as $row)
-                @php
-                    $user = $row['user'];
-                    $isEnvGlobal = $user?->isGlobalAdminViaEnv() ?? false;
-                    $isDbGlobal = $user?->is_global_admin ?? false;
-                    $hasTopics = $row['topics']->isNotEmpty();
-                @endphp
-                <tr>
-                    <td class="cell-title"><code>{{ $row['uid'] }}</code></td>
-                    <td data-label="Name">{{ $user?->name ?: '—' }}</td>
-                    <td data-label="{{ __('contact') }}">{{ $user?->email ?: '—' }}</td>
-                    <td data-label="{{ __('users_last_login') }}">{{ $user?->last_login_at?->format('d.m.Y') ?? '—' }}</td>
-                    <td class="cell-status">
-                        @if ($isEnvGlobal)
-                            <span class="status-pill open" title="{{ __('users_global_env_hint') }}">{{ __('role_global_admin') }} · {{ __('users_global_env') }}</span>
-                        @elseif ($isDbGlobal)
-                            <span class="status-pill done">{{ __('role_global_admin') }}</span>
-                        @elseif ($hasTopics)
-                            <span class="status-pill open">{{ __('role_topic_admin') }}</span>
-                        @else
-                            <span class="muted">—</span>
-                        @endif
-                        @if ($user === null)
-                            <span class="status-pill deactivated">{{ __('role_pending') }}</span>
-                        @endif
-                    </td>
-                    <td data-label="{{ __('users_topics_column') }}">
-                        @if ($row['topics']->isEmpty())
-                            <span class="muted">—</span>
-                        @else
-                            <span class="chip-list">
-                                @foreach ($row['topics'] as $t)
-                                    <span class="topic-chip">{{ $t->name($lang) }}</span>
-                                @endforeach
-                            </span>
-                        @endif
-                    </td>
-                    <td class="text-right cell-actions">
-                        <a class="button button-small button-ghost"
-                           href="{{ route('users.edit', ['uid' => $row['uid']]) }}">{{ __('edit') }}</a>
-                        @if (auth()->user()?->uid !== $row['uid'])
-                            <form method="post" action="{{ route('users.destroy', ['uid' => $row['uid']]) }}"
-                                  style="display: inline;"
-                                  data-confirm-submit="{{ __('users_confirm_revoke', ['uid' => $row['uid']]) }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="button button-small button-danger">{{ __('users_revoke') }}</button>
-                            </form>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="7" class="table-empty">{{ __('users_none') }}</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-    </div>
+    @if ($role !== 'none')
+        <section class="mb-5">
+            <div class="section-header">
+                <h2>{{ __('users_section_admins') }} <span class="muted">({{ count($admins) }})</span></h2>
+            </div>
+            <div class="table-wrap">
+                <table class="table-cards">
+                    <thead>
+                        <tr>
+                            <th>{{ __('users_person_column') }}</th>
+                            <th>{{ __('users_role_column') }}</th>
+                            <th>{{ __('users_topics_column') }}</th>
+                            <th>{{ __('users_last_login') }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($admins as $row)
+                            @include('pages.users._row', ['row' => $row])
+                        @empty
+                            <tr><td colspan="5" class="table-empty">{{ __('users_none_admins') }}</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    @endif
+
+    @if ($role === 'all' || $role === 'none')
+        {{-- Collapsed by default: this list grows with every login-required
+             report and rarely needs attention. A search or the role filter
+             opens it, since then the admin is looking for someone in here. --}}
+        <details class="section-collapsible"{!! $q !== '' || $role === 'none' ? ' open' : '' !!}>
+            <summary>
+                <h2>{{ __('users_section_regular') }} <span class="muted">({{ count($regular) }})</span></h2>
+                <span class="desc">{{ __('users_regular_hint') }}</span>
+            </summary>
+            <div class="table-wrap">
+                <table class="table-cards">
+                    <thead>
+                        <tr>
+                            <th>{{ __('users_person_column') }}</th>
+                            <th>{{ __('users_role_column') }}</th>
+                            <th>{{ __('users_topics_column') }}</th>
+                            <th>{{ __('users_last_login') }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($regular as $row)
+                            @include('pages.users._row', ['row' => $row])
+                        @empty
+                            <tr><td colspan="5" class="table-empty">{{ __('users_none_regular') }}</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    @endif
 @endsection

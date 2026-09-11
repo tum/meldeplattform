@@ -57,6 +57,28 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether this user administers anything at all: a global admin, or a
+     * topic admin with at least one topic assigned. Everyone else who can
+     * sign in (any TUM member, because topics may require login to report)
+     * is a regular user and gets no admin surface — no dashboard, no topic
+     * index, no editor helpers. Memoised per instance because the layout
+     * asks on every page.
+     */
+    public function isAdministrator(): bool
+    {
+        if ($this->isGlobalAdmin()) {
+            return true;
+        }
+
+        return $this->isTopicAdmin ??= Admin::query()
+            ->where('user_id', $this->uid)
+            ->whereHas('topics')
+            ->exists();
+    }
+
+    private ?bool $isTopicAdmin = null;
+
+    /**
      * True when the env config is responsible for this user's global-admin
      * status. Used by the /users UI to render an explanatory chip and to
      * disable the demote toggle (you can't demote what env grants).

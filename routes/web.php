@@ -71,12 +71,17 @@ Route::post('/shib', [SamlController::class, 'acs'])
     ->middleware('throttle:saml')->name('saml.acs');
 
 // Admin of a topic — `auth` ensures a User is bound; `can:` runs the policy.
+// Note that `auth` alone is not an admin check: any TUM member can sign in
+// (topics may require login to report), so every route that exposes admin
+// surface carries at least `can:viewAny,Topic` (= administers something).
 Route::middleware('auth')->group(function (): void {
     // Cross-topic admin landing page.
     Route::get('/dashboard', [TopicAdminController::class, 'dashboard'])
+        ->can('viewAny', Topic::class)
         ->name('dashboard');
 
     Route::get('/dashboard/export', [TopicAdminController::class, 'exportCsv'])
+        ->can('viewAny', Topic::class)
         ->name('dashboard.export');
 
     // Topic administration index — a management table of the topics the user
@@ -100,16 +105,16 @@ Route::middleware('auth')->group(function (): void {
         ->can('create', Topic::class)
         ->name('topic.store');
 
-    // Live summary preview for the editor: renders arbitrary markdown through
-    // the same sanitiser as the public page. Not topic-specific and exposes no
-    // data, so the group's `auth` gate is sufficient.
+    // Editor helpers. Not topic-specific — a topic-admin editing their own
+    // topic needs them too — so they are gated on "administers something"
+    // rather than on a single topic.
     Route::post('/api/topic/summary-preview', [TopicAdminController::class, 'previewSummary'])
+        ->can('viewAny', Topic::class)
         ->name('topic.summary.preview');
-
-    // Live OTRS queue list for the editor's per-topic OTRS dropdown. Exposes
-    // only queue names to authenticated admins, so the group's `auth` gate is
-    // sufficient (and lets topic-admins editing their own topic use it too).
+    // The OTRS queue list is internal ticketing structure; keep it off the
+    // regular-user surface.
     Route::get('/api/otrs/queues', [TopicAdminController::class, 'otrsQueues'])
+        ->can('viewAny', Topic::class)
         ->name('otrs.queues');
 
     Route::get('/newTopic/{topic}', [TopicAdminController::class, 'edit'])

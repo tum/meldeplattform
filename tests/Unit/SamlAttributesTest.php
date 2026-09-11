@@ -33,30 +33,44 @@ class SamlAttributesTest extends TestCase
         $this->assertSame('Mustermann', SamlAttributes::displayName(['sn' => ['Mustermann']]));
     }
 
-    public function test_falls_back_to_display_name_attribute(): void
-    {
-        // No imvorname/sn — use the ready-made display name.
-        $this->assertSame('Max Mustermann', SamlAttributes::displayName([
-            'imanzeigename' => ['Max Mustermann'],
-        ]));
-    }
-
-    public function test_falls_back_to_legacy_display_name_friendly_name(): void
-    {
-        $this->assertSame('Legacy Name', SamlAttributes::displayName([
-            'displayName' => ['Legacy Name'],
-        ]));
-    }
-
-    public function test_composed_name_takes_precedence_over_display_name(): void
+    public function test_display_name_attribute_wins_over_everything(): void
     {
         $name = SamlAttributes::displayName([
+            'displayName' => ['Max Mustermann'],
+            'imanzeigename' => ['Should Not Win'],
+            'imtitelanrede' => ['Dr.'],
             'imvorname' => ['Max'],
             'sn' => ['Mustermann'],
-            'imanzeigename' => ['Should Not Win'],
         ]);
 
         $this->assertSame('Max Mustermann', $name);
+    }
+
+    public function test_display_name_is_also_read_by_oid(): void
+    {
+        // An IdP that releases no FriendlyName leaves only the raw OID key.
+        $this->assertSame('Erika Musterfrau', SamlAttributes::displayName([
+            'urn:oid:2.16.840.1.113730.3.1.241' => ['Erika Musterfrau'],
+            'imvorname' => ['Erika'],
+        ]));
+    }
+
+    public function test_falls_back_to_imanzeigename_before_composing(): void
+    {
+        $this->assertSame('Ready Made', SamlAttributes::displayName([
+            'imanzeigename' => ['Ready Made'],
+            'imvorname' => ['Max'],
+            'sn' => ['Mustermann'],
+        ]));
+    }
+
+    public function test_blank_display_name_falls_through(): void
+    {
+        $this->assertSame('Max Mustermann', SamlAttributes::displayName([
+            'displayName' => ['   '],
+            'imvorname' => ['Max'],
+            'sn' => ['Mustermann'],
+        ]));
     }
 
     public function test_returns_null_when_nothing_usable(): void

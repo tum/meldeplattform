@@ -27,7 +27,8 @@
         const n = document.createElement(tag);
         Object.assign(n, props);
         if (props.attrs) Object.entries(props.attrs).forEach(([k, v]) => n.setAttribute(k, v));
-        children.flat().forEach((c) => n.append(c));
+        // Skip null/undefined so callers can pass conditional children.
+        children.flat().filter((c) => c != null).forEach((c) => n.append(c));
         return n;
     }
 
@@ -333,8 +334,11 @@
         topic.Admins.forEach((a, i) => {
             const row = el(
                 'div',
-                { style: 'display:flex;gap:.4rem;margin-bottom:.4rem;' },
+                { style: 'display:flex;gap:.4rem;margin-bottom:.4rem;align-items:center;' },
                 input(a.UserID ?? '', (v) => (a.UserID = v), 'ge42tum'),
+                // Resolved display name from the API (read-only); goes stale
+                // once the UID is edited, so drop it on input.
+                a.Name ? el('span', { className: 'muted', style: 'white-space:nowrap;', textContent: a.Name }) : null,
                 el('button', {
                     type: 'button',
                     className: 'button button-small button-danger',

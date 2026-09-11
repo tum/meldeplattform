@@ -75,7 +75,19 @@ class UserController
             }
             $rows[$admin->user_id] = $existing;
         }
-        ksort($rows);
+        // Sort by display name (people look for a colleague, not a UID);
+        // pending admins have no name yet and sort by UID among the rest.
+        uasort($rows, static fn (array $a, array $b): int => strcasecmp(
+            $a['user']?->name ?: $a['uid'],
+            $b['user']?->name ?: $b['uid'],
+        ));
+
+        // Role tallies over the unfiltered set, so the headline stays a
+        // platform-wide picture even while a search narrows the tables.
+        $counts = ['global' => 0, 'topic' => 0, 'pending' => 0, 'none' => 0];
+        foreach ($rows as $row) {
+            $counts[$row['role']]++;
+        }
 
         // Optional search over UID, name or email. The user/admin set is small,
         // so filtering after the merge keeps the two-table union simple.
@@ -93,8 +105,17 @@ class UserController
             $rows = array_filter($rows, static fn (array $row): bool => $row['role'] === $role);
         }
 
+        // Two tables: everyone with (or awaiting) privileges, and the regular
+        // users who merely signed in to report. The second group grows with
+        // every login-required report and carries nothing to manage, so the
+        // view keeps it collapsed unless the admin is explicitly looking there.
+        $admins = array_values(array_filter($rows, static fn (array $row): bool => $row['role'] !== 'none'));
+        $regular = array_values(array_filter($rows, static fn (array $row): bool => $row['role'] === 'none'));
+
         return view('pages.users.index', [
-            'rows' => array_values($rows),
+            'admins' => $admins,
+            'regular' => $regular,
+            'counts' => $counts,
             'topics' => $topics,
             'q' => $q,
             'role' => $role,

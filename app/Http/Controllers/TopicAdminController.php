@@ -61,7 +61,7 @@ class TopicAdminController
         $topics = Topic::query()
             ->manageableBy($user)
             ->withCount('reports')
-            ->with('admins:id,user_id')
+            ->with('admins.user:id,uid,name')
             ->when($status === 'active', fn (Builder $query): Builder => $query->active())
             ->when($status === 'deactivated', fn (Builder $query): Builder => $query->whereNotNull('deactivated_at'))
             ->when($q !== '', function (Builder $query) use ($q): void {
@@ -462,7 +462,7 @@ class TopicAdminController
 
     public function show(Topic $topic): TopicResource
     {
-        return TopicResource::make($topic->load(['fields', 'admins']));
+        return TopicResource::make($topic->load(['fields', 'admins.user:id,uid,name']));
     }
 
     public function store(UpsertTopicRequest $request, UpsertTopic $action): JsonResponse

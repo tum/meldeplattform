@@ -88,7 +88,7 @@
                             @else
                                 <span class="chip-list">
                                     @foreach ($t->admins as $a)
-                                        <span class="topic-chip">{{ $a->user_id }}</span>
+                                        <span class="topic-chip" title="{{ $a->user_id }}">{{ $a->user?->name ?: $a->user_id }}</span>
                                     @endforeach
                                 </span>
                             @endif

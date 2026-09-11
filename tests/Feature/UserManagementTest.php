@@ -149,6 +149,49 @@ class UserManagementTest extends TestCase
             ->assertDontSee('plainy@example.test');
     }
 
+    public function test_index_groups_admins_and_regular_users_and_shows_names(): void
+    {
+        $this->actingAsGlobalAdmin();
+        $topic = Topic::create(['name_de' => 'T', 'name_en' => 'T', 'summary_de' => '', 'summary_en' => '']);
+        User::create(['uid' => 'ge11aaa', 'name' => 'Erika Musterfrau', 'email' => 'erika@example.test']);
+        User::create(['uid' => 'ge22bbb', 'name' => 'Max Mustermann', 'email' => 'max@example.test']);
+        Admin::create(['user_id' => 'ge22bbb'])->topics()->attach($topic);
+        Admin::create(['user_id' => 'ge33ccc'])->topics()->attach($topic); // never logged in
+
+        $html = (string) $this->get('/users')->assertOk()->getContent();
+
+        // Tallies over the whole set: env global admin, topic admin, pending, regular.
+        $this->assertStringContainsString('<strong>1</strong> Global admin', $html);
+        $this->assertStringContainsString('<strong>1</strong> Topic admin', $html);
+        $this->assertStringContainsString('<strong>1</strong> Not yet logged in', $html);
+        $this->assertStringContainsString('<strong>1</strong> Regular user', $html);
+
+        // Display names lead; the UID is secondary.
+        $this->assertStringContainsString('<span class="person-name">Max Mustermann</span>', $html);
+        $this->assertStringContainsString('<span class="person-name">Erika Musterfrau</span>', $html);
+
+        // The regular user sits in the collapsed section with a grant action, no revoke.
+        $split = strpos($html, 'section-collapsible');
+        $this->assertIsInt($split);
+        $adminsPart = substr($html, 0, $split);
+        $regularPart = substr($html, $split);
+        $this->assertStringContainsString('Max Mustermann', $adminsPart);
+        $this->assertStringNotContainsString('Erika Musterfrau', $adminsPart);
+        $this->assertStringContainsString('Erika Musterfrau', $regularPart);
+        $this->assertStringContainsString('Grant access', $regularPart);
+        $this->assertStringNotContainsString('users/ge11aaa" style', $regularPart);
+        $this->assertStringContainsString('role-pending', $adminsPart);
+    }
+
+    public function test_index_opens_regular_section_when_searching(): void
+    {
+        $this->actingAsGlobalAdmin();
+        User::create(['uid' => 'ge11aaa', 'name' => 'Erika Musterfrau', 'email' => 'erika@example.test']);
+
+        $this->get('/users')->assertOk()->assertSee('<details class="section-collapsible">', false);
+        $this->get('/users?q=erika')->assertOk()->assertSee('<details class="section-collapsible" open>', false);
+    }
+
     public function test_db_promoted_user_becomes_global_admin(): void
     {
         $u = User::create(['uid' => 'promoted', 'name' => 'P', 'email' => 'p@x', 'is_global_admin' => true]);

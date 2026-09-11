@@ -5,13 +5,21 @@
 @section('intro')
     <section class="page-intro">
         <div class="container">
-            <a href="{{ route('users.index') }}" class="crumb">{{ __('back') }}</a>
-            <h1>{{ $uid }}</h1>
+            <a href="{{ route('users.index') }}" class="crumb">{{ __('users') }}</a>
+            <h1>{{ $user?->name ?: $uid }}</h1>
             <p class="muted">
+                <code>{{ $uid }}</code>
                 @if ($user === null)
-                    {{ __('users_pending_login') }}
-                @else
-                    {{ $user->name ?: '—' }} · {{ $user->email ?: '—' }}
+                    · {{ __('users_pending_login') }}
+                @elseif ($user->email)
+                    · {{ $user->email }}
+                @endif
+                @if ($user?->isGlobalAdmin())
+                    <span class="status-pill role-global">{{ __('role_global_admin') }}</span>
+                @elseif ($admin !== null && $admin->topics->isNotEmpty())
+                    <span class="status-pill role-topic">{{ __('role_topic_admin') }}</span>
+                @elseif ($user !== null)
+                    <span class="status-pill role-none">{{ __('role_none') }}</span>
                 @endif
             </p>
         </div>
