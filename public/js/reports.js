@@ -3,7 +3,20 @@
     const closedCb = document.getElementById('hide-closed');
     const spamCb = document.getElementById('hide-spam');
     const rows = document.querySelectorAll('.report-row');
+    const totalEl = document.querySelector('[data-report-count]');
     if (!wrap || !closedCb || !spamCb) return;
+
+    // The intro line is server-rendered with the topic's total. When the
+    // filters hide rows it would read "7 reports" above a two-row table, so
+    // rewrite it to "2 of 7 reports" from the data-showing template.
+    const totalAllText = totalEl ? totalEl.textContent : '';
+    function syncTotal(visible) {
+        if (!totalEl) return;
+        const total = Number(totalEl.dataset.total);
+        totalEl.textContent = visible === total
+            ? totalAllText
+            : (totalEl.dataset.showing || '').replace(':visible', String(visible));
+    }
 
     // Sticky per-topic filter state so an admin's "show closed" choice
     // survives a reload instead of resetting every time.
@@ -19,12 +32,15 @@
     }
 
     function apply() {
+        let visible = 0;
         rows.forEach((r) => {
             const closed = r.dataset.closed === '1';
             const spam = r.dataset.spam === '1';
             const hide = (closedCb.checked && closed) || (spamCb.checked && spam);
             r.style.display = hide ? 'none' : '';
+            if (!hide) visible++;
         });
+        syncTotal(visible);
         try {
             localStorage.setItem(storageKey, JSON.stringify({
                 hideClosed: closedCb.checked,

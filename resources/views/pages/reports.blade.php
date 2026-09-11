@@ -7,19 +7,24 @@
         <div class="container">
             <a href="{{ route('home') }}" class="crumb">{{ __('back') }}</a>
             <h1>{{ __('reports') }}: {{ $topic->name($lang) }}</h1>
-            <p class="muted">{{ $reports->count() }} {{ __('reports') }}</p>
+            @php $total = $reports->count(); @endphp
+            {{-- reports.js hides closed/spam rows client-side and rewrites this
+                 line to "X of Y" whenever the visible count differs from the
+                 total. The template keeps the paginator-style :visible token
+                 for JS; only :total is filled in here. --}}
+            <p class="muted" data-report-count data-total="{{ $total }}"
+               data-showing="{{ __('reports_showing', ['total' => trans_choice('reports_count', $total, ['count' => $total])]) }}">{{ trans_choice('reports_count', $total, ['count' => $total]) }}</p>
         </div>
     </section>
 @endsection
 
 @section('content')
-    <div class="card card-soft mb-4" data-reports-filter data-topic-id="{{ $topic->id }}"
-         style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;">
-        <label style="font-weight: 500; margin: 0;">
+    <div class="toolbar" data-reports-filter data-topic-id="{{ $topic->id }}">
+        <label>
             <input type="checkbox" id="hide-closed" checked>
             {{ __('hide_closed') }}
         </label>
-        <label style="font-weight: 500; margin: 0;">
+        <label>
             <input type="checkbox" id="hide-spam" checked>
             {{ __('hide_spam') }}
         </label>
@@ -37,6 +42,7 @@
         </div>
     </div>
 
+    <div class="table-wrap-narrow">
     <table>
         <thead>
             <tr>
@@ -110,10 +116,11 @@
                 </tr>
             @endforeach
             @if ($reports->isEmpty())
-                <tr><td colspan="7" class="muted text-center" style="padding: 2rem;">—</td></tr>
+                <tr><td colspan="7" class="table-empty">{{ __('reports_none') }}</td></tr>
             @endif
         </tbody>
     </table>
+    </div>
 
     <script src="{{ asset('js/reports.js') }}" defer></script>
 @endsection

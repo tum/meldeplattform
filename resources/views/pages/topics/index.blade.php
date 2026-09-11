@@ -48,6 +48,7 @@
             </span>
         </form>
 
+        <div class="table-wrap">
         <table>
             <thead>
                 <tr>
@@ -124,6 +125,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
     @endif
 
     <script src="{{ asset('js/topics-admin.js') }}" defer></script>

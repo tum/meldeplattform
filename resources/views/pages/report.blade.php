@@ -12,8 +12,7 @@
             @endif
             <h1>
                 {{ __('report') }} #{{ $report->id }}
-                <span class="muted" style="font-weight: 400; font-size: 0.55em; margin-left: 0.5rem;">·
-                    {{ $report->topic->name($lang) }}</span>
+                <span class="title-context">· {{ $report->topic->name($lang) }}</span>
             </h1>
             <p class="muted">
                 {{ $isAdministrator ? __('report_view_admin') : __('report_view_reporter') }}
@@ -33,7 +32,7 @@
             <p style="margin: 0 0 0.75rem;">{{ __('reportOpened') }}</p>
             <strong>{{ __('receipt_heading') }}</strong>
             <p style="margin-top: 0.5rem;">{{ __('receipt_instructions') }}</p>
-            <p style="font-family: monospace; font-size: 1.4rem; letter-spacing: 0.1em; margin: 0.75rem 0;">{{ $receiptGroups }}</p>
+            <p style="margin: 0;"><span class="receipt-code">{{ $receiptGroups }}</span></p>
             <p class="muted"><small>{{ __('receipt_track_hint') }}</small></p>
         </div>
     @endif

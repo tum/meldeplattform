@@ -408,6 +408,23 @@ class AdminApiTest extends TestCase
         $this->actingAsUser('nobody')->get("/reports/{$t->id}")->assertStatus(403);
     }
 
+    public function test_reports_list_counter_carries_total_and_showing_template(): void
+    {
+        $t = Topic::create(['name_de' => 't', 'name_en' => 't', 'summary_de' => '', 'summary_en' => '']);
+        Report::create(['topic_id' => $t->id, 'state' => ReportState::Open]);
+        Report::create(['topic_id' => $t->id, 'state' => ReportState::Open]);
+        Report::create(['topic_id' => $t->id, 'state' => ReportState::Done]);
+
+        // reports.js hides closed/spam rows client-side and rewrites the
+        // intro line from these attributes; the :visible token must survive
+        // translation untouched so the script can fill it in.
+        $this->actingAsGlobalAdmin()->get("/reports/{$t->id}")
+            ->assertOk()
+            ->assertSee('data-total="3"', false)
+            ->assertSee('data-showing="Showing :visible of 3 reports"', false)
+            ->assertSee('3 reports');
+    }
+
     public function test_get_topic_returns_skeleton_for_new(): void
     {
         $this->actingAsGlobalAdmin()->getJson('/api/topic/new')

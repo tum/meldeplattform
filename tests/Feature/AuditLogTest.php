@@ -163,4 +163,35 @@ class AuditLogTest extends TestCase
     {
         $this->actingAsGlobalAdmin()->get('/audit')->assertOk();
     }
+
+    public function test_audit_page_renders_metadata_as_key_value_chips(): void
+    {
+        AuditLog::record('report.bulk_status_changed', null, ['to' => 'done', 'report_ids' => [4, 7]]);
+
+        $this->actingAsGlobalAdmin()->get('/audit')
+            ->assertOk()
+            ->assertSee('<span class="kv-key">to</span>', false)
+            ->assertSee('<span class="kv-value">done</span>', false)
+            ->assertSee('<span class="kv-value">[4,7]</span>', false)
+            // Actions carry their domain so the stylesheet can colour-code them.
+            ->assertSee('data-domain="report"', false);
+    }
+
+    public function test_audit_page_uses_themed_paginator(): void
+    {
+        // 51 entries → page size 50 → a second page exists.
+        for ($i = 0; $i < 51; $i++) {
+            AuditLog::record('report.accessed');
+        }
+
+        $response = $this->actingAsGlobalAdmin()->get('/audit')->assertOk();
+
+        // The stock Laravel template is written against Tailwind, which this
+        // app does not ship, so its arrows render unsized. Guard against a
+        // regression to it.
+        $response->assertSee('class="pagination"', false)
+            ->assertSee('aria-current="page"', false)
+            ->assertSee('rel="next"', false)
+            ->assertDontSee('class="w-5 h-5"', false);
+    }
 }
