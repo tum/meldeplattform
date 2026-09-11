@@ -635,7 +635,7 @@ table thead th:last-child  { border-top-right-radius: var(--radius); }
 table tbody tr:last-child td:first-child { border-bottom-left-radius: var(--radius); }
 table tbody tr:last-child td:last-child  { border-bottom-right-radius: var(--radius); }
 thead { background: var(--tum-secondary); color: #fff; }
-th { font-weight: 600; font-size: 0.9rem; letter-spacing: 0.01em; }
+th { font-weight: 600; font-size: 0.9rem; letter-spacing: 0.01em; white-space: nowrap; }
 th, td {
     padding: 0.75rem 1rem;
     text-align: left;
@@ -747,6 +747,7 @@ a.pagination-link:focus-visible {
     border-radius: 999px;
     font-size: 0.8rem;
     font-weight: 600;
+    white-space: nowrap;
     background: var(--tum-bg);
     color: var(--tum-muted);
 }
@@ -767,6 +768,64 @@ a.pagination-link:focus-visible {
    is muted (offline), matching the neutral treatment used for spam. */
 .status-pill.active { color: var(--tum-green); background: #d1e7dd; }
 .status-pill.deactivated { color: var(--tum-muted); background: var(--tum-bg); }
+/* User roles, in descending weight: global admin is the one filled pill,
+   topic admin the usual blue tint, pending an outline, regular user plain. */
+.status-pill.role-global { color: #fff; background: var(--tum-secondary); }
+.status-pill.role-topic { color: var(--tum-primary); background: var(--tum-soft); }
+.status-pill.role-pending { color: var(--tum-muted); background: #fff; border: 1px dashed var(--tum-border); }
+.status-pill.role-none { color: var(--tum-muted); background: var(--tum-bg); }
+
+/* Name-first identity cell: display name over UID (and e-mail). */
+.person { display: inline-flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.person-name { font-weight: 600; color: var(--tum-text-heading); }
+.person-meta { font-size: 0.8rem; color: var(--tum-muted); }
+.person-meta code { font-size: 0.85em; }
+
+/* Headline tallies in a page intro (e.g. role counts on /users). */
+.stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+.stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.3rem 0.75rem;
+    background: #fff;
+    border: 1px solid var(--tum-border-soft);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    color: var(--tum-text);
+}
+.stat strong { font-size: 1.05rem; color: var(--tum-text-heading); }
+.stat-muted { color: var(--tum-muted); }
+
+/* Disclosure around a secondary table (regular users on /users). */
+.section-collapsible > summary {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--tum-border-soft);
+    cursor: pointer;
+    list-style: none;
+}
+.section-collapsible > summary::-webkit-details-marker { display: none; }
+.section-collapsible > summary::before {
+    content: "▸";
+    font-size: 0.9rem;
+    color: var(--tum-muted);
+    transition: transform 0.15s ease;
+}
+.section-collapsible[open] > summary::before { transform: rotate(90deg); }
+.section-collapsible > summary h2 { margin: 0; }
+.section-collapsible > summary .desc { margin: 0; flex-basis: 100%; }
 
 .unread-badge {
     display: inline-block;

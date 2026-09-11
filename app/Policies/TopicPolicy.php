@@ -20,13 +20,16 @@ class TopicPolicy
     }
 
     /**
-     * Anyone authenticated may open the topic administration index — it lists
-     * only the topics they can manage (global admins see all; topic-admins see
-     * their own), scoped in SQL via Topic::scopeManageableBy.
+     * Gate for the admin surface as a whole: the topic index, the dashboard
+     * and the editor's helper endpoints. Open to anyone who administers at
+     * least one topic (global admins pass via before()); what they then see
+     * is scoped in SQL via Topic::scopeManageableBy. A regular signed-in
+     * user — every TUM member can sign in, since topics may require login
+     * to report — has nothing to manage and is refused outright.
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->isAdministrator();
     }
 
     public function update(User $user, Topic $topic): bool

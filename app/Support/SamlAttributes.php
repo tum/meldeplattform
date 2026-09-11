@@ -11,33 +11,50 @@ namespace App\Support;
 class SamlAttributes
 {
     /**
-     * Resolve a display name from the TUM IdP's LDAP attributes. Prefers a
-     * composed "Anrede/Titel Vorname Nachname" built from imtitelanrede +
-     * imvorname + sn; falls back to the ready-made display name imanzeigename,
-     * then to the legacy `displayName` friendly name. Returns null when nothing
-     * usable was released.
+     * LDAP `displayName` as the IdP may release it: by FriendlyName, or by
+     * its attribute OID when the IdP emits no FriendlyName for it.
+     */
+    private const DISPLAY_NAME_KEYS = ['displayName', 'urn:oid:2.16.840.1.113730.3.1.241'];
+
+    /**
+     * Resolve a display name from the TUM IdP's LDAP attributes. `displayName`
+     * is the name the directory itself presents for the person, so it wins.
+     * Falls back to TUM's ready-made imanzeigename, then to a composed
+     * "Anrede/Titel Vorname Nachname" from imtitelanrede + imvorname + sn.
+     * Returns null when nothing usable was released.
      *
      * @param array<string, list<string>> $attrs merged friendly-name + raw attribute map
      */
     public static function displayName(array $attrs): ?string
     {
+        foreach (self::DISPLAY_NAME_KEYS as $key) {
+            $name = self::first($attrs, $key);
+            if ($name !== null) {
+                return $name;
+            }
+        }
+
+        $ready = self::first($attrs, 'imanzeigename');
+        if ($ready !== null) {
+            return $ready;
+        }
+
         $title = self::first($attrs, 'imtitelanrede');
         $first = self::first($attrs, 'imvorname');
         $last = self::first($attrs, 'sn');
 
         // Compose only when at least a given name or surname is present, so a
         // lone salutation ("Herr") never becomes the whole name.
-        if ($first !== null || $last !== null) {
-            $composed = trim(implode(' ', array_filter(
-                [$title, $first, $last],
-                static fn (?string $v): bool => $v !== null,
-            )));
-            if ($composed !== '') {
-                return $composed;
-            }
+        if ($first === null && $last === null) {
+            return null;
         }
 
-        return self::first($attrs, 'imanzeigename') ?? self::first($attrs, 'displayName');
+        $composed = trim(implode(' ', array_filter(
+            [$title, $first, $last],
+            static fn (?string $v): bool => $v !== null,
+        )));
+
+        return $composed !== '' ? $composed : null;
     }
 
     /**

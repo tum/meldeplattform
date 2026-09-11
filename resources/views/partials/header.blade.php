@@ -29,10 +29,13 @@
                     // Section highlight for the current page. Topic editing and
                     // per-topic report lists count as "Topics"; a single report can
                     // be reached from either section, so it highlights neither.
-                    $nav = [
-                        ['route' => 'dashboard', 'label' => __('dashboard'), 'active' => request()->routeIs('dashboard', 'dashboard.*')],
-                        ['route' => 'topics.index', 'label' => __('topics'), 'active' => request()->routeIs('topics.*', 'topic.*')],
-                    ];
+                    // A regular signed-in user (no topic to administer) gets no
+                    // section links at all — only logout and the language toggle.
+                    $nav = [];
+                    if (auth()->user()->can('viewAny', App\Models\Topic::class)) {
+                        $nav[] = ['route' => 'dashboard', 'label' => __('dashboard'), 'active' => request()->routeIs('dashboard', 'dashboard.*')];
+                        $nav[] = ['route' => 'topics.index', 'label' => __('topics'), 'active' => request()->routeIs('topics.*', 'topic.*')];
+                    }
                     if (auth()->user()->can('manage', App\Models\User::class)) {
                         $nav[] = ['route' => 'users.index', 'label' => __('users'), 'active' => request()->routeIs('users.*')];
                         $nav[] = ['route' => 'audit.index', 'label' => __('audit_title'), 'active' => request()->routeIs('audit.*')];

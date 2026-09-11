@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Admin;
+use App\Models\Topic;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -85,15 +87,28 @@ class OtrsQueuesTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_any_authenticated_admin_may_list_queues(): void
+    public function test_topic_admin_may_list_queues(): void
     {
         // Topic-admins (not global admins) edit their own topics, so they must
-        // be able to populate the queue dropdown too — the route is auth-only.
+        // be able to populate the queue dropdown too.
         $this->configureQueueList();
         Http::fake(['*' => Http::response(['Raw'], 200)]);
+        $topic = Topic::create(['name_de' => 'T', 'name_en' => 'T', 'summary_de' => '', 'summary_en' => '']);
+        Admin::create(['user_id' => 'ge99tum'])->topics()->attach($topic);
 
         $this->actingAsUser('ge99tum')->getJson('/api/otrs/queues')
             ->assertOk()
             ->assertExactJson(['queues' => ['Raw']]);
+    }
+
+    public function test_regular_user_may_not_list_queues(): void
+    {
+        // Queue names are internal ticketing structure; a signed-in user who
+        // administers nothing must not see them.
+        $this->configureQueueList();
+        Http::fake(['*' => Http::response(['Raw'], 200)]);
+
+        $this->actingAsUser('ge99tum')->getJson('/api/otrs/queues')->assertStatus(403);
+        Http::assertNothingSent();
     }
 }
