@@ -179,6 +179,17 @@ class AuditLogTest extends TestCase
             ->assertSee('id="topbar-menu"', false);
     }
 
+    public function test_assets_are_versioned_so_browsers_refetch_after_deploy(): void
+    {
+        // Without a version the CSS and JS URLs never change, so a browser
+        // that cached them under heuristic freshness keeps serving the old
+        // script long after a deploy — new markup, dead toggle.
+        $this->actingAsGlobalAdmin()->get('/audit')
+            ->assertOk()
+            ->assertSee('/css/app.css?v='.filemtime(public_path('css/app.css')), false)
+            ->assertSee('/js/app.js?v='.filemtime(public_path('js/app.js')), false);
+    }
+
     public function test_audit_table_carries_card_labels_for_small_screens(): void
     {
         AuditLog::record('report.accessed', null, ['source' => 'otrs']);

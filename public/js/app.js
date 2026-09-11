@@ -87,9 +87,10 @@
                 btn.focus();
             }
         });
-        window.matchMedia('(min-width: 721px)').addEventListener('change', (e) => {
-            if (e.matches) setOpen(false);
-        });
+        const wide = window.matchMedia('(min-width: 721px)');
+        const onWide = (e) => { if (e.matches) setOpen(false); };
+        if (typeof wide.addEventListener === 'function') wide.addEventListener('change', onWide);
+        else if (typeof wide.addListener === 'function') wide.addListener(onWide);
     });
 
     // Generic form-submit confirmation via `data-confirm-submit="…"`. Used
