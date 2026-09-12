@@ -206,12 +206,12 @@
                 <span class="muted">{{ __('stats_total') }} {{ $n($reports['total']) }}</span>
             </figcaption>
             @if ($reports['total'] > 0)
-                <div class="stack" role="img" aria-label="{{ __('status') }}">
+                <div class="stackbar" role="img" aria-label="{{ __('status') }}">
                     @foreach ($stateMeta as $key => $meta)
                         @php $w = $states[$key] / $reports['total'] * 100; @endphp
                         @if ($states[$key] > 0)
-                            <span class="stack-seg {{ $meta['class'] }}" style="flex-basis: {{ $w }}%" title="{{ $meta['label'] }}: {{ $n($states[$key]) }} ({{ $pctText($states[$key], $reports['total']) }})" tabindex="0">
-                                @if ($w >= 12)<span class="stack-label">{{ $n($states[$key]) }}</span>@endif
+                            <span class="stackbar-seg {{ $meta['class'] }}" style="flex-basis: {{ $w }}%" title="{{ $meta['label'] }}: {{ $n($states[$key]) }} ({{ $pctText($states[$key], $reports['total']) }})" tabindex="0">
+                                @if ($w >= 12)<span class="stackbar-label">{{ $n($states[$key]) }}</span>@endif
                             </span>
                         @endif
                     @endforeach
