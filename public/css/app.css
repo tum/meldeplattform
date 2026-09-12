@@ -1303,11 +1303,13 @@ a.unread-badge:hover { color: #fff; filter: brightness(0.92); }
 .viz-bar:hover .viz-fill, .viz-bar:focus-visible .viz-fill { opacity: 0.75; }
 .viz-bar:focus-visible .viz-hit { fill: rgba(48, 112, 179, 0.08); }
 
-/* Single horizontal stacked bar: 2px surface gaps between segments. */
-.stack { display: flex; gap: 2px; height: 26px; border-radius: 5px; overflow: hidden; background: var(--viz-grid); }
-.stack-seg { display: flex; align-items: center; justify-content: center; min-width: 4px; flex: 0 0 auto; transition: opacity 0.12s ease; outline: none; }
-.stack-seg:hover, .stack-seg:focus-visible { opacity: 0.8; }
-.stack-label { font-size: 0.75rem; font-weight: 600; color: #fff; }
+/* Single horizontal stacked bar: 2px surface gaps between segments.
+   Named "stackbar" (not "stack") so it never collides with the vertical
+   spacing utility .stack used by the topic list and other pages. */
+.stackbar { display: flex; gap: 2px; height: 26px; border-radius: 5px; overflow: hidden; background: var(--viz-grid); }
+.stackbar-seg { display: flex; align-items: center; justify-content: center; min-width: 4px; flex: 0 0 auto; transition: opacity 0.12s ease; outline: none; }
+.stackbar-seg:hover, .stackbar-seg:focus-visible { opacity: 0.8; }
+.stackbar-label { font-size: 0.75rem; font-weight: 600; color: #fff; }
 .seg-open { background: var(--viz-1); }
 .seg-progress { background: var(--viz-progress); }
 .seg-done { background: var(--viz-done); }
