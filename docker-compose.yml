@@ -42,7 +42,7 @@ services:
       - "${HTTP_PORT:-8080}:8080"
 
   db:
-    image: mariadb:12
+    image: mariadb:13
     restart: unless-stopped
     environment:
       MARIADB_DATABASE: meldeplattform
