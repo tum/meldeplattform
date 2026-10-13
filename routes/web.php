@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/imprint', [HomeController::class, 'imprint'])->name('imprint');
 Route::get('/privacy', [HomeController::class, 'privacy'])->name('privacy');
+Route::get('/process', [HomeController::class, 'process'])->name('process');
+Route::get('/support', [HomeController::class, 'support'])->name('support');
 Route::post('/setLang', [HomeController::class, 'setLang'])->name('lang.set');
 
 // Reporter flow — /submit is rate-limited to blunt storage-exhaustion abuse.

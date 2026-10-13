@@ -31,6 +31,25 @@ class HomeController
         ]);
     }
 
+    public function process(): View
+    {
+        return view('pages.process', [
+            'content' => Markdown::renderOperatorContent($this->operatorPage('process', '')),
+            'ackDays' => Config::integer('meldeplattform.acknowledgement_deadline_days'),
+            'feedbackDays' => Config::integer('meldeplattform.feedback_deadline_days'),
+            'metaDescription' => __('process_meta_description'),
+        ]);
+    }
+
+    public function support(): View
+    {
+        return view('pages.info', [
+            'content' => Markdown::renderOperatorContent($this->operatorPage('support', '')),
+            'pageTitle' => __('support_title'),
+            'metaDescription' => __('support_meta_description'),
+        ]);
+    }
+
     public function setLang(Request $request): RedirectResponse
     {
         $lang = $request->string('lang', 'en')->toString();
@@ -84,7 +103,12 @@ class HomeController
         }
 
         $path = $parsed['path'] ?? '/';
-        $query = isset($parsed['query']) ? '?'.$parsed['query'] : '';
+        // Drop a ?lang= the user arrived with (e.g. from a search result):
+        // it outranks the cookie being set here, so keeping it would undo the
+        // switch on the very page the user returns to.
+        parse_str($parsed['query'] ?? '', $params);
+        unset($params['lang']);
+        $query = $params === [] ? '' : '?'.http_build_query($params);
 
         // Only ever hand back a plain, single-slash-rooted path. A referer of
         // `https://host//evil.com` parses as this origin with the path
@@ -116,9 +140,19 @@ class HomeController
         }
 
         $file = Config::string('meldeplattform.'.$name.'_file');
+        if ($file === '') {
+            return $fallback;
+        }
 
-        return $file !== '' && is_file($file)
-            ? (string) file_get_contents($file)
-            : $fallback;
+        // `{lang}` in the path picks the active locale's file; German is the
+        // fallback translation. Paths without the placeholder resolve once.
+        foreach (array_unique([app()->getLocale(), 'de']) as $lang) {
+            $candidate = str_replace('{lang}', $lang, $file);
+            if (is_file($candidate)) {
+                return (string) file_get_contents($candidate);
+            }
+        }
+
+        return $fallback;
     }
 }

@@ -1654,3 +1654,32 @@ a.unread-badge:hover { color: #fff; filter: brightness(0.92); }
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Reporter-facing process graphic (/process): numbered steps joined by a
+   vertical rule, so the sequence reads at a glance on any width. */
+.intro-links { list-style: none; padding: 0; margin: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.reporter-help p { margin: 0 0 0.5rem; }
+.reporter-help p:last-child { margin-bottom: 0; }
+.process-steps { list-style: none; padding: 0; margin: 0; max-width: 840px; }
+.process-step { position: relative; display: flex; gap: 1rem; padding-bottom: 1.5rem; }
+.process-step:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 1.125rem;
+    top: 2.25rem;
+    bottom: 0;
+    border-left: 2px solid var(--tum-border-soft);
+}
+.process-step-number {
+    flex: 0 0 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: var(--tum-primary);
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.process-step h2 { font-size: 1.15rem; margin: 0.35rem 0 0.25rem; }
+.process-step p { margin: 0; }

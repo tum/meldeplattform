@@ -18,6 +18,21 @@
                 {{ $isAdministrator ? __('report_view_admin') : __('report_view_reporter') }}
                 · {{ $report->dateFmt() }}
             </p>
+            {{-- Reporters see whether receipt was acknowledged (HinSchG § 17)
+                 but never the internal state — "spam" must not leak to them,
+                 so a concluded, never-acknowledged report shows nothing
+                 rather than a promise that will not be kept. --}}
+            @if (! $isAdministrator && ($report->isAcknowledged() || ! $report->isConcluded()))
+                <p class="muted" data-reporter-ack>
+                    @if ($report->isAcknowledged())
+                        {{ __('reporter_ack_done', ['date' => $report->acknowledged_at?->format('d.m.Y')]) }}
+                    @elseif ($report->isAcknowledgementOverdue())
+                        {{ __('reporter_ack_overdue') }}
+                    @else
+                        {{ __('reporter_ack_pending', ['date' => $report->acknowledgementDueAt()?->format('d.m.Y')]) }}
+                    @endif
+                </p>
+            @endif
         </div>
     </section>
 @endsection

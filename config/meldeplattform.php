@@ -31,8 +31,8 @@ return [
         'en' => 'TUM SafeSignal',
     ],
     'subtitle' => [
-        'de' => 'Whistleblowing & IT Security Reporting System',
-        'en' => 'Whistleblowing & IT Security Reporting System',
+        'de' => 'Meldeplattform für Fehlverhalten, Belästigung & IT-Sicherheit',
+        'en' => 'Reporting platform for misconduct, harassment & IT security',
     ],
 
     /*
@@ -241,13 +241,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Markdown-rendered pages (imprint / privacy).
+    | Markdown-rendered pages (imprint / privacy / process / support).
     |--------------------------------------------------------------------------
-    | Set to an empty string to fall back to resources/markdown/{imprint,privacy}.md.
+    | Set to an empty string to fall back to the *_file path. A `{lang}`
+    | placeholder in a path resolves to the active locale, falling back to
+    | the German file when no translation exists.
     */
     'imprint' => '',
     'privacy' => '',
+    'process' => '',
+    'support' => '',
 
     'imprint_file' => resource_path('markdown/imprint.md'),
     'privacy_file' => resource_path('markdown/privacy.md'),
+    'process_file' => resource_path('markdown/process.{lang}.md'),
+    'support_file' => resource_path('markdown/support.{lang}.md'),
 ];
