@@ -338,5 +338,6 @@
     "support_title": "Beratung & weitere Meldewege",
     "support_meta_description": "Beratungsstellen an der TU München und extern bei sexueller Belästigung, Gewalt, Diskriminierung und Mobbing – sowie Meldewege neben TUM SafeSignal.",
     "reporter_ack_done": "Eingang bestätigt am :date.",
-    "reporter_ack_pending": "Eingang noch nicht bestätigt – die zuständige Stelle bestätigt spätestens bis :date."
+    "reporter_ack_pending": "Eingang noch nicht bestätigt – die zuständige Stelle bestätigt spätestens bis :date.",
+    "reporter_ack_overdue": "Eingang noch nicht bestätigt – die Bestätigung ist überfällig. Sie können über das Nachrichtenfeld unten nachfragen."
 }

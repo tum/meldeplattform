@@ -338,5 +338,6 @@
     "support_title": "Support & other ways to report",
     "support_meta_description": "Support services at the Technical University of Munich and externally for sexual harassment, violence, discrimination and bullying – plus ways to report besides TUM SafeSignal.",
     "reporter_ack_done": "Receipt acknowledged on :date.",
-    "reporter_ack_pending": "Receipt not yet acknowledged – the responsible office will confirm by :date at the latest."
+    "reporter_ack_pending": "Receipt not yet acknowledged – the responsible office will confirm by :date at the latest.",
+    "reporter_ack_overdue": "Receipt not yet acknowledged – the confirmation is overdue. You can follow up using the message field below."
 }

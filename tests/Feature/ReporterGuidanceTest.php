@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ReportState;
 use App\Models\Report;
+use App\Models\Topic;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -59,19 +60,33 @@ class ReporterGuidanceTest extends TestCase
             ->assertSee(route('support'), false);
     }
 
-    public function test_lang_query_parameter_overrides_header_and_cookie_without_persisting(): void
+    public function test_lang_query_parameter_overrides_header_and_cookie_and_persists(): void
     {
         // Crawlers send no Accept-Language; ?lang=de must still yield the
-        // German page so its search terms get indexed.
-        $response = $this->withCookie('lang', 'en')
+        // German page so its search terms get indexed — and a visitor from a
+        // search result keeps German on the next click.
+        $this->withCookie('lang', 'en')
             ->get('/?lang=de', ['Accept-Language' => 'en-US'])
             ->assertOk()
             ->assertSee('<html lang="de">', false)
-            ->assertHeader('Content-Language', 'de-DE');
-        $this->assertNull($response->getCookie('lang', false));
+            ->assertHeader('Content-Language', 'de-DE')
+            ->assertCookie('lang', 'de');
 
-        $this->get('/?lang=xx', ['Accept-Language' => 'en-US'])
+        $response = $this->get('/?lang=xx', ['Accept-Language' => 'en-US'])
             ->assertSee('<html lang="en">', false);
+        $this->assertNull($response->getCookie('lang', false));
+    }
+
+    public function test_lang_toggle_drops_a_lang_query_from_the_return_url(): void
+    {
+        // Otherwise the ?lang=de the user arrived with outranks the new
+        // cookie and the toggle appears to do nothing.
+        $this->post('/setLang', ['lang' => 'en'], ['referer' => 'http://localhost/?lang=de'])
+            ->assertRedirect('/')
+            ->assertCookie('lang', 'en');
+
+        $this->post('/setLang', ['lang' => 'en'], ['referer' => 'http://localhost/track?lang=de&x=1'])
+            ->assertRedirect('/track?x=1');
     }
 
     public function test_layout_announces_both_language_versions(): void
@@ -82,15 +97,33 @@ class ReporterGuidanceTest extends TestCase
             ->assertSee('<meta name="description" content="TUM SafeSignal:', false);
     }
 
-    public function test_reporter_sees_acknowledgement_status_but_not_internal_state(): void
+    public function test_token_bearing_pages_do_not_announce_alternates(): void
     {
-        $report = Report::factory()->create(['state' => ReportState::Spam]);
+        $report = Report::factory()->create();
+
+        $this->get(route('report.show', ['reporterToken' => $report->reporter_token]))
+            ->assertOk()
+            ->assertDontSee('hreflang', false);
+    }
+
+    public function test_process_page_content_can_be_overridden_via_config(): void
+    {
+        config(['meldeplattform.process' => '## Eigener Ablauftext']);
+
+        $this->get('/process')
+            ->assertOk()
+            ->assertSee('Eigener Ablauftext');
+    }
+
+    public function test_reporter_sees_acknowledgement_status(): void
+    {
+        $report = Report::factory()->create();
         $url = route('report.show', ['reporterToken' => $report->reporter_token]);
 
         $this->withCookie('lang', 'de')->get($url)
             ->assertOk()
-            ->assertSee('Eingang noch nicht bestätigt')
-            ->assertDontSee('Spam');
+            ->assertSee('Eingang noch nicht bestätigt – die zuständige Stelle bestätigt spätestens bis '
+                .now()->addDays(7)->format('d.m.Y'));
 
         $report->acknowledge();
 
@@ -98,11 +131,34 @@ class ReporterGuidanceTest extends TestCase
             ->assertSee('Eingang bestätigt am '.now()->format('d.m.Y'));
     }
 
+    public function test_overdue_acknowledgement_shows_no_past_deadline(): void
+    {
+        $report = Report::factory()->create(['created_at' => now()->subDays(30)]);
+
+        $this->withCookie('lang', 'de')
+            ->get(route('report.show', ['reporterToken' => $report->reporter_token]))
+            ->assertSee('die Bestätigung ist überfällig')
+            ->assertDontSee('spätestens bis');
+    }
+
+    public function test_concluded_unacknowledged_report_shows_no_status_and_no_internal_state(): void
+    {
+        foreach ([ReportState::Spam, ReportState::Done] as $state) {
+            $report = Report::factory()->create(['state' => $state]);
+
+            $this->withCookie('lang', 'de')
+                ->get(route('report.show', ['reporterToken' => $report->reporter_token]))
+                ->assertOk()
+                ->assertDontSee('data-reporter-ack', false)
+                ->assertDontSee('Spam');
+        }
+    }
+
     public function test_form_page_links_to_process_and_support(): void
     {
-        $report = Report::factory()->create();
+        $topic = Topic::factory()->create();
 
-        $this->get('/form/'.$report->topic_id)
+        $this->get('/form/'.$topic->id)
             ->assertOk()
             ->assertSee(route('process'), false)
             ->assertSee(route('support'), false);
