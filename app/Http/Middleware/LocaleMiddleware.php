@@ -13,7 +13,14 @@ class LocaleMiddleware
 
     public function handle(Request $request, Closure $next): Response
     {
-        $lang = $request->cookie('lang');
+        // An explicit ?lang= wins over cookie and header for this request
+        // only (nothing is persisted). Crawlers send no Accept-Language, so
+        // without it the German page — and its German search terms — would
+        // never be indexed; the layout's hreflang links point here.
+        $lang = $request->query('lang');
+        if (! in_array($lang, self::SUPPORTED, true)) {
+            $lang = $request->cookie('lang');
+        }
 
         if (! in_array($lang, self::SUPPORTED, true)) {
             $accept = (string) $request->headers->get('Accept-Language', '');

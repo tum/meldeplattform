@@ -5,7 +5,13 @@
     <title>@yield('title', $appTitle)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description" content="{{ $appTitle }} – {{ $appSubtitle }}">
+    <meta name="description" content="{{ $metaDescription ?? __('meta_description') }}">
+    {{-- Every page answers in both languages via ?lang=; announce both so
+         search engines index the German page too (crawlers send no
+         Accept-Language and would otherwise only ever see English). --}}
+    <link rel="alternate" hreflang="de" href="{{ url()->current() }}?lang=de">
+    <link rel="alternate" hreflang="en" href="{{ url()->current() }}?lang=en">
+    <link rel="alternate" hreflang="x-default" href="{{ url()->current() }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" sizes="any">
     <link rel="stylesheet" href="@asset('css/app.css')">
     <script src="@asset('js/app.js')" defer></script>

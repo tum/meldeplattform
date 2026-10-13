@@ -31,8 +31,8 @@ return [
         'en' => 'TUM SafeSignal',
     ],
     'subtitle' => [
-        'de' => 'Whistleblowing & IT Security Reporting System',
-        'en' => 'Whistleblowing & IT Security Reporting System',
+        'de' => 'Meldeplattform für Fehlverhalten, Belästigung & IT-Sicherheit',
+        'en' => 'Reporting platform for misconduct, harassment & IT security',
     ],
 
     /*

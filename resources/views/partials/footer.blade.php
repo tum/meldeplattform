@@ -1,6 +1,8 @@
 <footer class="site-footer">
     <div class="container">
         <div class="footer-links">
+            <a href="{{ route('process') }}">{{ __('process_title') }}</a>
+            <a href="{{ route('support') }}">{{ __('support_title') }}</a>
             <a href="{{ route('imprint') }}">{{ __('imprint') }}</a>
             <a href="{{ route('privacy') }}">{{ __('privacy') }}</a>
             <a href="https://github.com/tum/meldeplattform" target="_blank" rel="noopener">{{ __('source') }}</a>

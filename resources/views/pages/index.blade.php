@@ -1,12 +1,18 @@
 @extends('layouts.app')
 
+@section('title', $appTitle.' – '.__('home_page_title'))
+
 @section('intro')
     <section class="page-intro">
         <div class="container">
             <h1>{{ __('welcome_heading') }}</h1>
             <p>{{ __('about_text') }}</p>
             <p>{{ __('intro_text') }}</p>
-            <p><a href="{{ route('report.track') }}">{{ __('track_link') }}</a></p>
+            <ul class="intro-links">
+                <li><a href="{{ route('process') }}">{{ __('process_link') }}</a></li>
+                <li><a href="{{ route('support') }}">{{ __('support_link') }}</a></li>
+                <li><a href="{{ route('report.track') }}">{{ __('track_link') }}</a></li>
+            </ul>
         </div>
     </section>
 @endsection
@@ -21,6 +27,7 @@
     @endphp
     <div class="stack">
         <h2>{{ __('select_topic_prompt') }}</h2>
+        <p class="muted">{{ __('select_topic_hint') }}</p>
         @foreach ($visibleTopics as $t)
             <article class="card topic-card">
                 <div class="topic-body">

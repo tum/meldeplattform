@@ -31,6 +31,25 @@ class HomeController
         ]);
     }
 
+    public function process(): View
+    {
+        return view('pages.process', [
+            'content' => Markdown::renderOperatorContent($this->localizedPage('process')),
+            'ackDays' => Config::integer('meldeplattform.acknowledgement_deadline_days'),
+            'feedbackDays' => Config::integer('meldeplattform.feedback_deadline_days'),
+            'metaDescription' => __('process_meta_description'),
+        ]);
+    }
+
+    public function support(): View
+    {
+        return view('pages.info', [
+            'content' => Markdown::renderOperatorContent($this->localizedPage('support')),
+            'pageTitle' => __('support_title'),
+            'metaDescription' => __('support_meta_description'),
+        ]);
+    }
+
     public function setLang(Request $request): RedirectResponse
     {
         $lang = $request->string('lang', 'en')->toString();
@@ -120,5 +139,21 @@ class HomeController
         return $file !== '' && is_file($file)
             ? (string) file_get_contents($file)
             : $fallback;
+    }
+
+    /**
+     * Reporter-facing explanatory pages ship one Markdown file per locale
+     * (resources/markdown/{name}.{lang}.md); German is the fallback.
+     */
+    private function localizedPage(string $name): string
+    {
+        foreach ([app()->getLocale(), 'de'] as $lang) {
+            $file = resource_path("markdown/{$name}.{$lang}.md");
+            if (is_file($file)) {
+                return (string) file_get_contents($file);
+            }
+        }
+
+        return '';
     }
 }

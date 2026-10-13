@@ -17,6 +17,14 @@
         <div class="alert alert-error">{{ __('please_fix_errors') }}</div>
     @endif
 
+    <aside class="card card-soft reporter-help" style="max-width: 820px;">
+        <p>{{ __('form_help_text') }}</p>
+        <p>
+            <a href="{{ route('process') }}">{{ __('process_link') }}</a>
+            · <a href="{{ route('support') }}">{{ __('support_link') }}</a>
+        </p>
+    </aside>
+
     <div class="alert alert-info draft-restored" data-draft-note hidden>{{ __('draft_restored') }}</div>
 
     <form method="post" action="{{ route('form.submit') }}" enctype="multipart/form-data" class="card"
