@@ -41,7 +41,7 @@ class ReporterGuidanceTest extends TestCase
         $this->withCookie('lang', 'de')->get('/support')
             ->assertOk()
             ->assertSee('Beratung &amp; weitere Meldewege', false)
-            ->assertSee('mailto:diversity@tum.de', false)
+            ->assertSee('mailto:respect@tum.de', false)
             ->assertSee('116 016');
 
         $this->withCookie('lang', 'en')->get('/support')
