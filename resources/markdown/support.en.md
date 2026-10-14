@@ -8,10 +8,17 @@ whether "it counts".
 
 ## Support at TUM
 
-- **Diversity & Inclusion Office** – advice on discrimination, harassment and
-  conflicts: [diversity@tum.de](mailto:diversity@tum.de)
-- **Gender Equality Office** – advice on sexual harassment and sexualised
-  violence: [gender@tum.de](mailto:gender@tum.de)
+- **Contact persons for questions relating to sexual harassment and sexualised
+  violence:** [respect@tum.de](mailto:respect@tum.de)
+- **Gender Equality Office** – advice for women on discrimination, harassment
+  and conflicts: [gender@tum.de](mailto:gender@tum.de)
+- **Protestant University Chaplaincy at TUM** (Evangelische
+  Hochschulgemeinde) – counselling and pastoral care for personal,
+  study-related or work-related concerns (regardless of religious
+  affiliation): [simone.oppel@elkb.de](mailto:simone.oppel@elkb.de)
+- **Violence Protection Coordination Office** (Koordinationsstelle
+  Gewaltschutz) – incidents in which you feel threatened, have experienced
+  violence or see a potential risk: [care@tum.de](mailto:care@tum.de)
 
 ## Ways to report at TUM
 

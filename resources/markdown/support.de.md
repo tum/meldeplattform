@@ -8,10 +8,16 @@ unsicher sind, ob „das schon zählt“.
 
 ## Beratung an der TUM
 
-- **Stabsstelle Diversity & Inclusion** – Beratung bei Diskriminierung,
-  Belästigung und Konflikten: [diversity@tum.de](mailto:diversity@tum.de)
-- **Gender Equality Office** – Beratung bei sexueller Belästigung und
-  sexualisierter Gewalt: [gender@tum.de](mailto:gender@tum.de)
+- **Ansprechpersonen für Fragen im Zusammenhang mit sexueller Belästigung und
+  sexualisierter Gewalt:** [respect@tum.de](mailto:respect@tum.de)
+- **Gender Equality Office** – Beratung für Frauen bei Diskriminierung,
+  Belästigung und Konflikten: [gender@tum.de](mailto:gender@tum.de)
+- **Evangelische Hochschulgemeinde an der TUM** – Beratung und Seelsorge für
+  persönliche, studienbezogene oder berufliche Anliegen (unabhängig von der
+  Religionszugehörigkeit): [simone.oppel@elkb.de](mailto:simone.oppel@elkb.de)
+- **Koordinationsstelle Gewaltschutz** – Vorfälle, bei denen Sie sich bedroht
+  fühlen, Gewalt erlebt haben oder eine mögliche Gefährdung sehen:
+  [care@tum.de](mailto:care@tum.de)
 
 ## Meldewege an der TUM
 
