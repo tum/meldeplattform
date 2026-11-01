@@ -146,7 +146,6 @@ class OtrsReplyImporter
                 continue;
             }
             /** @var array<string, mixed> $article OTRS article objects are JSON objects (string keys). */
-
             $articleId = isset($article['ArticleID']) && is_scalar($article['ArticleID'])
                 ? (int) $article['ArticleID']
                 : 0;
