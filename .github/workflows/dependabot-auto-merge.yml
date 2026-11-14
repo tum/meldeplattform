@@ -29,11 +29,16 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Patch and minor bumps go in automatically; major bumps (breaking
-      # changes by definition) stay for a human to review. For grouped PRs
-      # update-type is the largest bump in the group.
+      # Patch bumps go in automatically everywhere. Minor bumps only for
+      # Composer and Actions: for Docker images a "minor" tag bump means a
+      # new runtime (php:8.5 -> 8.6, mariadb:13 -> 13.1) that the CI matrix
+      # does not test. Major bumps always stay for a human to review. For
+      # grouped PRs update-type is the largest bump in the group.
       - name: Enable auto-merge
-        if: steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor'
+        if: >-
+          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          (steps.meta.outputs.update-type == 'version-update:semver-minor' &&
+           contains(fromJSON('["composer", "github_actions"]'), steps.meta.outputs.package-ecosystem))
         run: gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
