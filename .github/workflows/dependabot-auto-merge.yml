@@ -1,0 +1,40 @@
+name: Dependabot auto-merge
+
+# Turns on GitHub's native auto-merge for Dependabot PRs. GitHub then merges
+# the PR on its own once every required status check (CI) has passed — this
+# workflow never merges anything itself. Without branch protection requiring
+# the CI checks, auto-merge would merge immediately, so that rule is a hard
+# prerequisite (see the PR description).
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  enable-auto-merge:
+    name: Enable auto-merge
+    runs-on: ubuntu-latest
+    # Check the PR author, not github.actor: the actor is whoever triggered
+    # this particular run (e.g. someone pushing to the Dependabot branch).
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'tum/meldeplattform'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Patch and minor bumps go in automatically; major bumps (breaking
+      # changes by definition) stay for a human to review. For grouped PRs
+      # update-type is the largest bump in the group.
+      - name: Enable auto-merge
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor'
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
