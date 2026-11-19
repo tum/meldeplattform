@@ -12,7 +12,8 @@
         "laravel/framework": "^13.0",
         "league/commonmark": "^2.5",
         "mews/purifier": "^3.4",
-        "onelogin/php-saml": "^4.1"
+        "onelogin/php-saml": "^4.1",
+        "tum/system-reporter": "^2.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
@@ -72,5 +73,10 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": [{
+        "name": "system-reporter",
+        "type": "vcs",
+        "url": "https://github.com/tum/system-reporter.git"
+    }]
 }

@@ -210,6 +210,12 @@ Die App ist so gebaut, dass sie auch auf klassischen PHP-Hostings
    ```
    * * * * * cd /home/USER/meldeplattform && php artisan schedule:run >/dev/null 2>&1
    ```
+7. IT-Inventar: Im IT-Portal das System „Meldeplattform“ anlegen, ein
+   Melde-Token erzeugen (IT-Systeme → System → Melde-Tokens) und
+   `SYSTEM_REPORTER_ENABLED=true` sowie `SYSTEM_REPORTER_TOKEN` in die
+   Produktions-`.env` setzen
+   ([`tum/system-reporter`](https://github.com/tum/system-reporter)). Prüfen
+   mit `php artisan system-reporter:report --dry-run`.
 
 ## Konfiguration
 
@@ -339,6 +345,7 @@ Folgende Artisan-Commands sind im Scheduler registriert (`routes/console.php`):
 | `admins:prune` | täglich | Entzieht seit `MELDE_DORMANT_ADMIN_DAYS` ungenutzte Admin-Berechtigungen, verwirft nie genutzte Vormerkungen (no-op bei `0`) |
 | `audit:prune` | täglich | Löscht Audit-Einträge älter als `MELDE_AUDIT_RETENTION_DAYS`, außer zu noch bestehenden Meldungen (no-op bei `0`) |
 | `otrs:poll-replies` | alle 5 Min. | Spiegelt OTRS/Znuny-Antworten in die Meldungen zurück (no-op ohne OTRS-Inbound) |
+| `system-reporter:report` | täglich 05:30 | System- und Patchstand ans IT-Inventar des IT-Portals, nur mit `SYSTEM_REPORTER_ENABLED=true` (registriert vom Paket, Zeit aus `SYSTEM_REPORTER_TIME`) |
 | Heartbeat | alle 5 Min. | Schreibt `scheduler.heartbeat` in den Cache; `/stats` warnt, wenn der Cron den Scheduler nicht mehr weckt |
 
 Beide laufen über den Laravel-Scheduler. Es genügt **ein** Cron-Eintrag auf
