@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "51e0b795d90fcc41574ef5b530f9a798",
+    "content-hash": "88aec7926f994062e71281498bd20965",
     "packages": [
         {
             "name": "brick/math",
@@ -6242,6 +6242,71 @@
                 "source": "https://github.com/tijsverkoyen/CssToInlineStyles/tree/v2.4.0"
             },
             "time": "2025-12-02T11:56:42+00:00"
+        },
+        {
+            "name": "tum/system-reporter",
+            "version": "v2.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tum/system-reporter.git",
+                "reference": "0de6307fdd15be0031b12cbda0ce634beab5fc71"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tum/system-reporter/zipball/0de6307fdd15be0031b12cbda0ce634beab5fc71",
+                "reference": "0de6307fdd15be0031b12cbda0ce634beab5fc71",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^12.0|^13.0",
+                "illuminate/http": "^12.0|^13.0",
+                "illuminate/support": "^12.0|^13.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.0",
+                "laravel/pint": "^1.18",
+                "orchestra/testbench": "^10.0|^11.0",
+                "phpunit/phpunit": "^11.0|^12.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Tum\\SystemReporter\\SystemReporterServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Tum\\SystemReporter\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Tum\\SystemReporter\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ],
+                "lint": [
+                    "pint --test"
+                ],
+                "analyse": [
+                    "phpstan analyse --memory-limit=512M"
+                ]
+            },
+            "license": [
+                "proprietary"
+            ],
+            "description": "Meldet System- und Patchstand einer Laravel-Anwendung (tum.system-report/v2) an das IT-Inventar des TUM IT-Portals. Läuft auf Shared Webhosting ohne Agent und ohne CI.",
+            "support": {
+                "source": "https://github.com/tum/system-reporter/tree/v2.2.0",
+                "issues": "https://github.com/tum/system-reporter/issues"
+            },
+            "time": "2026-11-19T08:12:10+00:00"
         },
         {
             "name": "vlucas/phpdotenv",

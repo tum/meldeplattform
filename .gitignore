@@ -11,6 +11,9 @@
 /storage/framework/sessions/*
 /storage/framework/testing/*
 /storage/framework/views/*
+# tum/system-reporter: PHP version seen in the web context (RecordWebRuntime)
+/storage/framework/system-reporter-web.json
+/storage/framework/system-reporter-web.json.*.tmp
 /storage/logs/*
 /.phpunit.cache
 Homestead.json

@@ -22,6 +22,8 @@ $forced = [
     'TELESCOPE_ENABLED' => 'false',
     'MELDE_ADMIN_USERS' => 'globaladmin',
     'MELDE_DEV_LOGIN_ENABLED' => 'true',
+    // Never self-report to the IT portal from tests, even if .env enables it.
+    'SYSTEM_REPORTER_ENABLED' => 'false',
 ];
 
 // The database connection is the one group we cannot force unconditionally:
