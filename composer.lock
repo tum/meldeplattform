@@ -6247,16 +6247,16 @@
         },
         {
             "name": "tum/system-reporter",
-            "version": "v2.2.1",
+            "version": "v2.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/tum/system-reporter.git",
-                "reference": "471fc89fc2231de8236becb62c2f0d469f40d2a0"
+                "reference": "d2e2a5c016b0116bab58a328ab4b8a9c0985da39"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/tum/system-reporter/zipball/471fc89fc2231de8236becb62c2f0d469f40d2a0",
-                "reference": "471fc89fc2231de8236becb62c2f0d469f40d2a0",
+                "url": "https://api.github.com/repos/tum/system-reporter/zipball/d2e2a5c016b0116bab58a328ab4b8a9c0985da39",
+                "reference": "d2e2a5c016b0116bab58a328ab4b8a9c0985da39",
                 "shasum": ""
             },
             "require": {
@@ -6305,10 +6305,10 @@
             ],
             "description": "Meldet System- und Patchstand einer Laravel-Anwendung (tum.system-report/v2) an das IT-Inventar des TUM IT-Portals. Läuft auf Shared Webhosting ohne Agent und ohne CI.",
             "support": {
-                "source": "https://github.com/tum/system-reporter/tree/v2.2.1",
+                "source": "https://github.com/tum/system-reporter/tree/v2.4.0",
                 "issues": "https://github.com/tum/system-reporter/issues"
             },
-            "time": "2026-11-19T14:59:56+00:00"
+            "time": "2026-11-27T14:49:35+00:00"
         },
         {
             "name": "vlucas/phpdotenv",
